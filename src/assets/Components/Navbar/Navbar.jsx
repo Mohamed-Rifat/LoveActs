@@ -75,6 +75,12 @@ const Navbar = () => {
                 >
                   About Us
                 </Link>
+                <Link
+                  to="/admindashboard"
+                  className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
+                >
+                  Admin Dashboard
+                </Link>
                 <button
                   onClick={() => setLogoutModalOpen(true)}
                   className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
