@@ -15,6 +15,7 @@ import { TokenProvider } from './assets/Context/TokenContext/TokenContext';
 import Cafes from './assets/Pages/Cafes/Cafes';
 import About from './assets/Pages/About/About';
 import Products from './assets/Pages/Products/Products';
+import AdminProducts from './assets/Pages/AdminProducts/AdminProducts';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const routes = createBrowserRouter([
       { path: "resetpassword", element: <ResetPassword /> },
       // { path: "admindashboard", element: <ProtectedRoutes> <AdminDashboard /> </ProtectedRoutes> },
       { path: "admindashboard", element:  <AdminDashboard />  },
+            { path: "adminproducts", element:  <AdminProducts />  },
       { path: "cafes", element:  <Cafes />  },
       { path: "products", element:  <Products />  },
       { path: "about", element:  <About />  },

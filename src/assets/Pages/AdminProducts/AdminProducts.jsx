@@ -7,6 +7,7 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   LocalCafe as CafeIcon,
+  ShoppingBag as ProductsIcon,
   People as UsersIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
@@ -19,50 +20,39 @@ import {
   CheckCircle as ActiveIcon,
   Visibility as FeaturedIcon,
   Schedule as NewIcon,
-  LocationOn as MapPinIcon,
-  Home as HomeIcon,
-  AccessTime as ClockIcon,
-  Phone as PhoneIcon,
-  Language as WebsiteIcon
+  Category as CategoryIcon,
+  AttachMoney as PriceIcon,
+  Inventory as InventoryIcon
 } from '@mui/icons-material';
 import { Switch } from '@mui/material';
 
 // API Base URL
-const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api/cafe';
+const API_BASE_URL = 'http://localhost:3000/api/product';
 
 // API Functions
-const fetchCafes = async () => {
+const fetchProducts = async () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error("يجب تسجيل الدخول أولاً");
     }
 
-    const { data } = await axios.get(`${API_BASE_URL}/display-all-cafes`, {
+    const { data } = await axios.get(`${API_BASE_URL}/all-products`, {
       headers: {
         'Authorization': `Admin ${token}`,
         'Content-Type': 'application/json'
       }
     });
 
-    // تحقق من بنية البيانات المختلفة
-    const cafesData = Array.isArray(data) ? data : data?.cafeData || data?.data || data?.cafes || [];
-
-    // تحويل القيم إلى boolean إذا كانت strings
-    return cafesData.map(cafe => ({
-      ...cafe,
-      isActive: cafe.isActive === true || cafe.isActive === 'true',
-      isFeatured: cafe.isFeatured === true || cafe.isFeatured === 'true'
-    }));
-
+    return data.products || [];
   } catch (error) {
-    console.error('Error fetching cafes:', error);
-    throw new Error(error.response?.data?.message || 'Failed to fetch cafes');
+    console.error('Error fetching products:', error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch products');
   }
 };
 
-const createCafe = async (cafeData) => {
-  const { data } = await axios.post(`${API_BASE_URL}/add-cafe`, cafeData, {
+const createProduct = async (productData) => {
+  const { data } = await axios.post(`${API_BASE_URL}/create`, productData, {
     headers: {
       'Authorization': `Admin ${localStorage.getItem('token')}`,
       'Content-Type': 'application/json'
@@ -71,8 +61,8 @@ const createCafe = async (cafeData) => {
   return data;
 };
 
-const updateCafe = async ({ id, cafeData }) => {
-  const { data } = await axios.put(`${API_BASE_URL}/update-cafe/${id}`, cafeData, {
+const updateProduct = async ({ id, productData }) => {
+  const { data } = await axios.put(`${API_BASE_URL}/update/${id}`, productData, {
     headers: {
       'Authorization': `Admin ${localStorage.getItem('token')}`,
       'Content-Type': 'application/json'
@@ -81,100 +71,57 @@ const updateCafe = async ({ id, cafeData }) => {
   return data;
 };
 
-const deleteCafe = async (id) => {
-  await axios.delete(`${API_BASE_URL}/delete-cafe/${id}`, {
+const softDeleteProduct = async (id) => {
+  await axios.patch(`${API_BASE_URL}/${id}/soft-delete`, {}, {
     headers: {
       'Authorization': `Admin ${localStorage.getItem('token')}`
     }
   });
 };
 
-const AdminDashboard = () => {
+const hardDeleteProduct = async (id) => {
+  await axios.delete(`${API_BASE_URL}/${id}`, {
+    headers: {
+      'Authorization': `Admin ${localStorage.getItem('token')}`
+    }
+  });
+};
+
+const AdminProducts = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedCafe, setSelectedCafe] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openSoftDeleteDialog, setOpenSoftDeleteDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
-    phone: '',
-    iframe: '',
-    link: '',
-    location: '',
+    description: '',
+    price: 0,
+    category: '',
+    stock: 0,
     isActive: true,
     isFeatured: false
   });
 
   const queryClient = useQueryClient();
 
-  // Close context menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if (anchorEl) {
-        setAnchorEl(null);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [anchorEl]);
-
-  const handleValidation = (e) => {
-    const { name, value } = e.target;
-    let newErrors = { ...errors };
-
-    // Clear existing error
-    delete newErrors[name];
-
-    // Validate based on field name
-    if (!value.trim() && e.target.required) {
-      newErrors[name] = 'This field is required';
-    } else {
-      switch (name) {
-        case 'phone':
-          if (!/^[0-9]{8,15}$/.test(value)) {
-            newErrors.phone = 'Phone must be 8-15 digits';
-          }
-          break;
-        case 'link':
-          if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(value)) {
-            newErrors.link = 'Please enter a valid URL';
-          }
-          break;
-        case 'name':
-          if (value.length < 3) {
-            newErrors.name = 'Name must be at least 3 characters';
-          }
-          break;
-        case 'address':
-          if (value.length < 5) {
-            newErrors.address = 'Address must be at least 5 characters';
-          }
-          break;
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Fetch cafes data
+  // Fetch products data
   const {
-    data: cafes = [],
+    data: products = [],
     isLoading,
     error,
     refetch
   } = useQuery({
-    queryKey: ['admin-cafes'],
-    queryFn: fetchCafes,
+    queryKey: ['admin-products'],
+    queryFn: fetchProducts,
     onError: (err) => {
       console.error("Error details:", err);
       toast.error(err.message);
 
-      // إذا كان الخطأ 401 (غير مصرح)
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login';
@@ -182,110 +129,74 @@ const AdminDashboard = () => {
     }
   });
 
-  // Delete cafe mutation
-  const { mutate: deleteCafeMutation, isPending: isDeleting } = useMutation({
-    mutationFn: deleteCafe,
+  // Delete mutations
+  const { mutate: softDeleteMutation, isPending: isSoftDeleting } = useMutation({
+    mutationFn: softDeleteProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe deleted successfully');
-      setOpenDeleteDialog(false);
+      queryClient.invalidateQueries(['admin-products']);
+      toast.success('Product soft deleted successfully');
+      setOpenSoftDeleteDialog(false);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to delete cafe');
+      toast.error(error.response?.data?.error || 'Failed to soft delete product');
     }
   });
 
-  // Create cafe mutation
-  const { mutate: createCafeMutation, isPending: isCreating } = useMutation({
-    mutationFn: createCafe,
+  const { mutate: hardDeleteMutation, isPending: isHardDeleting } = useMutation({
+    mutationFn: hardDeleteProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe created successfully');
+      queryClient.invalidateQueries(['admin-products']);
+      toast.success('Product permanently deleted');
+      setOpenDeleteDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || 'Failed to delete product');
+    }
+  });
+
+  // Create product mutation
+  const { mutate: createProductMutation, isPending: isCreating } = useMutation({
+    mutationFn: createProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-products']);
+      toast.success('Product created successfully');
       setOpenAddDialog(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to create cafe');
+      toast.error(error.response?.data?.error || 'Failed to create product');
     }
   });
 
-  // Update cafe mutation
-  const { mutate: updateCafeMutation, isPending: isUpdating } = useMutation({
-    mutationFn: updateCafe,
+  // Update product mutation
+  const { mutate: updateProductMutation, isPending: isUpdating } = useMutation({
+    mutationFn: updateProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe updated successfully');
+      queryClient.invalidateQueries(['admin-products']);
+      toast.success('Product updated successfully');
       setOpenEditDialog(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to update cafe');
+      toast.error(error.response?.data?.error || 'Failed to update product');
     }
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
-      address: '',
-      phone: '',
-      iframe: '',
-      link: '',
-      location: '',
+      description: '',
+      price: 0,
+      category: '',
+      stock: 0,
       isActive: true,
       isFeatured: false
     });
     setErrors({});
   };
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const handleMenuOpen = (event, cafe) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setSelectedCafe(cafe);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleDeleteClick = () => {
-    setOpenDeleteDialog(true);
-    handleMenuClose();
-  };
-
-  const handleEditClick = () => {
-    if (selectedCafe) {
-      setFormData({
-        name: selectedCafe.name,
-        address: selectedCafe.address,
-        phone: selectedCafe.phone,
-        iframe: selectedCafe.iframe || '',
-        link: selectedCafe.link,
-        location: selectedCafe.location,
-        isActive: Boolean(selectedCafe.isActive),
-        isFeatured: Boolean(selectedCafe.isFeatured)
-      });
-      setOpenEditDialog(true);
-    }
-    handleMenuClose();
-  };
-
-  const handleAddClick = () => {
-    resetForm();
-    setOpenAddDialog(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    deleteCafeMutation(selectedCafe._id);
-  };
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Handle checkbox inputs differently
     const newValue = type === 'checkbox' ? checked : value;
 
     setFormData(prev => ({
@@ -294,53 +205,57 @@ const AdminDashboard = () => {
     }));
 
     if (errors[name]) {
-      handleValidation(e);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
   const handleSubmit = (e, isEdit = false) => {
     e.preventDefault();
 
-    // No need to convert to boolean here as it's already handled in handleInputChange
-    if (isEdit && selectedCafe) {
-      updateCafeMutation({ id: selectedCafe._id, cafeData: formData });
+    const submissionData = {
+      ...formData,
+      price: Number(formData.price),
+      stock: Number(formData.stock)
+    };
+
+    if (isEdit && selectedProduct) {
+      updateProductMutation({ id: selectedProduct._id, productData: submissionData });
     } else {
-      createCafeMutation(formData);
+      createProductMutation(submissionData);
     }
   };
 
-  // Filter cafes
-  const filteredCafes = React.useMemo(() => {
-    return cafes.filter(cafe => {
+  // Filter products
+  const filteredProducts = React.useMemo(() => {
+    return products.filter(product => {
       const search = searchTerm.toLowerCase();
       return (
-        cafe.name.toLowerCase().includes(search) ||
-        (cafe.location && cafe.location.toLowerCase().includes(search)) ||
-        (cafe.address && cafe.address.toLowerCase().includes(search))
+        product.name.toLowerCase().includes(search) ||
+        (product.category && product.category.toLowerCase().includes(search)) ||
+        (product.description && product.description.toLowerCase().includes(search))
       );
     });
-  }, [cafes, searchTerm]);
+  }, [products, searchTerm]);
 
   // Stats calculation
   const stats = React.useMemo(() => {
     return {
-      total: cafes.length,
-      active: cafes.filter(c => c.isActive).length,
-      featured: cafes.filter(c => c.isFeatured).length,
-      newThisMonth: cafes.filter(c => {
-        if (!c.createdAt) return false;
-        const cafeDate = new Date(c.createdAt);
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return cafeDate > monthAgo;
-      }).length
+      total: products.length,
+      active: products.filter(p => p.isActive).length,
+      featured: products.filter(p => p.isFeatured).length,
+      outOfStock: products.filter(p => p.stock <= 0).length
     };
-  }, [cafes]);
+  }, [products]);
 
   // Drawer items
   const drawerItems = [
     { text: 'Dashboard', icon: <DashboardIcon /> },
-    { text: 'Cafes', icon: <CafeIcon />, active: true },
+    { text: 'Cafes', icon: <CafeIcon /> },
+    { text: 'Products', icon: <ProductsIcon />, active: true },
     { text: 'Users', icon: <UsersIcon /> },
     { text: 'Settings', icon: <SettingsIcon /> }
   ];
@@ -389,7 +304,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between h-16 px-4">
             <button
               className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
-              onClick={handleDrawerToggle}
+              onClick={() => setMobileOpen(!mobileOpen)}
             >
               <MenuIcon />
             </button>
@@ -401,7 +316,7 @@ const AdminDashboard = () => {
                   type="text"
                   id="search-input"
                   name="search"
-                  placeholder="Search cafes..."
+                  placeholder="Search products..."
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -414,8 +329,8 @@ const AdminDashboard = () => {
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Cafes Management</h2>
-            <p className="text-gray-600">Manage all cafes in your system</p>
+            <h2 className="text-2xl font-bold text-gray-800">Products Management</h2>
+            <p className="text-gray-600">Manage all products in your system</p>
           </div>
 
           {/* Stats Cards */}
@@ -423,10 +338,10 @@ const AdminDashboard = () => {
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="flex items-center">
                 <div className="p-3 rounded-full bg-amber-100 text-amber-600">
-                  <CafeIcon />
+                  <ProductsIcon />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Cafes</p>
+                  <p className="text-sm font-medium text-gray-500">Total Products</p>
                   <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.total}</p>
                 </div>
               </div>
@@ -437,7 +352,7 @@ const AdminDashboard = () => {
                   <ActiveIcon />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Active Cafes</p>
+                  <p className="text-sm font-medium text-gray-500">Active Products</p>
                   <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.active}</p>
                 </div>
               </div>
@@ -448,19 +363,19 @@ const AdminDashboard = () => {
                   <FeaturedIcon />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Featured Cafes</p>
+                  <p className="text-sm font-medium text-gray-500">Featured Products</p>
                   <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.featured}</p>
                 </div>
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                  <NewIcon />
+                <div className="p-3 rounded-full bg-red-100 text-red-600">
+                  <InventoryIcon />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">New This Month</p>
-                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.newThisMonth}</p>
+                  <p className="text-sm font-medium text-gray-500">Out of Stock</p>
+                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.outOfStock}</p>
                 </div>
               </div>
             </div>
@@ -477,21 +392,21 @@ const AdminDashboard = () => {
                 id="search-input-2"
                 name="search2"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                placeholder="Search cafes..."
+                placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button
-              onClick={handleAddClick}
+              onClick={() => setOpenAddDialog(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
             >
               <AddIcon className="mr-2" />
-              Add New Cafe
+              Add New Product
             </button>
           </div>
 
-          {/* Cafes Table */}
+          {/* Products Table */}
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -505,9 +420,9 @@ const AdminDashboard = () => {
             </div>
           ) : error ? (
             <div className="p-4 text-red-500 text-center">
-              Error loading cafes: {error.message}
+              Error loading products: {error.message}
             </div>
-          ) : filteredCafes.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg
@@ -524,69 +439,61 @@ const AdminDashboard = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">No cafes found</h3>
+              <h3 className="text-lg font-medium text-gray-900">No products found</h3>
               <p className="mt-2 text-gray-500 max-w-md mx-auto">
                 {searchTerm
-                  ? "We couldn't find any cafes matching your search. Try different keywords."
-                  : "There are currently no cafes available. Please check back later."}
+                  ? "We couldn't find any products matching your search. Try different keywords."
+                  : "There are currently no products available. Please check back later."}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCafes.map((cafe) => (
+              {filteredProducts.map((product) => (
                 <div
-                  key={cafe._id}
+                  key={product._id}
                   className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border border-gray-100"
                 >
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-3">
                       <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
-                        {cafe.name}
+                        {product.name}
                       </h2>
                       <div className="flex space-x-2">
-                        {cafe.isFeatured && (
+                        {product.isFeatured && (
                           <span className="flex items-center bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
                             <StarIcon className="mr-1" fontSize="small" /> Featured
                           </span>
                         )}
-                        <span className={`flex items-center text-xs px-2 py-1 rounded-full ${cafe.isActive
+                        <span className={`flex items-center text-xs px-2 py-1 rounded-full ${product.isActive
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                           }`}>
-                          {cafe.isActive ? 'Active' : 'Inactive'}
+                          {product.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                     </div>
 
                     <div className="space-y-2 text-gray-600">
                       <div className="flex items-start">
-                        <MapPinIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                        <p className="text-sm">{cafe.location || "Location not specified"}</p>
+                        <CategoryIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
+                        <p className="text-sm">{product.category || "No category specified"}</p>
                       </div>
 
                       <div className="flex items-start">
-                        <HomeIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                        <p className="text-sm">{cafe.address || "No address provided"}</p>
+                        <PriceIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
+                        <p className="text-sm">${product.price.toFixed(2)}</p>
                       </div>
 
-                      {cafe.phone && (
-                        <div className="flex items-start">
-                          <PhoneIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                          <p className="text-sm">{cafe.phone}</p>
-                        </div>
-                      )}
+                      <div className="flex items-start">
+                        <InventoryIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
+                        <p className={`text-sm ${product.stock <= 0 ? 'text-red-500' : ''}`}>
+                          {product.stock <= 0 ? 'Out of Stock' : `In Stock: ${product.stock}`}
+                        </p>
+                      </div>
 
-                      {cafe.link && (
-                        <div className="flex items-start">
-                          <WebsiteIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                          <a
-                            href={cafe.link.startsWith('http') ? cafe.link : `https://${cafe.link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            Visit Website
-                          </a>
+                      {product.description && (
+                        <div className="text-sm text-gray-500 line-clamp-2">
+                          {product.description}
                         </div>
                       )}
                     </div>
@@ -596,16 +503,15 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => {
                         setFormData({
-                          name: cafe.name,
-                          address: cafe.address,
-                          phone: cafe.phone,
-                          iframe: cafe.iframe || '',
-                          link: cafe.link,
-                          location: cafe.location,
-                          isActive: Boolean(cafe.isActive),
-                          isFeatured: Boolean(cafe.isFeatured)
+                          name: product.name,
+                          description: product.description,
+                          price: product.price,
+                          category: product.category,
+                          stock: product.stock,
+                          isActive: Boolean(product.isActive),
+                          isFeatured: Boolean(product.isFeatured)
                         });
-                        setSelectedCafe(cafe);
+                        setSelectedProduct(product);
                         setOpenEditDialog(true);
                       }}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
@@ -613,15 +519,26 @@ const AdminDashboard = () => {
                       Edit
                     </button>
 
-                    <button
-                      onClick={() => {
-                        setSelectedCafe(cafe);
-                        setOpenDeleteDialog(true);
-                      }}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setOpenSoftDeleteDialog(true);
+                        }}
+                        className="text-orange-600 hover:text-orange-800 text-sm font-medium transition-colors"
+                      >
+                        Soft Delete
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setOpenDeleteDialog(true);
+                        }}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -630,35 +547,7 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* Context Menu */}
-      {anchorEl && (
-        <div
-          className="fixed z-40 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-          style={{
-            top: anchorEl.getBoundingClientRect().bottom + window.scrollY,
-            left: anchorEl.getBoundingClientRect().left + window.scrollX
-          }}
-        >
-          <div className="py-1">
-            <button
-              onClick={handleEditClick}
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-            >
-              <EditIcon fontSize="small" className="mr-3" />
-              Edit
-            </button>
-            <button
-              onClick={handleDeleteClick}
-              className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-            >
-              <DeleteIcon fontSize="small" className="mr-3" />
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialogs */}
       {openDeleteDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -673,10 +562,10 @@ const AdminDashboard = () => {
                     <DeleteIcon className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Cafe</h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Product</h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Are you sure you want to delete "{selectedCafe?.name}"? This action cannot be undone.
+                        Are you sure you want to permanently delete "{selectedProduct?.name}"? This action cannot be undone.
                       </p>
                     </div>
                   </div>
@@ -685,11 +574,11 @@ const AdminDashboard = () => {
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  onClick={() => hardDeleteMutation(selectedProduct._id)}
+                  disabled={isHardDeleting}
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm ${isHardDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isHardDeleting ? 'Deleting...' : 'Delete Permanently'}
                 </button>
                 <button
                   type="button"
@@ -704,7 +593,52 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Edit Cafe Dialog */}
+      {openSoftDeleteDialog && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <DeleteIcon className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Soft Delete Product</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to soft delete "{selectedProduct?.name}"? The product will be marked as inactive but can be restored later.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => softDeleteMutation(selectedProduct._id)}
+                  disabled={isSoftDeleting}
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm ${isSoftDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {isSoftDeleting ? 'Processing...' : 'Soft Delete'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenSoftDeleteDialog(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Dialog */}
       {openEditDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -715,11 +649,11 @@ const AdminDashboard = () => {
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
               <form onSubmit={(e) => handleSubmit(e, true)}>
                 <div className="bg-amber-600 px-4 py-3">
-                  <h3 className="text-lg font-medium text-white">Edit Cafe</h3>
+                  <h3 className="text-lg font-medium text-white">Edit Product</h3>
                 </div>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-6">
                       <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">
                         Name <span className="text-red-500">*</span>
                       </label>
@@ -729,114 +663,70 @@ const AdminDashboard = () => {
                         id="edit-name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                         required
-                        autoComplete="organization"
                       />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-location" className="block text-sm font-medium text-gray-700">
-                        Location <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="location"
-                        id="edit-location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.location ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="address-level2"
-                      />
-                      {errors.location && (
-                        <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-                      )}
                     </div>
 
                     <div className="sm:col-span-6">
-                      <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700">
-                        Address <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="address"
-                        id="edit-address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.address ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="street-address"
-                      />
-                      {errors.address && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700">
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="edit-phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="tel"
-                      />
-                      {errors.phone && (
-                        <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-link" className="block text-sm font-medium text-gray-700">
-                        Website Link <span className="text-red-500">*</span>
-                      </label>
-                      <div className="mt-1 flex rounded-md shadow-sm">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                          https://
-                        </span>
-                        <input
-                          type="text"
-                          name="link"
-                          id="edit-link"
-                          value={formData.link.replace(/^https?:\/\//, '')}
-                          onChange={handleInputChange}
-                          onBlur={handleValidation}
-                          className={`flex-1 min-w-0 block w-full rounded-none rounded-r-md border ${errors.link ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500 focus:border-amber-500 sm:text-sm py-2 px-3`}
-                          placeholder="example.com"
-                          required
-                          autoComplete="url"
-                        />
-                      </div>
-                      {errors.link && (
-                        <p className="mt-1 text-sm text-red-600">{errors.link}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="edit-iframe" className="block text-sm font-medium text-gray-700">
-                        Map Embed Code
+                      <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">
+                        Description
                       </label>
                       <textarea
-                        name="iframe"
-                        id="edit-iframe"
+                        name="description"
+                        id="edit-description"
                         rows={3}
-                        value={formData.iframe}
+                        value={formData.description}
                         onChange={handleInputChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                        placeholder="Paste iframe code for maps..."
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700">
+                        Price <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="price"
+                        id="edit-price"
+                        min="0"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label htmlFor="edit-stock" className="block text-sm font-medium text-gray-700">
+                        Stock <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="stock"
+                        id="edit-stock"
+                        min="0"
+                        value={formData.stock}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-6">
+                      <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700">
+                        Category <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="category"
+                        id="edit-category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
                       />
                     </div>
 
@@ -874,8 +764,8 @@ const AdminDashboard = () => {
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="submit"
-                    disabled={isUpdating || Object.keys(errors).length > 0}
-                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isUpdating || Object.keys(errors).length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    disabled={isUpdating}
+                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isUpdating ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
                     {isUpdating ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -893,7 +783,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Add Cafe Dialog */}
+      {/* Add Product Dialog */}
       {openAddDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -904,11 +794,11 @@ const AdminDashboard = () => {
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
               <form onSubmit={handleSubmit}>
                 <div className="bg-amber-600 px-4 py-3">
-                  <h3 className="text-lg font-medium text-white">Add New Cafe</h3>
+                  <h3 className="text-lg font-medium text-white">Add New Product</h3>
                 </div>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-6">
                       <label htmlFor="add-name" className="block text-sm font-medium text-gray-700">
                         Name <span className="text-red-500">*</span>
                       </label>
@@ -918,114 +808,70 @@ const AdminDashboard = () => {
                         id="add-name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
                         required
-                        autoComplete="organization"
                       />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-location" className="block text-sm font-medium text-gray-700">
-                        Location <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="location"
-                        id="add-location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.location ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="address-level2"
-                      />
-                      {errors.location && (
-                        <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-                      )}
                     </div>
 
                     <div className="sm:col-span-6">
-                      <label htmlFor="add-address" className="block text-sm font-medium text-gray-700">
-                        Address <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="address"
-                        id="add-address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.address ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="street-address"
-                      />
-                      {errors.address && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-phone" className="block text-sm font-medium text-gray-700">
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="add-phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="tel"
-                      />
-                      {errors.phone && (
-                        <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-link" className="block text-sm font-medium text-gray-700">
-                        Website Link <span className="text-red-500">*</span>
-                      </label>
-                      <div className="mt-1 flex rounded-md shadow-sm">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                          https://
-                        </span>
-                        <input
-                          type="text"
-                          name="link"
-                          id="add-link"
-                          value={formData.link.replace(/^https?:\/\//, '')}
-                          onChange={handleInputChange}
-                          onBlur={handleValidation}
-                          className={`flex-1 min-w-0 block w-full rounded-none rounded-r-md border ${errors.link ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500 focus:border-amber-500 sm:text-sm py-2 px-3`}
-                          placeholder="example.com"
-                          required
-                          autoComplete="url"
-                        />
-                      </div>
-                      {errors.link && (
-                        <p className="mt-1 text-sm text-red-600">{errors.link}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="add-iframe" className="block text-sm font-medium text-gray-700">
-                        Map Embed Code
+                      <label htmlFor="add-description" className="block text-sm font-medium text-gray-700">
+                        Description
                       </label>
                       <textarea
-                        name="iframe"
-                        id="add-iframe"
+                        name="description"
+                        id="add-description"
                         rows={3}
-                        value={formData.iframe}
+                        value={formData.description}
                         onChange={handleInputChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                        placeholder="Paste iframe code for maps..."
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label htmlFor="add-price" className="block text-sm font-medium text-gray-700">
+                        Price <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="price"
+                        id="add-price"
+                        min="0"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label htmlFor="add-stock" className="block text-sm font-medium text-gray-700">
+                        Stock <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="stock"
+                        id="add-stock"
+                        min="0"
+                        value={formData.stock}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-6">
+                      <label htmlFor="add-category" className="block text-sm font-medium text-gray-700">
+                        Category <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="category"
+                        id="add-category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                        required
                       />
                     </div>
 
@@ -1063,10 +909,10 @@ const AdminDashboard = () => {
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="submit"
-                    disabled={isCreating || Object.keys(errors).length > 0}
-                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isCreating || Object.keys(errors).length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    disabled={isCreating}
+                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isCreating ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
-                    {isCreating ? 'Creating...' : 'Create Cafe'}
+                    {isCreating ? 'Creating...' : 'Create Product'}
                   </button>
                   <button
                     type="button"
@@ -1085,4 +931,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default AdminProducts;
