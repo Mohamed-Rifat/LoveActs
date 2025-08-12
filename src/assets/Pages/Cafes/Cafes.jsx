@@ -148,14 +148,6 @@ const fetchCafes = async () => {
                 key={cafe._id || cafe.id}
                 className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow"
               >
-                <img
-                  src={cafe.image || "https://via.placeholder.com/300x200?text=Cafe"}
-                  alt={cafe.name}
-                  className="h-48 w-full object-cover rounded-lg mb-4"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/300x200?text=Cafe";
-                  }}
-                />
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
                   {cafe.name || "Unnamed Cafe"}
                 </h2>
