@@ -14,6 +14,7 @@ import ProtectedRoutes from './assets/Components/ProtectRoutes/ProtectRoutes';
 import { TokenProvider } from './assets/Context/TokenContext/TokenContext';
 import Cafes from './assets/Pages/Cafes/Cafes';
 import About from './assets/Pages/About/About';
+import Products from './assets/Pages/Products/Products';
 
 // Create a QueryClient instance
 const queryClient = new QueryClient();
