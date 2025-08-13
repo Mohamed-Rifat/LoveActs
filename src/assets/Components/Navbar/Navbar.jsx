@@ -167,7 +167,7 @@ const Navbar = () => {
                   Products
                 </Link>
                 <Link
-                  to="/cafe"
+                  to="/cafes"
                   onClick={() => setIsOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
