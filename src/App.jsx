@@ -9,15 +9,12 @@ import Register from './assets/Pages/Register/Register';
 import Login from './assets/Pages/Login/Login';
 import NotFound from './assets/Pages/NotFound/NotFound';
 import ResetPassword from './assets/Pages/ResetPassword/ResetPassword';
-import AdminDashboard from './assets/Pages/AdminDashboard/AdminDashboard';
 import ProtectedRoutes from './assets/Components/ProtectRoutes/ProtectRoutes';
 import { TokenProvider } from './assets/Context/TokenContext/TokenContext';
 import Cafes from './assets/Pages/Cafes/Cafes';
 import About from './assets/Pages/About/About';
 import Products from './assets/Pages/Products/Products';
-import AdminProducts from './assets/Pages/AdminProducts/AdminProducts';
-
-// Create a QueryClient instance
+import MainAdminDashboard from './assets/Pages/MainAdminDashboard/MainAdminDashboard';
 const queryClient = new QueryClient();
 
 const routes = createBrowserRouter([
@@ -30,9 +27,7 @@ const routes = createBrowserRouter([
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
       { path: "resetpassword", element: <ResetPassword /> },
-      // { path: "admindashboard", element: <ProtectedRoutes> <AdminDashboard /> </ProtectedRoutes> },
-      { path: "admindashboard", element:  <AdminDashboard />  },
-            { path: "adminproducts", element:  <AdminProducts />  },
+      { path: "admindashboard", element: <ProtectedRoutes> <MainAdminDashboard /> </ProtectedRoutes> },
       { path: "cafes", element:  <Cafes />  },
       { path: "products", element:  <Products />  },
       { path: "about", element:  <About />  },
