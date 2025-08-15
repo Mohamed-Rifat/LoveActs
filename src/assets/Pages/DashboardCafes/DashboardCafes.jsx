@@ -27,10 +27,8 @@ import {
 } from '@mui/icons-material';
 import { Switch } from '@mui/material';
 
-// API Base URL
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api/cafe';
 
-// API Functions
 const fetchCafes = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -45,10 +43,8 @@ const fetchCafes = async () => {
       }
     });
 
-    // تحقق من بنية البيانات المختلفة
     const cafesData = Array.isArray(data) ? data : data?.cafeData || data?.data || data?.cafes || [];
 
-    // تحويل القيم إلى boolean إذا كانت strings
     return cafesData.map(cafe => ({
       ...cafe,
       isActive: cafe.isActive === true || cafe.isActive === 'true',
@@ -89,8 +85,7 @@ const deleteCafe = async (id) => {
   });
 };
 
-const AdminDashboard = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+const DashboardCafes = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCafe, setSelectedCafe] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -111,7 +106,6 @@ const AdminDashboard = () => {
 
   const queryClient = useQueryClient();
 
-  // Close context menu when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       if (anchorEl) {
@@ -126,10 +120,8 @@ const AdminDashboard = () => {
     const { name, value } = e.target;
     let newErrors = { ...errors };
 
-    // Clear existing error
     delete newErrors[name];
 
-    // Validate based on field name
     if (!value.trim() && e.target.required) {
       newErrors[name] = 'This field is required';
     } else {
@@ -161,7 +153,6 @@ const AdminDashboard = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fetch cafes data
   const {
     data: cafes = [],
     isLoading,
@@ -174,7 +165,6 @@ const AdminDashboard = () => {
       console.error("Error details:", err);
       toast.error(err.message);
 
-      // إذا كان الخطأ 401 (غير مصرح)
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login';
@@ -182,7 +172,6 @@ const AdminDashboard = () => {
     }
   });
 
-  // Delete cafe mutation
   const { mutate: deleteCafeMutation, isPending: isDeleting } = useMutation({
     mutationFn: deleteCafe,
     onSuccess: () => {
@@ -195,7 +184,6 @@ const AdminDashboard = () => {
     }
   });
 
-  // Create cafe mutation
   const { mutate: createCafeMutation, isPending: isCreating } = useMutation({
     mutationFn: createCafe,
     onSuccess: () => {
@@ -209,7 +197,6 @@ const AdminDashboard = () => {
     }
   });
 
-  // Update cafe mutation
   const { mutate: updateCafeMutation, isPending: isUpdating } = useMutation({
     mutationFn: updateCafe,
     onSuccess: () => {
@@ -235,10 +222,6 @@ const AdminDashboard = () => {
       isFeatured: false
     });
     setErrors({});
-  };
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
   };
 
   const handleMenuOpen = (event, cafe) => {
@@ -285,7 +268,6 @@ const AdminDashboard = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Handle checkbox inputs differently
     const newValue = type === 'checkbox' ? checked : value;
 
     setFormData(prev => ({
@@ -301,7 +283,6 @@ const AdminDashboard = () => {
   const handleSubmit = (e, isEdit = false) => {
     e.preventDefault();
 
-    // No need to convert to boolean here as it's already handled in handleInputChange
     if (isEdit && selectedCafe) {
       updateCafeMutation({ id: selectedCafe._id, cafeData: formData });
     } else {
@@ -309,7 +290,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filter cafes
   const filteredCafes = React.useMemo(() => {
     return cafes.filter(cafe => {
       const search = searchTerm.toLowerCase();
@@ -321,7 +301,6 @@ const AdminDashboard = () => {
     });
   }, [cafes, searchTerm]);
 
-  // Stats calculation
   const stats = React.useMemo(() => {
     return {
       total: cafes.length,
@@ -337,88 +316,16 @@ const AdminDashboard = () => {
     };
   }, [cafes]);
 
-  // Drawer items
-  const drawerItems = [
-    { text: 'Dashboard', icon: <DashboardIcon /> },
-    { text: 'Cafes', icon: <CafeIcon />, active: true },
-    { text: 'Users', icon: <UsersIcon /> },
-    { text: 'Settings', icon: <SettingsIcon /> }
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Drawer */}
-      <div className={`fixed inset-y-0 left-0 transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-30 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out`}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-center h-16 px-4 bg-amber-600 text-white">
-            <h2 className="text-xl font-bold">Love Acts</h2>
-          </div>
-          <div className="border-b border-gray-200"></div>
-          <nav className="flex-1 overflow-y-auto">
-            <ul className="py-4">
-              {drawerItems.map((item) => (
-                <li
-                  key={item.text}
-                  className={`px-4 py-3 mx-2 rounded-md flex items-center ${item.active ? 'bg-amber-100 text-amber-800' : 'text-gray-700 hover:bg-gray-100'}`}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  <span>{item.text}</span>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="p-4 border-t border-gray-200">
-            <button
-              className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-              onClick={() => {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-              }}
-            >
-              <LogoutIcon className="mr-3" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
+    <div className="min-h-screen bg-gray-50">
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* App Bar */}
-        <header className="bg-white shadow-sm z-20">
-          <div className="flex items-center justify-between h-16 px-4">
-            <button
-              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
-              onClick={handleDrawerToggle}
-            >
-              <MenuIcon />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-800">Admin Dashboard</h1>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="search-input"
-                  name="search"
-                  placeholder="Search cafes..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </header>
 
-        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-800">Cafes Management</h2>
             <p className="text-gray-600">Manage all cafes in your system</p>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="flex items-center">
@@ -466,7 +373,6 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Actions Bar */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div className="relative w-full md:w-64">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -491,7 +397,6 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          {/* Cafes Table */}
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -630,7 +535,6 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* Context Menu */}
       {anchorEl && (
         <div
           className="fixed z-40 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
@@ -658,7 +562,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       {openDeleteDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -704,7 +607,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Edit Cafe Dialog */}
       {openEditDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -893,7 +795,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Add Cafe Dialog */}
       {openAddDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -1085,4 +986,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default DashboardCafes;
