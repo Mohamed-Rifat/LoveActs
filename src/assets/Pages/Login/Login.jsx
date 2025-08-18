@@ -3,7 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Helmet } from 'react-helmet';
+import { Helmet } from "react-helmet-async";
 import styled, { keyframes } from 'styled-components';
 import { FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -289,6 +289,7 @@ export default function Login() {
                 type="email"
                 id="email"
                 name="email"
+                autoComplete="email"
                 className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.email && formik.errors.email
                     ? 'border-red-300'
                     : 'border-gray-300'
@@ -319,6 +320,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
+                  autoComplete="current-password"
                   className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.password && formik.errors.password
                       ? "border-red-300"
                       : "border-gray-300"

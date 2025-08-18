@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Home() {
   // Mock data for Word section
@@ -99,6 +100,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+       <Helmet>
+        <title>Home | Love Acts</title>
+        <meta name="description" content="Welcome to Love Acts homepage" />
+      </Helmet>
       {/* Header */}
       {/* <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">

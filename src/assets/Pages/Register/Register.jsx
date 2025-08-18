@@ -3,7 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Helmet } from 'react-helmet';
+import { Helmet } from "react-helmet-async";
 import styled, { keyframes } from 'styled-components';
 import { FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -252,6 +252,7 @@ export default function Register() {
         <>
             <Helmet>
                 <title>Register | Love Acts</title>
+                 <meta name="description" content="Create your Love Acts account" />
             </Helmet>
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-100 to-pink-100 p-4">
                 <FormContainer className="w-full max-w-md p-8 animate__animated animate__bounceInRight">
@@ -289,6 +290,7 @@ export default function Register() {
                                 type="text"
                                 id="name"
                                 name="name"
+                                autoComplete="name"
                                 className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.name && formik.errors.name ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
                                 placeholder=" "
                                 onChange={formik.handleChange}
@@ -314,6 +316,7 @@ export default function Register() {
                                 type="email"
                                 id="email"
                                 name="email"
+                                autoComplete="email"
                                 className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.email && formik.errors.email ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
                                 placeholder=" "
                                 onChange={formik.handleChange}
@@ -340,6 +343,7 @@ export default function Register() {
                                     type={showPassword ? "text" : "password"}
                                     id="password"
                                     name="password"
+                                    autoComplete="new-password"
                                     className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.password && formik.errors.password
                                         ? "border-red-300"
                                         : "border-gray-300"
@@ -382,6 +386,7 @@ export default function Register() {
                                 type={showRePassword ? "text" : "password"}
                                 id="rePassword"
                                 name="rePassword"
+                                autoComplete="new-password"
                                 className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.rePassword && formik.errors.rePassword ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
                                 placeholder=" "
                                 onChange={formik.handleChange}
@@ -417,6 +422,7 @@ export default function Register() {
                                 type="tel"
                                 id="phone"
                                 name="phone"
+                                autoComplete="tel"
                                 className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.phone && formik.errors.phone ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
                                 placeholder=" "
                                 onChange={formik.handleChange}

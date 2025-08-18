@@ -15,6 +15,8 @@ import Cafes from './assets/Pages/Cafes/Cafes';
 import About from './assets/Pages/About/About';
 import Products from './assets/Pages/Products/Products';
 import MainAdminDashboard from './assets/Pages/MainAdminDashboard/MainAdminDashboard';
+import { HelmetProvider } from "react-helmet-async";
+
 const queryClient = new QueryClient();
 
 const routes = createBrowserRouter([
@@ -40,6 +42,7 @@ const routes = createBrowserRouter([
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <HelmetProvider>
       {/* <Offline>
         <div className='offline flex items-center p-3 text-center'>
           Oops... You are offline. Check your connection <MdOutlineWifiOff className='ms-2' />
@@ -49,6 +52,7 @@ export default function App() {
         <Toaster position="bottom-left" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff', }, }} />
         <RouterProvider router={routes} />
       </TokenProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 }

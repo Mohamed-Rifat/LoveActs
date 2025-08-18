@@ -3,7 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Helmet } from 'react-helmet';
+import { Helmet } from "react-helmet-async";
 import styled from 'styled-components';
 import { FaCheck, FaExclamationTriangle, FaEye, FaEyeSlash, FaLock } from 'react-icons/fa';
 import 'animate.css';
