@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 
 export const TokenContext = createContext(undefined);
 export function TokenProvider({ children }) {
@@ -20,3 +20,4 @@ export function TokenProvider({ children }) {
         </TokenContext.Provider>
     );
 }
+export const useToken = () => useContext(TokenContext);

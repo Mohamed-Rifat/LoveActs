@@ -1,344 +1,269 @@
-import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
-import { FiSearch, FiRefreshCw, FiMapPin, FiHome, FiStar, FiClock } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react'
+
+const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
 export default function Cafes() {
-  const [cafes, setCafes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCafe, setSelectedCafe] = useState(null);
+  const [cafes, setCafes] = useState([])
+  const [filteredCafes, setFilteredCafes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedLocation, setSelectedLocation] = useState('all')
 
   const fetchCafes = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error("You must log in first");
-      }
-
-      const response = await axios.get(
-        "https://flowers-vert-six.vercel.app/api/cafe/display-all-cafes",
-        {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          timeout: 10000
+      const response = await fetch(`${API_BASE_URL}/cafe/display-all-cafes`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Content-Type': 'application/json'
         }
-      );
+      })
 
-      const cafesData = response.data?.cafeData || response.data?.data || response.data?.cafes || [];
-      if (!Array.isArray(cafesData)) {
-        throw new Error("Invalid data format");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      setCafes(cafesData);
-    } catch (err) {
-      const errorMessage = err.response?.data?.message ||
-        err.message ||
-        "An error occurred on the server. Please try again later.";
-      setError(errorMessage);
+      const data = await response.json()
+      setCafes(data.cafes || []);
+      setFilteredCafes(data.cafes || []);
 
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }
+    } catch (error) {
+      console.error('Error fetching cafes:', error)
+      setCafes(mockCafes)
+      setFilteredCafes(mockCafes)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCafes();
-  }, []);
+    fetchCafes()
+  }, [])
 
-  const filteredCafes = useMemo(() => {
-    const search = searchTerm.toLowerCase();
-    return cafes.filter(
-      (cafe) =>
-        cafe.name?.toLowerCase().includes(search) ||
-        cafe.location?.toLowerCase().includes(search) ||
-        cafe.address?.toLowerCase().includes(search)
-    );
-  }, [cafes, searchTerm]);
+  useEffect(() => {
+    let result = cafes
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      result = result.filter(cafe =>
+        cafe.name.toLowerCase().includes(term) ||
+        (cafe.address && cafe.address.toLowerCase().includes(term)) ||
+        (cafe.location && cafe.location.toLowerCase().includes(term))
+      )
     }
-  };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+    if (selectedLocation !== 'all') {
+      result = result.filter(cafe => cafe.location === selectedLocation)
+    }
+
+    setFilteredCafes(result)
+  }, [searchTerm, selectedLocation, cafes])
+
+  const locations = [...new Set(cafes.map(cafe => cafe.location).filter(Boolean))]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-amber-800">جاري تحميل بيانات المقاهي...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Discover Cafés</h1>
-            <p className="text-gray-600">Find your perfect coffee spot</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-100">
+      <header className="bg-gradient-to-r from-amber-600 to-amber-800 shadow-lg">
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl font-bold text-white">قهوتنا</h1>
+          <p className="mt-2 text-lg text-amber-100">استمتع بأفضل المقاهي في مدينتك</p>
+        </div>
+      </header>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-grow md:flex-grow-0 md:w-96">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="text-gray-400" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+                ابحث عن مقهى
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="ابحث باسم المقهى أو العنوان..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
               </div>
-              <input
-                type="text"
-                id="cafe-search"
-                name="cafeSearch"
-                placeholder="Search by name, location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                aria-label="Search cafes"
-              />
             </div>
 
-            <button
-              onClick={fetchCafes}
-              disabled={loading}
-              className="p-2 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors flex items-center gap-1"
-              aria-label="Refresh cafes list"
-            >
-              <FiRefreshCw className={`${loading ? "animate-spin" : ""}`} />
-              <span className="hidden md:inline">Refresh</span>
-            </button>
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                الموقع
+              </label>
+              <select
+                id="location"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              >
+                <option value="all">جميع المواقع</option>
+                {locations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Error Display */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg shadow-sm"
-          >
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-amber-900">قائمة المقاهي</h2>
+          <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+            {filteredCafes.length} مقهى
+          </span>
+        </div>
 
-        {/* Content */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-xl shadow-md p-4 animate-pulse overflow-hidden"
-              >
-                <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
-                <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </motion.div>
+        {filteredCafes.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">لا توجد مقاهي</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              لا توجد مقاهي تطابق معايير البحث الخاصة بك
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCafes.map((cafe) => (
+              <div key={cafe._id || cafe.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-amber-100">
+                <div className="p-6">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xl font-bold text-gray-900">{cafe.name}</h3>
+                    {cafe.location && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        {cafe.location}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {cafe.address && (
+                      <div className="flex items-start">
+                        <svg className="h-5 w-5 text-amber-500 mt-0.5 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <p className="text-gray-600 text-sm">{cafe.address}</p>
+                      </div>
+                    )}
+
+                    {cafe.phone && (
+                      <div className="flex items-center">
+                        <svg className="h-5 w-5 text-amber-500 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <a href={`tel:${cafe.phone}`} className="text-amber-600 hover:text-amber-700 text-sm">
+                          {cafe.phone}
+                        </a>
+                      </div>
+                    )}
+
+                    {cafe.link && (
+                      <div className="flex items-center">
+                        <svg className="h-5 w-5 text-amber-500 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <a href={cafe.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700 truncate text-sm">
+                          زيارة الموقع
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {cafe.products && cafe.products.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">قائمة المنتجات</h4>
+                      <div className="space-y-2">
+                        {cafe.products.map((product, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{product.productName}</span>
+                            <span className="font-medium text-amber-600">{product.price} ج.م</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {cafe.iframe && (
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">الموقع على الخريطة</h4>
+                      <div
+                        className="w-full h-40 rounded-md overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: cafe.iframe }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
-        ) : filteredCafes.length > 0 ? (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <AnimatePresence>
-              {filteredCafes.map((cafe) => (
-                <motion.div
-                  key={cafe._id || cafe.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -5 }}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border border-gray-100"
-                >
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-3">
-                      <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
-                        {cafe.name || "Unnamed Cafe"}
-                      </h2>
-                      {cafe.rating && (
-                        <span className="flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                          <FiStar className="mr-1" /> {cafe.rating}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 text-gray-600">
-                      <div className="flex items-start">
-                        <FiMapPin className="flex-shrink-0 mt-1 mr-2 text-gray-400" />
-                        <p className="text-sm">{cafe.location || "Location not specified"}</p>
-                      </div>
-
-                      <div className="flex items-start">
-                        <FiHome className="flex-shrink-0 mt-1 mr-2 text-gray-400" />
-                        <p className="text-sm">{cafe.address || "No address provided"}</p>
-                      </div>
-
-                      {cafe.openingHours && (
-                        <div className="flex items-start">
-                          <FiClock className="flex-shrink-0 mt-1 mr-2 text-gray-400" />
-                          <p className="text-sm">{cafe.openingHours}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {cafe.description && (
-                      <p className="mt-3 text-gray-500 text-sm line-clamp-2">
-                        {cafe.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
-                    <button
-                      onClick={() => setSelectedCafe(cafe)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-12"
-          >
-            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <svg
-                className="w-12 h-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900">No cafes found</h3>
-            <p className="mt-2 text-gray-500 max-w-md mx-auto">
-              {searchTerm
-                ? "We couldn't find any cafes matching your search. Try different keywords."
-                : "There are currently no cafes available. Please check back later."}
-            </p>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Clear search
-              </button>
-            )}
-          </motion.div>
         )}
       </div>
-
-      {/* Cafe Details Modal */}
-      <AnimatePresence>
-        {selectedCafe && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setSelectedCafe(null)}
-          >
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {selectedCafe.name || "Unnamed Cafe"}
-                  </h2>
-                  <button
-                    onClick={() => setSelectedCafe(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {selectedCafe.image && (
-                    <img
-                      src={selectedCafe.image}
-                      alt={selectedCafe.name}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center">
-                      <FiMapPin className="mr-2 text-gray-400" />
-                      <span className="text-gray-600">{selectedCafe.location || "N/A"}</span>
-                    </div>
-
-                    <div className="flex items-center">
-                      <FiHome className="mr-2 text-gray-400" />
-                      <span className="text-gray-600">{selectedCafe.address || "N/A"}</span>
-                    </div>
-
-                    {selectedCafe.rating && (
-                      <div className="flex items-center">
-                        <FiStar className="mr-2 text-gray-400" />
-                        <span className="text-gray-600">{selectedCafe.rating}/5</span>
-                      </div>
-                    )}
-
-                    {selectedCafe.openingHours && (
-                      <div className="flex items-center">
-                        <FiClock className="mr-2 text-gray-400" />
-                        <span className="text-gray-600">{selectedCafe.openingHours}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedCafe.description && (
-                    <div className="mt-4">
-                      <h4 className="font-medium text-gray-700 mb-2">About</h4>
-                      <p className="text-gray-600">{selectedCafe.description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
-  );
+  )
 }
+
+const mockCafes = [
+  {
+    id: 1,
+    name: "مقهى الفرسان",
+    address: "123 شارع التحرير، وسط البلد",
+    phone: "0123456789",
+    location: "القاهرة",
+    link: "https://example.com",
+    products: [
+      { productName: "إسبريسو", price: 25 },
+      { productName: "كابتشينو", price: 30 },
+      { productName: "لاتيه", price: 35 }
+    ]
+  },
+  {
+    id: 2,
+    name: "كافيه النخلة",
+    address: "456 شارع البحر، المعادي",
+    phone: "0123456780",
+    location: "الجيزة",
+    link: "https://example.com",
+    products: [
+      { productName: "شاي أخضر", price: 20 },
+      { productName: "موكا", price: 40 },
+      { productName: "آيس كوفي", price: 35 }
+    ]
+  },
+  {
+    id: 3,
+    name: "قهوة العروبة",
+    address: "789 شارع الهرم",
+    phone: "0123456781",
+    location: "القاهرة",
+    link: "https://example.com",
+    products: [
+      { productName: "أمريكانو", price: 25 },
+      { productName: "كولد برو", price: 45 },
+      { productName: "شوكولاتة ساخنة", price: 30 }
+    ]
+  }
+]
