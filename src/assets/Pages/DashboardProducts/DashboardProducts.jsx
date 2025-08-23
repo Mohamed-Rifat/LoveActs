@@ -1,1062 +1,624 @@
-'use client';
-import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
-import {
-    Menu as MenuIcon,
-    Dashboard as DashboardIcon,
-    LocalCafe as CafeIcon,
-    ShoppingBag as ProductsIcon,
-    People as UsersIcon,
-    Settings as SettingsIcon,
-    Logout as LogoutIcon,
-    Search as SearchIcon,
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    MoreVert as MoreIcon,
-    Star as StarIcon,
-    CheckCircle as ActiveIcon,
-    Visibility as FeaturedIcon,
-    Schedule as NewIcon,
-    AttachMoney as PriceIcon,
-    Inventory as InventoryIcon
-} from '@mui/icons-material';
-import { Switch } from '@mui/material';
+import { useState, useEffect, useRef } from 'react'
+import axios from 'axios'
 
-const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api/product';
+// Axios global configuration
+const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
-const getAuthHeaders = (isFormData = false) => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('Authentication required');
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Authorization': `Admin ${AUTH_TOKEN}`
+  }
+})
 
-    return {
-        Authorization: `Admin ${token}`,
-        ...(!isFormData && { 'Content-Type': 'application/json' })
-    };
-};
+function App() {
+  const [products, setProducts] = useState([])
+  const [filteredProducts, setFilteredProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showDeleted, setShowDeleted] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    description: '',
+    image: null
+  })
+  const [imagePreview, setImagePreview] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
-const fetchProducts = async () => {
+  // Add notification
+  const addNotification = (message, type = 'success') => {
+    const id = Date.now()
+    setNotifications(prev => [...prev, { id, message, type }])
+    
+    // Remove notification automatically after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(notif => notif.id !== id))
+    }, 5000)
+  }
+
+  // Fetch all products
+  const fetchProducts = async () => {
     try {
-        const { data } = await axios.get(`${API_BASE_URL}/`, {
-            headers: getAuthHeaders()
-        });
-
-        const productsData = Array.isArray(data) ? data : data?.products || data?.data || [];
-
-        return productsData.map((product) => ({
-            ...product,
-            price: parseFloat(product.price || 0),
-            isActive: product.isActive === true || product.isActive === 'true',
-            isFeatured: product.isFeatured === true || product.isFeatured === 'true'
-        }));
+      setLoading(true)
+      const response = await api.get('/product/')
+      setProducts(response.data)
+      setFilteredProducts(response.data)
     } catch (error) {
-        console.error('Error fetching products:', error);
-        if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
-        throw new Error(error.response?.data?.message || 'Failed to fetch products');
+      console.error('Error fetching products:', error)
+      addNotification('Failed to fetch products', 'error')
+    } finally {
+      setLoading(false)
     }
-};
+  }
 
-const createProduct = async (productData) => {
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  // Apply search and filter
+  useEffect(() => {
+    let result = products
+    
+    if (!showDeleted) {
+      result = result.filter(product => !product.isDeleted)
+    }
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      result = result.filter(product => 
+        product.name.toLowerCase().includes(term) || 
+        product.description?.toLowerCase().includes(term)
+      )
+    }
+    
+    setFilteredProducts(result)
+  }, [searchTerm, showDeleted, products])
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  // Handle image upload
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        image: file
+      }))
+      
+      // Create image preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Add new product
+  const handleAddProduct = async (e) => {
+    e.preventDefault()
+    setUploading(true)
+    
     try {
-        const isFormData = productData?.image instanceof File;
-        const headers = getAuthHeaders(isFormData);
+      const data = new FormData()
+      data.append('name', formData.name)
+      data.append('price', formData.price)
+      data.append('description', formData.description)
+      if (formData.image) {
+        data.append('image', formData.image)
+      }
 
-        if (!productData.name || !productData.price) {
-            throw new Error('Missing required fields');
+      await api.post('/product/', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-
-        if (isFormData) {
-            const formData = new FormData();
-            Object.entries(productData).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) {
-                    formData.append(key, value);
-                }
-            });
-            const { data } = await axios.post(`${API_BASE_URL}/`, formData, { headers });
-            return data;
-        } else {
-            const { data } = await axios.post(`${API_BASE_URL}/`, productData, { headers });
-            return data;
-        }
+      })
+      
+      addNotification('Product added successfully')
+      setShowModal(false)
+      setFormData({ name: '', price: '', description: '', image: null })
+      setImagePreview(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      fetchProducts()
     } catch (error) {
-        console.error('Error creating product:', error);
-        throw new Error(error.response?.data?.message || 'Failed to create product');
+      console.error('Error adding product:', error)
+      addNotification('Failed to add product', 'error')
+    } finally {
+      setUploading(false)
     }
-};
+  }
 
-const updateProduct = async ({ id, productData }) => {
+  // Edit product
+  const handleEditProduct = (product) => {
+    setEditingProduct(product)
+    setFormData({
+      name: product.name,
+      price: product.price,
+      description: product.description || '',
+      image: null
+    })
+    setImagePreview(product.image || null)
+    setShowModal(true)
+  }
+
+  // Save changes - modified version
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault()
+    setUploading(true)
+    
     try {
-        const isFormData = productData?.image instanceof File;
-        const headers = getAuthHeaders(isFormData);
+      // If there's a new image, use multipart/form-data
+      if (formData.image) {
+        const data = new FormData()
+        data.append('name', formData.name)
+        data.append('price', formData.price)
+        data.append('description', formData.description)
+        data.append('image', formData.image)
 
-        let dataToSend = productData;
-
-        if (isFormData) {
-            const formData = new FormData();
-            Object.entries(productData).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) {
-                    formData.append(key, value);
-                }
-            });
-            dataToSend = formData;
-        }
-
-        console.log('Data being sent:', dataToSend); 
-
-        const { data } = await axios.put(`${API_BASE_URL}/${id}`, dataToSend, {
-            headers
-        });
-        return data;
+        await api.put(`/product/${editingProduct._id}`, data, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      } else {
+        // If no new image, use application/json
+        await api.put(`/product/${editingProduct._id}`, {
+          name: formData.name,
+          price: formData.price,
+          description: formData.description
+        })
+      }
+      
+      addNotification('Product updated successfully')
+      setShowModal(false)
+      setEditingProduct(null)
+      setFormData({ name: '', price: '', description: '', image: null })
+      setImagePreview(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      fetchProducts()
     } catch (error) {
-        console.error('Update error:', {
-            status: error.response?.status,
-            data: error.response?.data,
-            message: error.message,
-            config: error.config 
-        });
-        throw error;
+      console.error('Error updating product:', error)
+      
+      // Show server error message if available
+      if (error.response && error.response.data && error.response.data.message) {
+        addNotification(`Failed to update product: ${error.response.data.message}`, 'error')
+      } else {
+        addNotification('Failed to update product', 'error')
+      }
+    } finally {
+      setUploading(false)
     }
-};
+  }
 
-const softDeleteProduct = async (id) => {
+  // Soft delete
+  const handleSoftDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to soft delete this product?')) return
+    
     try {
-        await axios.patch(
-            `${API_BASE_URL}/${id}/soft-delete`,
-            {},
-            {
-                headers: getAuthHeaders()
-            }
-        );
+      await api.patch(`/product/${id}/soft-delete`)
+      addNotification('Product soft deleted successfully')
+      fetchProducts()
     } catch (error) {
-        console.error('Error soft deleting product:', error);
-        throw new Error(error.response?.data?.message || 'Failed to soft delete product');
+      console.error('Error soft deleting product:', error)
+      addNotification('Failed to soft delete product', 'error')
     }
-};
+  }
 
-const deleteProduct = async (id) => {
+  // Hard delete
+  const handleHardDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently delete this product? This action cannot be undone.')) return
+    
     try {
-        await axios.delete(`${API_BASE_URL}/${id}`, {
-            headers: getAuthHeaders()
-        });
+      await api.delete(`/product/${id}`)
+      addNotification('Product permanently deleted successfully')
+      fetchProducts()
     } catch (error) {
-        console.error('Error deleting product:', error);
-        throw new Error(error.response?.data?.message || 'Failed to delete product');
+      console.error('Error hard deleting product:', error)
+      addNotification('Failed to hard delete product', 'error')
     }
-};
+  }
 
-const DashboardProducts = () => {
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-    const [openSoftDeleteDialog, setOpenSoftDeleteDialog] = useState(false);
-    const [openEditDialog, setOpenEditDialog] = useState(false);
-    const [openAddDialog, setOpenAddDialog] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [errors, setErrors] = useState({});
-    const [imagePreview, setImagePreview] = useState(null);
+  // Restore deleted product
+  const handleRestoreProduct = async (id) => {
+    try {
+      await api.patch(`/product/${id}/restore`)
+      addNotification('Product restored successfully')
+      fetchProducts()
+    } catch (error) {
+      console.error('Error restoring product:', error)
+      addNotification('Failed to restore product', 'error')
+    }
+  }
 
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        price: '',
-        image: null,
-        isActive: true,
-        isFeatured: false
-    });
+  // Close Modal and reset state
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingProduct(null)
+    setFormData({ name: '', price: '', description: '', image: null })
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
-    const queryClient = useQueryClient();
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`p-4 rounded-lg shadow-lg border-l-4 ${
+              notification.type === 'success'
+                ? 'bg-green-100 text-green-800 border-green-500'
+                : 'bg-red-100 text-red-800 border-red-500'
+            }`}
+          >
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                {notification.type === 'success' ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{notification.message}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-    useEffect(() => {
-        const handleClickOutside = () => {
-            if (anchorEl) setAnchorEl(null);
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, [anchorEl]);
+      {/* Header */}
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <div className="flex items-center">
+            <svg className="h-8 w-8 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <h1 className="text-3xl font-bold text-white">Products Management Dashboard</h1>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold py-3 px-6 rounded-lg shadow-md flex items-center transition duration-200"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New Product
+          </button>
+        </div>
+      </header>
 
-    const handleValidation = (e) => {
-        const { name, value, type, required } = e.target;
-        const trimmed = typeof value === 'string' ? value.trim() : value;
-        const newErrors = { ...errors };
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Filters */}
+        <div className="px-4 py-6 bg-white shadow rounded-lg mb-6 border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                Search
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="Search by product name or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-end">
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showDeleted}
+                  onChange={() => setShowDeleted(!showDeleted)}
+                  className="sr-only peer"
+                />
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-900">Show deleted products</span>
+              </label>
+            </div>
+          </div>
+        </div>
 
-        delete newErrors[name];
-
-        if (required && (trimmed === '' || trimmed === null || trimmed === undefined)) {
-            newErrors[name] = 'This field is required';
-        } else {
-            switch (name) {
-                case 'price': {
-                    const num = Number(trimmed);
-                    if (Number.isNaN(num)) newErrors.price = 'Price must be a number';
-                    else if (num < 0) newErrors.price = 'Price cannot be negative';
-                    break;
-                }
-                case 'name': {
-                    if ((trimmed || '').length < 3) newErrors.name = 'Name must be at least 3 characters';
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.name.trim()) newErrors.name = 'Product name is required';
-        else if (formData.name.trim().length < 3) newErrors.name = 'Name must be at least 3 characters';
-
-        if (formData.price === '') newErrors.price = 'Price is required';
-        else {
-            const priceNum = Number(formData.price);
-            if (isNaN(priceNum)) newErrors.price = 'Price must be a number';
-            else if (priceNum < 0) newErrors.price = 'Price cannot be negative';
-        }
-
-        if (!openEditDialog && !formData.image) {
-            newErrors.image = 'Product image is required';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) {
-            setFormData(prev => ({ ...prev, image: null }));
-            setImagePreview(null);
-            return;
-        }
-
-        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        const maxSize = 5 * 1024 * 1024;
-
-        if (!validTypes.includes(file.type)) {
-            toast.error('Please upload a valid image (JPEG, PNG, GIF)');
-            return;
-        }
-
-        if (file.size > maxSize) {
-            toast.error('Image size must be less than 5MB');
-            return;
-        }
-
-        setFormData(prev => ({ ...prev, image: file }));
-        setImagePreview(URL.createObjectURL(file));
-
-        setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors.image;
-            return newErrors;
-        });
-    };
-
-    const {
-        data: products = [],
-        isLoading,
-        error
-    } = useQuery({
-        queryKey: ['admin-products'],
-        queryFn: fetchProducts,
-        onError: (err) => {
-            console.error('Error details:', err);
-            toast.error(err.message);
-        }
-    });
-
-    const { mutate: softDeleteMutation, isPending: isSoftDeleting } = useMutation({
-        mutationFn: softDeleteProduct,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['admin-products']);
-            toast.success('Product deactivated successfully');
-            setOpenSoftDeleteDialog(false);
-        },
-        onError: (error) => {
-            toast.error(error.response?.data?.error || 'Failed to deactivate product');
-        }
-    });
-
-    const { mutate: deleteMutation, isPending: isDeleting } = useMutation({
-        mutationFn: deleteProduct,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['admin-products']);
-            toast.success('Product deleted permanently');
-            setOpenDeleteDialog(false);
-        },
-        onError: (error) => {
-            toast.error(error.response?.data?.error || 'Failed to delete product');
-        }
-    });
-
-    const { mutate: createMutation, isPending: isCreating } = useMutation({
-        mutationFn: createProduct,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['admin-products']);
-            toast.success('Product created successfully');
-            setOpenAddDialog(false);
-            resetForm();
-        },
-        onError: (error) => {
-            toast.error(error.response?.data?.error || 'Failed to create product');
-        }
-    });
-
-    const { mutate: updateMutation, isPending: isUpdating } = useMutation({
-        mutationFn: updateProduct,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['admin-products']);
-            toast.success('Product updated successfully');
-            setOpenEditDialog(false);
-            resetForm();
-        },
-        onError: (error) => {
-            toast.error(error.response?.data?.error || 'Failed to update product');
-        }
-    });
-
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            description: '',
-            price: '',
-            image: null,
-        });
-        setImagePreview(null);
-        setErrors({});
-    };
-
-    const handleDrawerToggle = () => setMobileOpen((p) => !p);
-
-    const handleMenuOpen = (event, product) => {
-        event.stopPropagation();
-        setAnchorEl(event.currentTarget);
-        setSelectedProduct(product);
-    };
-
-    const handleMenuClose = () => setAnchorEl(null);
-
-    const handleDeleteClick = () => {
-        setOpenDeleteDialog(true);
-        handleMenuClose();
-    };
-
-    const handleSoftDeleteClick = () => {
-        setOpenSoftDeleteDialog(true);
-        handleMenuClose();
-    };
-
-    const handleEditClick = () => {
-        if (selectedProduct) {
-            setFormData({
-                name: selectedProduct.name ?? '',
-                description: selectedProduct.description ?? '',
-                price: selectedProduct.price ?? '',
-                image: null,
-            });
-            setImagePreview(selectedProduct.imageUrl || null);
-            setOpenEditDialog(true);
-        }
-        handleMenuClose();
-    };
-
-    const handleAddClick = () => {
-        resetForm();
-        setOpenAddDialog(true);
-    };
-
-    const handleDeleteConfirm = () => {
-        if (!selectedProduct?._id) return;
-        deleteMutation(selectedProduct._id);
-    };
-
-    const handleSoftDeleteConfirm = () => {
-        if (!selectedProduct?._id) return;
-        softDeleteMutation(selectedProduct._id);
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        const newValue = type === 'checkbox' ? checked : value;
-
-        setFormData(prev => ({
-            ...prev,
-            [name]: newValue
-        }));
-
-        if (name === 'price') {
-            const numValue = newValue === '' ? '' : Number(newValue);
-            if (isNaN(numValue)) {
-                setErrors(prev => ({ ...prev, [name]: 'Must be a number' }));
-            } else if (numValue < 0) {
-                setErrors(prev => ({ ...prev, [name]: 'Cannot be negative' }));
-            } else {
-                setErrors(prev => {
-                    const newErrors = { ...prev };
-                    delete newErrors[name];
-                    return newErrors;
-                });
-            }
-        }
-    };
-
-    const handleSubmit = (e, isEdit = false) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-            toast.error('Please fix validation errors');
-            return;
-        }
-
-        const submissionData = {
-            name: formData.name,
-            description: formData.description || '',
-            price: formData.price,
-        };
-
-        if (!isEdit && formData.image) {
-            submissionData.image = formData.image;
-        }
-
-        if (isEdit && selectedProduct?._id) {
-            updateMutation({
-                id: selectedProduct._id,
-                productData: submissionData
-            });
-        } else {
-            createMutation(submissionData);
-        }
-    };
-    const filteredProducts = useMemo(() => {
-        const search = (searchTerm || '').toLowerCase();
-        return (products || []).filter((product) => {
-            const name = (product.name || '').toLowerCase();
-            const desc = (product.description || '').toLowerCase();
-            return name.includes(search) || desc.includes(search);
-        });
-    }, [products, searchTerm]);
-
-    const stats = useMemo(() => {
-        return {
-            total: products.length,
-        };
-    }, [products]);
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Products Management</h2>
-                        <p className="text-gray-600">Manage all products in your system</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-white p-4 rounded-lg shadow">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-amber-100 text-amber-600">
-                                    <ProductsIcon />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-500">Total Products</p>
-                                    <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.total}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-green-100 text-green-600">
-                                    <ActiveIcon />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-500">Active Products</p>
-                                    <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.active}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow">
-                            <div className="flex items-center">
-                                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                                    <FeaturedIcon />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-500">Featured Products</p>
-                                    <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.featured}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        <div className="relative w-full md:w-64">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <SearchIcon className="text-gray-400" />
-                            </div>
-                            <input
-                                type="text"
-                                id="search-input-2"
-                                name="search2"
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                                placeholder="Search products..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <button
-                            onClick={handleAddClick}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                        >
-                            <AddIcon className="mr-2" />
-                            Add New Product
-                        </button>
-                    </div>
-
-                    {isLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[...Array(6)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-xl shadow p-4 animate-pulse">
-                                    <div className="h-40 bg-gray-200 rounded-lg mb-4"></div>
-                                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : error ? (
-                        <div className="p-4 text-red-500 text-center">
-                            Error loading products: {error.message}
-                        </div>
-                    ) : filteredProducts.length === 0 ? (
-                        <div className="text-center py-12">
-                            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <svg
-                                    className="w-12 h-12 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={1.5}
-                                        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
+        {/* Products Table */}
+        <div className="px-4 py-6 bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">No products found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {showDeleted ? 'No deleted products found' : 'No products match your search criteria'}
+              </p>
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add New Product
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Image
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product._id} className={product.isDeleted ? 'bg-red-50' : 'hover:bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {product.image && (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="h-12 w-12 rounded-full object-cover shadow-sm"
+                          />
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-indigo-600">{product.price} LE</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-500 max-w-xs truncate">{product.description}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                          {product.isDeleted ? 'Deleted' : 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          {product.isDeleted ? (
+                            <button
+                              onClick={() => handleRestoreProduct(product._id)}
+                              className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-100 transition-colors"
+                              title="Restore"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditProduct(product)}
+                                className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-100 transition-colors"
+                                title="Edit"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900">No products found</h3>
-                            <p className="mt-2 text-gray-500 max-w-md mx-auto">
-                                {searchTerm
-                                    ? "We couldn't find any products matching your search. Try different keywords."
-                                    : "There are currently no products available. Please check back later."}
-                            </p>
+                              </button>
+                              <button
+                                onClick={() => handleSoftDelete(product._id)}
+                                className="text-yellow-600 hover:text-yellow-900 p-1 rounded-full hover:bg-yellow-100 transition-colors"
+                                title="Soft Delete"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleHardDelete(product._id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-100 transition-colors"
+                            title="Hard Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredProducts.map((product) => (
-                                <div
-                                    key={product._id}
-                                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border border-gray-100"
-                                >
-                                    {product.imageUrl && (
-                                        <div className="h-48 overflow-hidden">
-                                            <img
-                                                src={product.imageUrl}
-                                                alt={product.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="p-5">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
-                                                {product.name}
-                                            </h2>
-                                            <div className="flex space-x-2">
-                                                {product.isFeatured && (
-                                                    <span className="flex items-center bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                                                        <StarIcon className="mr-1" fontSize="small" /> Featured
-                                                    </span>
-                                                )}
-                                                <span className={`flex items-center text-xs px-2 py-1 rounded-full ${product.isActive
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {product.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </div>
-                                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </main>
 
-                                        <div className="space-y-2 text-gray-600">
-                                            <div className="flex items-start">
-                                                <PriceIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                                                <p className="text-sm">${product.price.toFixed(2)}</p>
-                                            </div>
-
-                                            {product.description && (
-                                                <div className="text-sm text-gray-500 line-clamp-2">
-                                                    {product.description}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                                        <button
-                                            onClick={() => {
-                                                setFormData({
-                                                    name: product.name,
-                                                    description: product.description || '',
-                                                    price: product.price,
-                                                    image: null,
-                                                    isActive: Boolean(product.isActive),
-                                                    isFeatured: Boolean(product.isFeatured)
-                                                });
-                                                setImagePreview(product.imageUrl || null);
-                                                setSelectedProduct(product);
-                                                setOpenEditDialog(true);
-                                            }}
-                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-                                        >
-                                            Edit
-                                        </button>
-
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedProduct(product);
-                                                    setOpenSoftDeleteDialog(true);
-                                                }}
-                                                className="text-orange-600 hover:text-orange-800 text-sm font-medium transition-colors"
-                                            >
-                                                {product.isActive ? 'Deactivate' : 'Activate'}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedProduct(product);
-                                                    setOpenDeleteDialog(true);
-                                                }}
-                                                className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </main>
+      {/* Add/Edit Product Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-6">
+            <div className="flex justify-between items-center pb-3 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            {openDeleteDialog && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="sm:flex sm:items-start">
-                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                        <DeleteIcon className="h-6 w-6 text-red-600" />
-                                    </div>
-                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Product</h3>
-                                        <div className="mt-2">
-                                            <p className="text-sm text-gray-500">
-                                                Are you sure you want to permanently delete "{selectedProduct?.name}"? This action cannot be undone.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteConfirm}
-                                    disabled={isDeleting}
-                                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                >
-                                    {isDeleting ? 'Deleting...' : 'Delete Permanently'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setOpenDeleteDialog(false)}
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="space-y-4 mt-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price
+                </label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                  {editingProduct ? 'New Image (Optional)' : 'Product Image'}
+                </label>
+                
+                {imagePreview && (
+                  <div className="mb-3">
+                    <img 
+                      src={imagePreview} 
+                      alt="Image preview" 
+                      className="h-24 w-24 object-cover rounded-md shadow-sm border"
+                    />
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-center px-6 py-3 border-2 border-dashed border-gray-300 rounded-md">
+                  <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    ref={fileInputRef}
+                    className="absolute opacity-0 w-0 h-0"
+                  />
+                  <label
+                    htmlFor="image"
+                    className="cursor-pointer text-center text-sm text-gray-600 hover:text-indigo-600"
+                  >
+                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="mt-2 block font-medium">Click to upload image</span>
+                  </label>
                 </div>
-            )}
+              </div>
 
-            {openSoftDeleteDialog && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="sm:flex sm:items-start">
-                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
-                                        <DeleteIcon className="h-6 w-6 text-orange-600" />
-                                    </div>
-                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                            {selectedProduct?.isActive ? 'Deactivate' : 'Activate'} Product
-                                        </h3>
-                                        <div className="mt-2">
-                                            <p className="text-sm text-gray-500">
-                                                {selectedProduct?.isActive
-                                                    ? `Are you sure you want to deactivate "${selectedProduct?.name}"? The product will be hidden but can be reactivated later.`
-                                                    : `Are you sure you want to activate "${selectedProduct?.name}"? The product will be visible to customers.`}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    onClick={handleSoftDeleteConfirm}
-                                    disabled={isSoftDeleting}
-                                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm ${isSoftDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                >
-                                    {isSoftDeleting ? 'Processing...' : selectedProduct?.isActive ? 'Deactivate' : 'Activate'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setOpenSoftDeleteDialog(false)}
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {openEditDialog && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                            <form onSubmit={(e) => handleSubmit(e, true)}>
-                                <div className="bg-amber-600 px-4 py-3">
-                                    <h3 className="text-lg font-medium text-white">Edit Product</h3>
-                                </div>
-                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">
-                                                Name <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                id="edit-name"
-                                                value={formData.name}
-                                                onChange={handleInputChange}
-                                                onBlur={handleValidation}
-                                                className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                                                required
-                                            />
-                                            {errors.name && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">
-                                                Description
-                                            </label>
-                                            <textarea
-                                                name="description"
-                                                id="edit-description"
-                                                rows={3}
-                                                value={formData.description}
-                                                onChange={handleInputChange}
-                                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700">
-                                                Price <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="price"
-                                                id="edit-price"
-                                                min="0"
-                                                step="0.01"
-                                                value={formData.price}
-                                                onChange={handleInputChange}
-                                                onBlur={handleValidation}
-                                                className={`mt-1 block w-full border ${errors.price ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                                                required
-                                            />
-                                            {errors.price && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                Product Image
-                                            </label>
-                                            <div className="mt-1 flex items-center">
-                                                <label
-                                                    htmlFor="edit-product-image"
-                                                    className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                                                >
-                                                    Change Image
-                                                </label>
-                                                <input
-                                                    id="edit-product-image"
-                                                    name="image"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageChange}
-                                                    className="sr-only"
-                                                />
-                                                {imagePreview && (
-                                                    <img
-                                                        src={imagePreview}
-                                                        alt="Preview"
-                                                        className="ml-4 h-12 w-12 rounded-full object-cover"
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="sm:col-span-3">
-                                            <div className="flex items-center">
-                                                <Switch
-                                                    name="isActive"
-                                                    id="edit-isActive"
-                                                    checked={Boolean(formData.isActive)}
-                                                    onChange={handleInputChange}
-                                                    color="warning"
-                                                />
-                                                <label htmlFor="edit-isActive" className="ml-2 block text-sm text-gray-700">
-                                                    Active
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div className="sm:col-span-3">
-                                            <div className="flex items-center">
-                                                <Switch
-                                                    name="isFeatured"
-                                                    id="edit-isFeatured"
-                                                    checked={Boolean(formData.isFeatured)}
-                                                    onChange={handleInputChange}
-                                                    color="warning"
-                                                />
-                                                <label htmlFor="edit-isFeatured" className="ml-2 block text-sm text-gray-700">
-                                                    Featured
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                    <button
-                                        type="submit"
-                                        disabled={isUpdating || Object.keys(errors).length > 0}
-                                        className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isUpdating || Object.keys(errors).length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                    >
-                                        {isUpdating ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenEditDialog(false)}
-                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {openAddDialog && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                            <form onSubmit={handleSubmit}>
-                                <div className="bg-amber-600 px-4 py-3">
-                                    <h3 className="text-lg font-medium text-white">Add New Product</h3>
-                                </div>
-                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="add-name" className="block text-sm font-medium text-gray-700">
-                                                Name <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="name"
-                                                id="add-name"
-                                                value={formData.name}
-                                                onChange={handleInputChange}
-                                                onBlur={handleValidation}
-                                                className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                                                required
-                                            />
-                                            {errors.name && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="add-description" className="block text-sm font-medium text-gray-700">
-                                                Description
-                                            </label>
-                                            <textarea
-                                                name="description"
-                                                id="add-description"
-                                                rows={3}
-                                                value={formData.description}
-                                                onChange={handleInputChange}
-                                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label htmlFor="add-price" className="block text-sm font-medium text-gray-700">
-                                                Price <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="price"
-                                                id="add-price"
-                                                min="0"
-                                                step="0.01"
-                                                value={formData.price}
-                                                onChange={handleInputChange}
-                                                onBlur={handleValidation}
-                                                className={`mt-1 block w-full border ${errors.price ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                                                required
-                                            />
-                                            {errors.price && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="sm:col-span-6">
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                Product Image <span className="text-red-500">*</span>
-                                            </label>
-                                            <div className="mt-1 flex items-center">
-                                                <label
-                                                    htmlFor="add-product-image"
-                                                    className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                                                >
-                                                    Choose Image
-                                                </label>
-                                                <input
-                                                    id="add-product-image"
-                                                    name="image"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageChange}
-                                                    className="sr-only"
-                                                    required
-                                                />
-                                                {imagePreview && (
-                                                    <img
-                                                        src={imagePreview}
-                                                        alt="Preview"
-                                                        className="ml-4 h-12 w-12 rounded-full object-cover"
-                                                    />
-                                                )}
-                                            </div>
-                                            {!imagePreview && (
-                                                <p className="mt-1 text-sm text-red-600">Product image is required</p>
-                                            )}
-                                        </div>
-
-                                        <div className="sm:col-span-3">
-                                            <div className="flex items-center">
-                                                <Switch
-                                                    name="isActive"
-                                                    id="add-isActive"
-                                                    checked={Boolean(formData.isActive)}
-                                                    onChange={handleInputChange}
-                                                    color="warning"
-                                                />
-                                                <label htmlFor="add-isActive" className="ml-2 block text-sm text-gray-700">
-                                                    Active
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div className="sm:col-span-3">
-                                            <div className="flex items-center">
-                                                <Switch
-                                                    name="isFeatured"
-                                                    id="add-isFeatured"
-                                                    checked={Boolean(formData.isFeatured)}
-                                                    onChange={handleInputChange}
-                                                    color="warning"
-                                                />
-                                                <label htmlFor="add-isFeatured" className="ml-2 block text-sm text-gray-700">
-                                                    Featured
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                    <button
-                                        type="submit"
-                                        disabled={isCreating || Object.keys(errors).length > 0 || !imagePreview}
-                                        className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isCreating || Object.keys(errors).length > 0 || !imagePreview ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                    >
-                                        {isCreating ? 'Creating...' : 'Create Product'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenAddDialog(false)}
-                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
+              <div className="flex justify-end pt-4 space-x-3 space-x-reverse border-t mt-6">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  disabled={uploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors flex items-center justify-center"
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {editingProduct ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    editingProduct ? 'Update Product' : 'Add Product'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-    );
-};
+      )}
+    </div>
+  )
+}
 
-export default DashboardProducts;
+export default App

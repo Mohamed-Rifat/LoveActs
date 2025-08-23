@@ -1,98 +1,24 @@
-'use client'
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
-import {
-  Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  LocalCafe as CafeIcon,
-  People as UsersIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  Search as SearchIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  MoreVert as MoreIcon,
-  Star as StarIcon,
-  CheckCircle as ActiveIcon,
-  Visibility as FeaturedIcon,
-  Schedule as NewIcon,
-  LocationOn as MapPinIcon,
-  Home as HomeIcon,
-  AccessTime as ClockIcon,
-  Phone as PhoneIcon,
-  Language as WebsiteIcon
-} from '@mui/icons-material';
-import { Switch } from '@mui/material';
+import { useState, useEffect, useRef } from 'react'
+import axios from 'axios'
 
-const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api/cafe';
+// Axios global configuration
+const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
-const fetchCafes = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error("يجب تسجيل الدخول أولاً");
-    }
-
-    const { data } = await axios.get(`${API_BASE_URL}/display-all-cafes`, {
-      headers: {
-        'Authorization': `Admin ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const cafesData = Array.isArray(data) ? data : data?.cafeData || data?.data || data?.cafes || [];
-
-    return cafesData.map(cafe => ({
-      ...cafe,
-      isActive: cafe.isActive === true || cafe.isActive === 'true',
-      isFeatured: cafe.isFeatured === true || cafe.isFeatured === 'true'
-    }));
-
-  } catch (error) {
-    console.error('Error fetching cafes:', error);
-    throw new Error(error.response?.data?.message || 'Failed to fetch cafes');
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Authorization': `Admin ${AUTH_TOKEN}`
   }
-};
+})
 
-const createCafe = async (cafeData) => {
-  const { data } = await axios.post(`${API_BASE_URL}/add-cafe`, cafeData, {
-    headers: {
-      'Authorization': `Admin ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  return data;
-};
-
-const updateCafe = async ({ id, cafeData }) => {
-  const { data } = await axios.put(`${API_BASE_URL}/update-cafe/${id}`, cafeData, {
-    headers: {
-      'Authorization': `Admin ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  return data;
-};
-
-const deleteCafe = async (id) => {
-  await axios.delete(`${API_BASE_URL}/delete-cafe/${id}`, {
-    headers: {
-      'Authorization': `Admin ${localStorage.getItem('token')}`
-    }
-  });
-};
-
-const DashboardCafes = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedCafe, setSelectedCafe] = useState(null);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [errors, setErrors] = useState({});
+function DashboardCafes() {
+  const [cafes, setCafes] = useState([])
+  const [filteredCafes, setFilteredCafes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [editingCafe, setEditingCafe] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -100,117 +26,212 @@ const DashboardCafes = () => {
     iframe: '',
     link: '',
     location: '',
-    isActive: true,
-    isFeatured: false
-  });
+    products: [{ productName: '', price: '' }]
+  })
+  const [notifications, setNotifications] = useState([])
+  const [submitting, setSubmitting] = useState(false)
 
-  const queryClient = useQueryClient();
+  // Add notification
+  const addNotification = (message, type = 'success') => {
+    const id = Date.now()
+    setNotifications(prev => [...prev, { id, message, type }])
+    
+    // Remove notification automatically after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(notif => notif.id !== id))
+    }, 5000)
+  }
 
+ // Fetch all cafes
+const fetchCafes = async () => {
+  try {
+    setLoading(true)
+    const response = await api.get('/cafe/display-all-cafes')
+
+    // لو الـ API راجع فيه كافيهات جوا object
+    const cafesArray = response.data.cafes || []
+
+    setCafes(cafesArray)
+    setFilteredCafes(cafesArray)
+  } catch (error) {
+    console.error('Error fetching cafes:', error)
+    addNotification('Failed to fetch cafes', 'error')
+  } finally {
+    setLoading(false)
+  }
+}
+
+useEffect(() => {
+  fetchCafes()
+}, [])
+
+  // Apply search filter
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (anchorEl) {
-        setAnchorEl(null);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [anchorEl]);
-
-  const handleValidation = (e) => {
-    const { name, value } = e.target;
-    let newErrors = { ...errors };
-
-    delete newErrors[name];
-
-    if (!value.trim() && e.target.required) {
-      newErrors[name] = 'This field is required';
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      const result = cafes.filter(cafe => 
+        cafe.name.toLowerCase().includes(term) || 
+        cafe.address?.toLowerCase().includes(term) ||
+        cafe.location?.toLowerCase().includes(term)
+      )
+      setFilteredCafes(result)
     } else {
-      switch (name) {
-        case 'phone':
-          if (!/^[0-9]{8,15}$/.test(value)) {
-            newErrors.phone = 'Phone must be 8-15 digits';
-          }
-          break;
-        case 'link':
-          if (!/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(value)) {
-            newErrors.link = 'Please enter a valid URL';
-          }
-          break;
-        case 'name':
-          if (value.length < 3) {
-            newErrors.name = 'Name must be at least 3 characters';
-          }
-          break;
-        case 'address':
-          if (value.length < 5) {
-            newErrors.address = 'Address must be at least 5 characters';
-          }
-          break;
+      setFilteredCafes(cafes)
+    }
+  }, [searchTerm, cafes])
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  // Handle product input changes
+  const handleProductChange = (index, e) => {
+    const { name, value } = e.target
+    const products = [...formData.products]
+    products[index][name] = value
+    setFormData(prev => ({
+      ...prev,
+      products
+    }))
+  }
+
+  // Add new product field
+  const addProductField = () => {
+    setFormData(prev => ({
+      ...prev,
+      products: [...prev.products, { productName: '', price: '' }]
+    }))
+  }
+
+  // Remove product field
+  const removeProductField = (index) => {
+    if (formData.products.length > 1) {
+      const products = [...formData.products]
+      products.splice(index, 1)
+      setFormData(prev => ({
+        ...prev,
+        products
+      }))
+    }
+  }
+
+  // Add new cafe
+  const handleAddCafe = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    
+    try {
+      // Filter out empty products
+      const filteredProducts = formData.products.filter(
+        product => product.productName.trim() && product.price
+      )
+
+      const payload = {
+        ...formData,
+        products: filteredProducts.length > 0 ? filteredProducts : undefined
       }
+
+      await api.post('/cafe/add-cafe', payload)
+      
+      addNotification('Cafe added successfully')
+      setShowModal(false)
+      setFormData({
+        name: '',
+        address: '',
+        phone: '',
+        iframe: '',
+        link: '',
+        location: '',
+        products: [{ productName: '', price: '' }]
+      })
+      fetchCafes()
+    } catch (error) {
+      console.error('Error adding cafe:', error)
+      addNotification('Failed to add cafe', 'error')
+    } finally {
+      setSubmitting(false)
     }
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Edit cafe
+  const handleEditCafe = (cafe) => {
+    setEditingCafe(cafe)
+    setFormData({
+      name: cafe.name,
+      address: cafe.address,
+      phone: cafe.phone,
+      iframe: cafe.iframe || '',
+      link: cafe.link,
+      location: cafe.location,
+      products: cafe.products && cafe.products.length > 0 
+        ? cafe.products 
+        : [{ productName: '', price: '' }]
+    })
+    setShowModal(true)
+  }
 
-  const {
-    data: cafes = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['admin-cafes'],
-    queryFn: fetchCafes,
-    onError: (err) => {
-      console.error("Error details:", err);
-      toast.error(err.message);
+  // Update cafe
+  const handleUpdateCafe = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    
+    try {
+      // Filter out empty products
+      const filteredProducts = formData.products.filter(
+        product => product.productName.trim() && product.price
+      )
 
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+      const payload = {
+        ...formData,
+        products: filteredProducts.length > 0 ? filteredProducts : undefined
       }
-    }
-  });
 
-  const { mutate: deleteCafeMutation, isPending: isDeleting } = useMutation({
-    mutationFn: deleteCafe,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe deleted successfully');
-      setOpenDeleteDialog(false);
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to delete cafe');
+      await api.put(`/cafe/${editingCafe._id}`, payload)
+      
+      addNotification('Cafe updated successfully')
+      setShowModal(false)
+      setEditingCafe(null)
+      setFormData({
+        name: '',
+        address: '',
+        phone: '',
+        iframe: '',
+        link: '',
+        location: '',
+        products: [{ productName: '', price: '' }]
+      })
+      fetchCafes()
+    } catch (error) {
+      console.error('Error updating cafe:', error)
+      addNotification('Failed to update cafe', 'error')
+    } finally {
+      setSubmitting(false)
     }
-  });
+  }
 
-  const { mutate: createCafeMutation, isPending: isCreating } = useMutation({
-    mutationFn: createCafe,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe created successfully');
-      setOpenAddDialog(false);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to create cafe');
+  // Delete cafe
+  const handleDeleteCafe = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this cafe?')) return
+    
+    try {
+      await api.delete(`/cafe/${id}`)
+      addNotification('Cafe deleted successfully')
+      fetchCafes()
+    } catch (error) {
+      console.error('Error deleting cafe:', error)
+      addNotification('Failed to delete cafe', 'error')
     }
-  });
+  }
 
-  const { mutate: updateCafeMutation, isPending: isUpdating } = useMutation({
-    mutationFn: updateCafe,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cafes']);
-      toast.success('Cafe updated successfully');
-      setOpenEditDialog(false);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to update cafe');
-    }
-  });
-
-  const resetForm = () => {
+  // Close Modal and reset state
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingCafe(null)
     setFormData({
       name: '',
       address: '',
@@ -218,772 +239,413 @@ const DashboardCafes = () => {
       iframe: '',
       link: '',
       location: '',
-      isActive: true,
-      isFeatured: false
-    });
-    setErrors({});
-  };
-
-  const handleMenuOpen = (event, cafe) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setSelectedCafe(cafe);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleDeleteClick = () => {
-    setOpenDeleteDialog(true);
-    handleMenuClose();
-  };
-
-  const handleEditClick = () => {
-    if (selectedCafe) {
-      setFormData({
-        name: selectedCafe.name,
-        address: selectedCafe.address,
-        phone: selectedCafe.phone,
-        iframe: selectedCafe.iframe || '',
-        link: selectedCafe.link,
-        location: selectedCafe.location,
-        isActive: Boolean(selectedCafe.isActive),
-        isFeatured: Boolean(selectedCafe.isFeatured)
-      });
-      setOpenEditDialog(true);
-    }
-    handleMenuClose();
-  };
-
-  const handleAddClick = () => {
-    resetForm();
-    setOpenAddDialog(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    deleteCafeMutation(selectedCafe._id);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    const newValue = type === 'checkbox' ? checked : value;
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: newValue
-    }));
-
-    if (errors[name]) {
-      handleValidation(e);
-    }
-  };
-
-  const handleSubmit = (e, isEdit = false) => {
-    e.preventDefault();
-
-    if (isEdit && selectedCafe) {
-      updateCafeMutation({ id: selectedCafe._id, cafeData: formData });
-    } else {
-      createCafeMutation(formData);
-    }
-  };
-
-  const filteredCafes = React.useMemo(() => {
-    return cafes.filter(cafe => {
-      const search = searchTerm.toLowerCase();
-      return (
-        cafe.name.toLowerCase().includes(search) ||
-        (cafe.location && cafe.location.toLowerCase().includes(search)) ||
-        (cafe.address && cafe.address.toLowerCase().includes(search))
-      );
-    });
-  }, [cafes, searchTerm]);
-
-  const stats = React.useMemo(() => {
-    return {
-      total: cafes.length,
-      active: cafes.filter(c => c.isActive).length,
-      featured: cafes.filter(c => c.isFeatured).length,
-      newThisMonth: cafes.filter(c => {
-        if (!c.createdAt) return false;
-        const cafeDate = new Date(c.createdAt);
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return cafeDate > monthAgo;
-      }).length
-    };
-  }, [cafes]);
+      products: [{ productName: '', price: '' }]
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex-1 flex flex-col overflow-hidden">
-
-        <main className="flex-1 overflow-y-auto p-4 bg-gray-50">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Cafes Management</h2>
-            <p className="text-gray-600">Manage all cafes in your system</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-amber-100 text-amber-600">
-                  <CafeIcon />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Cafes</p>
-                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.total}</p>
-                </div>
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={`p-4 rounded-lg shadow-lg border-l-4 ${
+              notification.type === 'success'
+                ? 'bg-green-100 text-green-800 border-green-500'
+                : 'bg-red-100 text-red-800 border-red-500'
+            }`}
+          >
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                {notification.type === 'success' ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-100 text-green-600">
-                  <ActiveIcon />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Active Cafes</p>
-                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.active}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                  <FeaturedIcon />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Featured Cafes</p>
-                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.featured}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                  <NewIcon />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">New This Month</p>
-                  <p className="text-2xl font-semibold text-gray-800">{isLoading ? '...' : stats.newThisMonth}</p>
-                </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{notification.message}</p>
               </div>
             </div>
           </div>
+        ))}
+      </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div className="relative w-full md:w-64">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="text-gray-400" />
+      {/* Header */}
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <div className="flex items-center">
+            <svg className="h-8 w-8 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h1 className="text-3xl font-bold text-white">Cafes Management Dashboard</h1>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold py-3 px-6 rounded-lg shadow-md flex items-center transition duration-200"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New Cafe
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Filters */}
+        <div className="px-4 py-6 bg-white shadow rounded-lg mb-6 border border-gray-200">
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+              Search Cafes
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
               </div>
               <input
                 type="text"
-                id="search-input-2"
-                name="search2"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                placeholder="Search cafes..."
+                id="search"
+                placeholder="Search by cafe name, address or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
-            <button
-              onClick={handleAddClick}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-            >
-              <AddIcon className="mr-2" />
-              Add New Cafe
-            </button>
           </div>
+        </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow p-4 animate-pulse">
-                  <div className="h-40 bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="p-4 text-red-500 text-center">
-              Error loading cafes: {error.message}
+        {/* Cafes Table */}
+        <div className="px-4 py-6 bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             </div>
           ) : filteredCafes.length === 0 ? (
             <div className="text-center py-12">
-              <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-12 h-12 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">No cafes found</h3>
-              <p className="mt-2 text-gray-500 max-w-md mx-auto">
-                {searchTerm
-                  ? "We couldn't find any cafes matching your search. Try different keywords."
-                  : "There are currently no cafes available. Please check back later."}
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">No cafes found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No cafes match your search criteria
               </p>
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add New Cafe
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCafes.map((cafe) => (
-                <div
-                  key={cafe._id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border border-gray-100"
-                >
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-3">
-                      <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
-                        {cafe.name}
-                      </h2>
-                      <div className="flex space-x-2">
-                        {cafe.isFeatured && (
-                          <span className="flex items-center bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                            <StarIcon className="mr-1" fontSize="small" /> Featured
-                          </span>
-                        )}
-                        <span className={`flex items-center text-xs px-2 py-1 rounded-full ${cafe.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                          }`}>
-                          {cafe.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-gray-600">
-                      <div className="flex items-start">
-                        <MapPinIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                        <p className="text-sm">{cafe.location || "Location not specified"}</p>
-                      </div>
-
-                      <div className="flex items-start">
-                        <HomeIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                        <p className="text-sm">{cafe.address || "No address provided"}</p>
-                      </div>
-
-                      {cafe.phone && (
-                        <div className="flex items-start">
-                          <PhoneIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                          <p className="text-sm">{cafe.phone}</p>
-                        </div>
-                      )}
-
-                      {cafe.link && (
-                        <div className="flex items-start">
-                          <WebsiteIcon className="flex-shrink-0 mt-1 mr-2 text-gray-400" fontSize="small" />
-                          <a
-                            href={cafe.link.startsWith('http') ? cafe.link : `https://${cafe.link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            Visit Website
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Address
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Products
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredCafes.map((cafe) => (
+                    <tr key={cafe._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{cafe.name}</div>
+                        <div className="text-sm text-gray-500">
+                          <a href={cafe.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                            {cafe.link}
                           </a>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 max-w-xs">{cafe.address}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{cafe.phone}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{cafe.location}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {cafe.products && cafe.products.length > 0 ? (
+                          <div className="text-sm text-gray-900">
+                            {cafe.products.map((product, index) => (
+                              <div key={index} className="mb-1">
+                                {product.productName}: {product.price} LE
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">No products</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <button
+                            onClick={() => handleEditCafe(cafe)}
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-100 transition-colors"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCafe(cafe._id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-100 transition-colors"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Add/Edit Cafe Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {editingCafe ? 'Edit Cafe' : 'Add New Cafe'}
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={editingCafe ? handleUpdateCafe : handleAddCafe} className="space-y-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Cafe Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                    Address *
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="link" className="block text-sm font-medium text-gray-700 mb-1">
+                    Link *
+                  </label>
+                  <input
+                    type="url"
+                    id="link"
+                    name="link"
+                    value={formData.link}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="iframe" className="block text-sm font-medium text-gray-700 mb-1">
+                    Map Iframe (Optional)
+                  </label>
+                  <textarea
+                    id="iframe"
+                    name="iframe"
+                    value={formData.iframe}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Products Section */}
+              <div className="pt-4 border-t">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-lg font-medium text-gray-900">Products (Optional)</h4>
+                  <button
+                    type="button"
+                    onClick={addProductField}
+                    className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
+                  >
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Product
+                  </button>
+                </div>
+
+                {formData.products.map((product, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 p-3 bg-gray-50 rounded-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Product Name
+                      </label>
+                      <input
+                        type="text"
+                        name="productName"
+                        value={product.productName}
+                        onChange={(e) => handleProductChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price (LE)
+                      </label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={product.price}
+                        onChange={(e) => handleProductChange(index, e)}
+                        min="0"
+                        step="0.01"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      {formData.products.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeProductField(index)}
+                          className="text-red-600 hover:text-red-800 text-sm flex items-center"
+                        >
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Remove
+                        </button>
                       )}
                     </div>
                   </div>
-
-                  <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                    <button
-                      onClick={() => {
-                        setFormData({
-                          name: cafe.name,
-                          address: cafe.address,
-                          phone: cafe.phone,
-                          iframe: cafe.iframe || '',
-                          link: cafe.link,
-                          location: cafe.location,
-                          isActive: Boolean(cafe.isActive),
-                          isFeatured: Boolean(cafe.isFeatured)
-                        });
-                        setSelectedCafe(cafe);
-                        setOpenEditDialog(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setSelectedCafe(cafe);
-                        setOpenDeleteDialog(true);
-                      }}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
-
-      {anchorEl && (
-        <div
-          className="fixed z-40 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-          style={{
-            top: anchorEl.getBoundingClientRect().bottom + window.scrollY,
-            left: anchorEl.getBoundingClientRect().left + window.scrollX
-          }}
-        >
-          <div className="py-1">
-            <button
-              onClick={handleEditClick}
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-            >
-              <EditIcon fontSize="small" className="mr-3" />
-              Edit
-            </button>
-            <button
-              onClick={handleDeleteClick}
-              className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
-            >
-              <DeleteIcon fontSize="small" className="mr-3" />
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-
-      {openDeleteDialog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <DeleteIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Cafe</h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to delete "{selectedCafe?.name}"? This action cannot be undone.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+
+              <div className="flex justify-end pt-4 space-x-3 space-x-reverse border-t mt-6">
                 <button
                   type="button"
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpenDeleteDialog(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors flex items-center justify-center"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {editingCafe ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    editingCafe ? 'Update Cafe' : 'Add Cafe'
+                  )}
+                </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {openEditDialog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <form onSubmit={(e) => handleSubmit(e, true)}>
-                <div className="bg-amber-600 px-4 py-3">
-                  <h3 className="text-lg font-medium text-white">Edit Cafe</h3>
-                </div>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">
-                        Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        id="edit-name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="organization"
-                      />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-location" className="block text-sm font-medium text-gray-700">
-                        Location <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="location"
-                        id="edit-location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.location ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="address-level2"
-                      />
-                      {errors.location && (
-                        <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700">
-                        Address <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="address"
-                        id="edit-address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.address ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="street-address"
-                      />
-                      {errors.address && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700">
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="edit-phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="tel"
-                      />
-                      {errors.phone && (
-                        <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="edit-link" className="block text-sm font-medium text-gray-700">
-                        Website Link <span className="text-red-500">*</span>
-                      </label>
-                      <div className="mt-1 flex rounded-md shadow-sm">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                          https://
-                        </span>
-                        <input
-                          type="text"
-                          name="link"
-                          id="edit-link"
-                          value={formData.link.replace(/^https?:\/\//, '')}
-                          onChange={handleInputChange}
-                          onBlur={handleValidation}
-                          className={`flex-1 min-w-0 block w-full rounded-none rounded-r-md border ${errors.link ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500 focus:border-amber-500 sm:text-sm py-2 px-3`}
-                          placeholder="example.com"
-                          required
-                          autoComplete="url"
-                        />
-                      </div>
-                      {errors.link && (
-                        <p className="mt-1 text-sm text-red-600">{errors.link}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="edit-iframe" className="block text-sm font-medium text-gray-700">
-                        Map Embed Code
-                      </label>
-                      <textarea
-                        name="iframe"
-                        id="edit-iframe"
-                        rows={3}
-                        value={formData.iframe}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                        placeholder="Paste iframe code for maps..."
-                      />
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <div className="flex items-center">
-                        <Switch
-                          name="isActive"
-                          id="edit-isActive"
-                          checked={Boolean(formData.isActive)}
-                          onChange={handleInputChange}
-                          color="warning"
-                        />
-                        <label htmlFor="edit-isActive" className="ml-2 block text-sm text-gray-700">
-                          Active
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <div className="flex items-center">
-                        <Switch
-                          name="isFeatured"
-                          id="edit-isFeatured"
-                          checked={Boolean(formData.isFeatured)}
-                          onChange={handleInputChange}
-                          color="warning"
-                        />
-                        <label htmlFor="edit-isFeatured" className="ml-2 block text-sm text-gray-700">
-                          Featured
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    disabled={isUpdating || Object.keys(errors).length > 0}
-                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isUpdating || Object.keys(errors).length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  >
-                    {isUpdating ? 'Saving...' : 'Save Changes'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOpenEditDialog(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {openAddDialog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <form onSubmit={handleSubmit}>
-                <div className="bg-amber-600 px-4 py-3">
-                  <h3 className="text-lg font-medium text-white">Add New Cafe</h3>
-                </div>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-name" className="block text-sm font-medium text-gray-700">
-                        Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        id="add-name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="organization"
-                      />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-location" className="block text-sm font-medium text-gray-700">
-                        Location <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="location"
-                        id="add-location"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.location ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="address-level2"
-                      />
-                      {errors.location && (
-                        <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="add-address" className="block text-sm font-medium text-gray-700">
-                        Address <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="address"
-                        id="add-address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.address ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="street-address"
-                      />
-                      {errors.address && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-phone" className="block text-sm font-medium text-gray-700">
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        id="add-phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        onBlur={handleValidation}
-                        className={`mt-1 block w-full border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm`}
-                        required
-                        autoComplete="tel"
-                      />
-                      {errors.phone && (
-                        <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="add-link" className="block text-sm font-medium text-gray-700">
-                        Website Link <span className="text-red-500">*</span>
-                      </label>
-                      <div className="mt-1 flex rounded-md shadow-sm">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                          https://
-                        </span>
-                        <input
-                          type="text"
-                          name="link"
-                          id="add-link"
-                          value={formData.link.replace(/^https?:\/\//, '')}
-                          onChange={handleInputChange}
-                          onBlur={handleValidation}
-                          className={`flex-1 min-w-0 block w-full rounded-none rounded-r-md border ${errors.link ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500 focus:border-amber-500 sm:text-sm py-2 px-3`}
-                          placeholder="example.com"
-                          required
-                          autoComplete="url"
-                        />
-                      </div>
-                      {errors.link && (
-                        <p className="mt-1 text-sm text-red-600">{errors.link}</p>
-                      )}
-                    </div>
-
-                    <div className="sm:col-span-6">
-                      <label htmlFor="add-iframe" className="block text-sm font-medium text-gray-700">
-                        Map Embed Code
-                      </label>
-                      <textarea
-                        name="iframe"
-                        id="add-iframe"
-                        rows={3}
-                        value={formData.iframe}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                        placeholder="Paste iframe code for maps..."
-                      />
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <div className="flex items-center">
-                        <Switch
-                          name="isActive"
-                          id="add-isActive"
-                          checked={Boolean(formData.isActive)}
-                          onChange={handleInputChange}
-                          color="warning"
-                        />
-                        <label htmlFor="add-isActive" className="ml-2 block text-sm text-gray-700">
-                          Active
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <div className="flex items-center">
-                        <Switch
-                          name="isFeatured"
-                          id="add-isFeatured"
-                          checked={Boolean(formData.isFeatured)}
-                          onChange={handleInputChange}
-                          color="warning"
-                        />
-                        <label htmlFor="add-isFeatured" className="ml-2 block text-sm text-gray-700">
-                          Featured
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    disabled={isCreating || Object.keys(errors).length > 0}
-                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm ${isCreating || Object.keys(errors).length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  >
-                    {isCreating ? 'Creating...' : 'Create Cafe'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOpenAddDialog(false)}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default DashboardCafes;
+export default DashboardCafes
