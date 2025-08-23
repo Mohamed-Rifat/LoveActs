@@ -4,7 +4,7 @@ import './Cart.css'
 import toast from "react-hot-toast"
 import Loader from "../../Components/Loader/Loader"
 import { Link } from "react-router-dom"
-import OrderModal from "../../components/Modal/OrderModal"
+// import OrderModal from "../../components/Modal/OrderModal"
 import axios from "axios"
 
 export default function Cart() {
@@ -196,12 +196,12 @@ export default function Cart() {
                                 >
                                     Make Payment
                                 </button>
-                                <OrderModal 
+                                {/* <OrderModal 
                                     isOpenOrder={isOpenOrder} 
                                     setIsOpenOrder={setIsOpenOrder} 
                                     cartId={cartData._id} 
                                     totalPrice={cartData.totalPrice}
-                                />
+                                /> */}
                                 <div className="mt-6 space-y-6">
                                     <div>
                                         <h4 className="text-sm font-bold text-gray-800 mb-2">Secure payment</h4>
