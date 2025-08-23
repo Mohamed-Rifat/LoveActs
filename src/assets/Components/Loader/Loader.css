@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri&display=swap');
+
+.preloader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Amiri', serif;
+}
+
+.cart {
+    filter: drop-shadow(0 0 5px rgba(255, 107, 156, 0.5));
+}
+
+.cart__lines {
+    animation: cart-line-anim 2s infinite ease-in-out;
+}
+
+.cart__top {
+    animation: cart-top-anim 2s infinite linear;
+}
+
+.cart__wheel1, .cart__wheel2 {
+    animation: cart-wheel-anim 2s infinite linear;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+@keyframes cart-line-anim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes cart-top-anim {
+    0% { stroke-dashoffset: -338; }
+    100% { stroke-dashoffset: 0; }
+}
+
+@keyframes cart-wheel-anim {
+    0% {
+        stroke-dashoffset: 81.68;
+        transform: rotate(0);
+    }
+    100% {
+        stroke-dashoffset: 0;
+        transform: rotate(360deg);
+    }
+}
+
+.preloader__text {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.preloader__msg {
+    color: #ff6b9c;
+    font-size: 1.2rem;
+    margin: 0;
+    animation: textPulse 2s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}

@@ -16,7 +16,12 @@ import About from './assets/Pages/About/About';
 import Products from './assets/Pages/Products/Products';
 import MainAdminDashboard from './assets/Pages/MainAdminDashboard/MainAdminDashboard';
 import { HelmetProvider } from "react-helmet-async";
-
+import { CartProvider } from '../src/assets/Context/CartContext';
+import Cart from './assets/Pages/Cart/Cart';
+import Settings from './assets/Pages/Settings/Settings';
+import PersonalInfo from './assets/Components/PersonalInfo/PersonalInfo';
+import Privacy from './assets/Components/Privacy/Privacy';
+import Orders from './assets/Components/Orders/Orders';
 const queryClient = new QueryClient();
 
 const routes = createBrowserRouter([
@@ -32,7 +37,25 @@ const routes = createBrowserRouter([
       { path: "admindashboard", element: <ProtectedRoutes> <MainAdminDashboard /> </ProtectedRoutes> },
       { path: "cafes", element:  <Cafes />  },
       { path: "products", element:  <Products />  },
+      { path: "cart", element:  <Cart />  },
       { path: "about", element:  <About />  },
+      {
+          path: 'settings', element:
+            <ProtectedRoutes>
+              <Settings />
+            </ProtectedRoutes>
+          , children: [{
+            index: true, element: <PersonalInfo />
+          },
+          {
+            path: 'privacy', element: <Privacy />
+          },
+          {
+            path: 'orders', element:
+              <Orders />
+          }
+          ]
+        },
 
       { path: "*", element: <NotFound /> }
     ]
@@ -49,8 +72,10 @@ export default function App() {
         </div>
       </Offline> */}
       <TokenProvider>
+        <CartProvider >
         <Toaster position="bottom-left" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff', }, }} />
         <RouterProvider router={routes} />
+        </CartProvider>
       </TokenProvider>
       </HelmetProvider>
     </QueryClientProvider>
