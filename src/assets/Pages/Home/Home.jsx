@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Home() {
-  // Mock data for Word section
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
@@ -31,7 +31,6 @@ export default function Home() {
     }
   ];
 
-  // Auto slide change every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
@@ -62,7 +61,6 @@ export default function Home() {
     }
   ]);
 
-  // Mock data for Cafes section
   const [cafeItems, setCafeItems] = useState([
     {
       id: 101,
@@ -98,45 +96,61 @@ export default function Home() {
     console.log(`Added product ${productId} to cart`);
   };
 
+  const text = "Love Acts".split("");
+  const [isAnimationDone, setIsAnimationDone] = useState(false);
+  const showLoader = !isAnimationDone;
+
+   useEffect(() => {
+    if (showLoader) {
+      const timer = setTimeout(() => {
+        setIsAnimationDone(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLoader]);
+
   return (
     <div className="min-h-screen bg-gray-50">
        <Helmet>
         <title>Home | Love Acts</title>
         <meta name="description" content="Welcome to Love Acts homepage" />
       </Helmet>
-      {/* Header */}
-      {/* <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">Logo</h1>
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-600 hover:text-gray-900">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <button className="text-gray-600 hover:text-gray-900 relative">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cart.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header> */}
 
-      {/* Hero Section */}
+      <AnimatePresence>
+      {showLoader && (
+        <motion.div
+          className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-pink-100 z-50"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+        >
+          <motion.img
+            src="/Logo.PNG"
+            alt="Love Acts Logo"
+            className="w-40 h-40 drop-shadow-xl"
+            initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+            animate={{
+              opacity: 1,
+              scale: [0.5, 1.2, 1],
+              rotate: [ -20, 0, 5, 0 ],
+            }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{
+              duration: 3,
+              ease: "easeInOut"
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+
       <div className="relative h-96 md:h-screen max-h-[600px] overflow-hidden">
-        {/* Slides */}
         {slides.map((slide, index) => (
           <div
             key={slide.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
           >
-            {/* Background image with overlay */}
             <div className="absolute inset-0">
               <img
                 src={slide.image}
@@ -146,7 +160,6 @@ export default function Home() {
               <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgColor} opacity-90`}></div>
             </div>
 
-            {/* Content */}
             <div className="relative h-full flex items-center justify-center text-center px-4">
               <div className="max-w-4xl mx-auto text-white">
                 <h1 className="text-3xl md:text-5xl font-bold mb-4 animate-fadeIn">
@@ -165,7 +178,6 @@ export default function Home() {
           </div>
         ))}
 
-        {/* Slide indicators */}
         <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-2">
           {slides.map((_, index) => (
             <button
@@ -177,7 +189,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Navigation arrows */}
         <button
           onClick={() => setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1))}
           className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 transition"
@@ -198,7 +209,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Word Products Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-12">
@@ -233,7 +243,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Cafe Products Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-12">
@@ -241,7 +250,6 @@ export default function Home() {
             <button className="text-amber-600 hover:text-amber-700 font-medium">View All</button>
           </div>
 
-          {/* Category Tabs */}
           <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
             {["All", "Hot Drinks", "Cold Drinks", "Bakery"].map(category => (
               <button
@@ -288,36 +296,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      {/* <footer className="bg-gray-800 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">About Us</h3>
-              <p className="text-gray-300">Providing high quality word products and premium cafe experience since 2023.</p>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-white">Home</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Word Collections</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Cafe Menu</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-white">Contact Us</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-4">Contact</h3>
-              <p className="text-gray-300">123 Street, City</p>
-              <p className="text-gray-300">info@example.com</p>
-              <p className="text-gray-300">+123 456 7890</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>© 2023 Your Company. All rights reserved.</p>
-          </div>
-        </div>
-      </footer> */}
     </div>
   );
 }

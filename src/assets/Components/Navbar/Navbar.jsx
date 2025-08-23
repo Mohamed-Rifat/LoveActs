@@ -4,40 +4,71 @@ import { TokenContext } from '../../Context/TokenContext/TokenContext';
 import toast from 'react-hot-toast';
 import { TiWarningOutline } from 'react-icons/ti';
 import 'animate.css';
+import { FaShoppingCart, FaHeart, FaUserCircle } from "react-icons/fa";
 
 const Navbar = () => {
   const { token, setToken } = useContext(TokenContext);
-  const [isOpen, setIsOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-  const menuRef = useRef(null);
-  const buttonRef = useRef(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+  const userButtonRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const mobileButtonRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isOpen &&
-        !menuRef.current.contains(event.target) &&
-        !buttonRef.current.contains(event.target)) {
-        setIsOpen(false);
+    const handleClickOutsideUserMenu = (event) => {
+      if (
+        isUserMenuOpen &&
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target) &&
+        userButtonRef.current &&
+        !userButtonRef.current.contains(event.target)
+      ) {
+        setIsUserMenuOpen(false);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutsideUserMenu);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutsideUserMenu);
     };
-  }, [isOpen]);
+  }, [isUserMenuOpen]);
+
+  useEffect(() => {
+    const handleClickOutsideMobileMenu = (event) => {
+      if (
+        isMobileMenuOpen &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target) &&
+        mobileButtonRef.current &&
+        !mobileButtonRef.current.contains(event.target)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutsideMobileMenu);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideMobileMenu);
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
-    setIsOpen(false);
+    setIsUserMenuOpen(false);
     setLogoutModalOpen(false);
     toast.success("Goodbye! 👋", { duration: 4000 });
     navigate('/login');
   };
 
+  const handleLogoutClick = (e) => {
+    e.stopPropagation();
+    setIsUserMenuOpen(false);
+    setLogoutModalOpen(true);
+  };
+  
   return (
     <nav className="bg-[#FDE9EE] shadow-lg relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -70,6 +101,12 @@ const Navbar = () => {
                   Cafe
                 </Link>
                 <Link
+                  to="/cart"
+                  className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
+                >
+                  Cart
+                </Link>
+                <Link
                   to="/about"
                   className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
                 >
@@ -81,12 +118,49 @@ const Navbar = () => {
                 >
                   Admin Dashboard
                 </Link>
-                <button
-                  onClick={() => setLogoutModalOpen(true)}
-                  className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
-                >
-                  Log Out
-                </button>
+                <Link
+                  to="/cart"
+                  className="relative text-gray-700 hover:text-[#CF848A] transition-all duration-300">
+                  <FaShoppingCart className="text-2xl" />
+                </Link>
+                <Link
+                  to="/wishlist"
+                  className="relative text-gray-700 hover:text-[#CF848A] transition-all duration-300">
+                  <FaHeart className="text-2xl" />
+                </Link>
+
+                <div className="relative">
+                  <FaUserCircle
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    ref={userButtonRef}
+                    className="text-2xl cursor-pointer text-gray-700 hover:text-[#CF848A] transition-colors duration-300"
+                  />
+
+                  {isUserMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-3 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 origin-top-right animate-fadeIn"
+                      ref={userMenuRef}
+                    >
+                      <div className="px-4 py-3 text-sm text-gray-900 ">
+                          
+                        <p className='text-base font-semibold'>{localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).name : "User"}</p>
+                      </div>
+                      <Link
+                        to="/settings"
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogoutClick}
+                        className="w-full text-left block px-4 py-2 text-red-500 hover:bg-red-50 transition-colors duration-200"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -125,13 +199,13 @@ const Navbar = () => {
 
           <div className="md:hidden flex items-center">
             <button
-              ref={buttonRef}
-              onClick={() => setIsOpen(!isOpen)}
+              ref={mobileButtonRef}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
-              aria-expanded={isOpen}
+              aria-expanded={isMobileMenuOpen}
             >
               <span className="sr-only">Open main menu</span>
-              {!isOpen ? (
+              {!isMobileMenuOpen ? (
                 <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -145,53 +219,64 @@ const Navbar = () => {
         </div>
 
         <div
-          ref={menuRef}
+          ref={mobileMenuRef}
           className={`md:hidden absolute top-20 left-0 w-full bg-white shadow-lg transition-all duration-300 ease-in-out z-50
-          ${isOpen ? 'opacity-100 py-2' : 'opacity-0 pointer-events-none py-0'}`}
+          ${isMobileMenuOpen ? 'opacity-100 py-2' : 'opacity-0 pointer-events-none py-0'}`}
         >
           <div className="space-y-1 pb-2">
             {token ? (
               <>
                 <Link
                   to="/home"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Home
                 </Link>
                 <Link
                   to="/products"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Products
                 </Link>
                 <Link
                   to="/cafes"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Cafe
                 </Link>
                 <Link
+                  to="/cart"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
+                >
+                  Cart
+                </Link>
+                <Link
                   to="/about"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   About Us
                 </Link>
                 <Link
                   to="/admindashboard"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Admin Dashboard
                 </Link>
+                <Link
+                  to="/settings"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
+                >
+                  Settings
+                </Link>
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    setLogoutModalOpen(true);
-                  }}
+                  onClick={handleLogoutClick}
                   className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Log Out
@@ -201,20 +286,21 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                 >
                   Register
                 </Link>
               </>
             )}
+
 
             <div className="flex justify-center space-x-6 pt-3">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-pink-600 transition-colors duration-300">
@@ -272,4 +358,5 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+
+export default Navbar; 
