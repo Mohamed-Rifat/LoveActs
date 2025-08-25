@@ -75,7 +75,7 @@ const Navbar = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/home" className="flex-shrink-0 flex items-center">
-              <img className="h-10 w-auto" src="./Logo.PNG" alt="Love Acts Logo" />
+              <img className="h-32 w-auto" src="./Logo.PNG" alt="Love Acts Logo" />
             </Link>
           </div>
 
