@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-// Axios global configuration
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
@@ -31,18 +30,15 @@ function App() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
 
-  // Add notification
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
     setNotifications(prev => [...prev, { id, message, type }])
-    
-    // Remove notification automatically after 5 seconds
+
     setTimeout(() => {
       setNotifications(prev => prev.filter(notif => notif.id !== id))
     }, 5000)
   }
 
-  // Fetch all products
   const fetchProducts = async () => {
     try {
       setLoading(true)
@@ -61,26 +57,24 @@ function App() {
     fetchProducts()
   }, [])
 
-  // Apply search and filter
   useEffect(() => {
     let result = products
-    
+
     if (!showDeleted) {
       result = result.filter(product => !product.isDeleted)
     }
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      result = result.filter(product => 
-        product.name.toLowerCase().includes(term) || 
+      result = result.filter(product =>
+        product.name.toLowerCase().includes(term) ||
         product.description?.toLowerCase().includes(term)
       )
     }
-    
+
     setFilteredProducts(result)
   }, [searchTerm, showDeleted, products])
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -89,7 +83,6 @@ function App() {
     }))
   }
 
-  // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -97,8 +90,7 @@ function App() {
         ...prev,
         image: file
       }))
-      
-      // Create image preview
+
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result)
@@ -107,11 +99,10 @@ function App() {
     }
   }
 
-  // Add new product
   const handleAddProduct = async (e) => {
     e.preventDefault()
     setUploading(true)
-    
+
     try {
       const data = new FormData()
       data.append('name', formData.name)
@@ -126,7 +117,7 @@ function App() {
           'Content-Type': 'multipart/form-data'
         }
       })
-      
+
       addNotification('Product added successfully')
       setShowModal(false)
       setFormData({ name: '', price: '', description: '', image: null })
@@ -143,7 +134,6 @@ function App() {
     }
   }
 
-  // Edit product
   const handleEditProduct = (product) => {
     setEditingProduct(product)
     setFormData({
@@ -156,13 +146,11 @@ function App() {
     setShowModal(true)
   }
 
-  // Save changes - modified version
   const handleUpdateProduct = async (e) => {
     e.preventDefault()
     setUploading(true)
-    
+
     try {
-      // If there's a new image, use multipart/form-data
       if (formData.image) {
         const data = new FormData()
         data.append('name', formData.name)
@@ -176,14 +164,13 @@ function App() {
           }
         })
       } else {
-        // If no new image, use application/json
         await api.put(`/product/${editingProduct._id}`, {
           name: formData.name,
           price: formData.price,
           description: formData.description
         })
       }
-      
+
       addNotification('Product updated successfully')
       setShowModal(false)
       setEditingProduct(null)
@@ -195,8 +182,7 @@ function App() {
       fetchProducts()
     } catch (error) {
       console.error('Error updating product:', error)
-      
-      // Show server error message if available
+
       if (error.response && error.response.data && error.response.data.message) {
         addNotification(`Failed to update product: ${error.response.data.message}`, 'error')
       } else {
@@ -207,10 +193,9 @@ function App() {
     }
   }
 
-  // Soft delete
   const handleSoftDelete = async (id) => {
     if (!window.confirm('Are you sure you want to soft delete this product?')) return
-    
+
     try {
       await api.patch(`/product/${id}/soft-delete`)
       addNotification('Product soft deleted successfully')
@@ -221,10 +206,9 @@ function App() {
     }
   }
 
-  // Hard delete
   const handleHardDelete = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this product? This action cannot be undone.')) return
-    
+
     try {
       await api.delete(`/product/${id}`)
       addNotification('Product permanently deleted successfully')
@@ -235,7 +219,6 @@ function App() {
     }
   }
 
-  // Restore deleted product
   const handleRestoreProduct = async (id) => {
     try {
       await api.patch(`/product/${id}/restore`)
@@ -247,7 +230,6 @@ function App() {
     }
   }
 
-  // Close Modal and reset state
   const handleCloseModal = () => {
     setShowModal(false)
     setEditingProduct(null)
@@ -260,16 +242,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {notifications.map(notification => (
           <div
             key={notification.id}
-            className={`p-4 rounded-lg shadow-lg border-l-4 ${
-              notification.type === 'success'
-                ? 'bg-green-100 text-green-800 border-green-500'
-                : 'bg-red-100 text-red-800 border-red-500'
-            }`}
+            className={`p-4 rounded-lg shadow-lg border-l-4 ${notification.type === 'success'
+              ? 'bg-green-100 text-green-800 border-green-500'
+              : 'bg-red-100 text-red-800 border-red-500'
+              }`}
           >
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -291,7 +271,6 @@ function App() {
         ))}
       </div>
 
-      {/* Header */}
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center">
@@ -312,9 +291,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Filters */}
         <div className="px-4 py-6 bg-white shadow rounded-lg mb-6 border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -352,7 +329,6 @@ function App() {
           </div>
         </div>
 
-        {/* Products Table */}
         <div className="px-4 py-6 bg-white shadow rounded-lg overflow-hidden border border-gray-200">
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -384,22 +360,22 @@ function App() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Image
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Description
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -407,24 +383,28 @@ function App() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.map((product) => (
                     <tr key={product._id} className={product.isDeleted ? 'bg-red-50' : 'hover:bg-gray-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 text-left whitespace-nowrap">
                         {product.image && (
-                          <img 
-                            src={product.image} 
-                            alt={product.name} 
+                          <img
+                            src={product.image}
+                            alt={product.name}
                             className="h-12 w-12 rounded-full object-cover shadow-sm"
                           />
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+
+                      <td className="px-6 py-4 text-left whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+
+                      <td className="px-6 py-4 text-left whitespace-nowrap">
                         <div className="text-sm font-semibold text-indigo-600">{product.price} LE</div>
                       </td>
-                      <td className="px-6 py-4">
+
+                      <td className="px-6 py-4 text-left">
                         <div className="text-sm text-gray-500 max-w-xs truncate">{product.description}</div>
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${product.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                           {product.isDeleted ? 'Deleted' : 'Active'}
@@ -484,7 +464,6 @@ function App() {
         </div>
       </main>
 
-      {/* Add/Edit Product Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
           <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto p-6">
@@ -553,17 +532,17 @@ function App() {
                 <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
                   {editingProduct ? 'New Image (Optional)' : 'Product Image'}
                 </label>
-                
+
                 {imagePreview && (
                   <div className="mb-3">
-                    <img 
-                      src={imagePreview} 
-                      alt="Image preview" 
+                    <img
+                      src={imagePreview}
+                      alt="Image preview"
                       className="h-24 w-24 object-cover rounded-md shadow-sm border"
                     />
                   </div>
                 )}
-                
+
                 <div className="flex items-center justify-center px-6 py-3 border-2 border-dashed border-gray-300 rounded-md">
                   <input
                     type="file"

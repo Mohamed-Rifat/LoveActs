@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import { useToken } from '../../Context/TokenContext/TokenContext'
 
-// Axios global configuration
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
@@ -12,7 +12,69 @@ const api = axios.create({
   }
 })
 
+const CafeProductsModal = ({ cafe, isOpen, onClose }) => {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
+      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center pb-3 border-b">
+          <h3 className="text-xl font-semibold text-gray-900">
+            منتجات {cafe.name}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="mt-4">
+          {cafe.products && cafe.products.length > 0 ? (
+            <div className="space-y-4">
+              {cafe.products.map((product, index) => (
+                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{product.productName}</h4>
+                    <p className="text-sm text-gray-500 mt-1">السعر: {product.price} جنيه</p>
+                  </div>
+                  <div className="text-lg font-bold text-indigo-600">
+                    {product.price} ج.م
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-16" />
+              </svg>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">لا توجد منتجات</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                لم يتم إضافة أي منتجات لهذا الكافيه بعد.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-4 border-t mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DashboardCafes() {
+  const { token } = useToken()
   const [cafes, setCafes] = useState([])
   const [filteredCafes, setFilteredCafes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,47 +92,44 @@ function DashboardCafes() {
   })
   const [notifications, setNotifications] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const [showProductsModal, setShowProductsModal] = useState(false)
+  const [selectedCafe, setSelectedCafe] = useState(null)
 
-  // Add notification
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
     setNotifications(prev => [...prev, { id, message, type }])
-    
-    // Remove notification automatically after 5 seconds
+
     setTimeout(() => {
       setNotifications(prev => prev.filter(notif => notif.id !== id))
     }, 5000)
   }
 
- // Fetch all cafes
-const fetchCafes = async () => {
-  try {
-    setLoading(true)
-    const response = await api.get('/cafe/display-all-cafes')
+  const fetchCafes = async () => {
+    try {
+      setLoading(true)
+      const response = await api.get('/cafe/display-all-cafes')
 
-    // لو الـ API راجع فيه كافيهات جوا object
-    const cafesArray = response.data.cafes || []
+      const cafesArray = response.data.cafeData || []
 
-    setCafes(cafesArray)
-    setFilteredCafes(cafesArray)
-  } catch (error) {
-    console.error('Error fetching cafes:', error)
-    addNotification('Failed to fetch cafes', 'error')
-  } finally {
-    setLoading(false)
+      setCafes(cafesArray)
+      setFilteredCafes(cafesArray)
+    } catch (error) {
+      console.error('Error fetching cafes:', error)
+      addNotification('Failed to fetch cafes', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
-useEffect(() => {
-  fetchCafes()
-}, [])
+  useEffect(() => {
+    fetchCafes()
+  }, [])
 
-  // Apply search filter
   useEffect(() => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      const result = cafes.filter(cafe => 
-        cafe.name.toLowerCase().includes(term) || 
+      const result = cafes.filter(cafe =>
+        cafe.name.toLowerCase().includes(term) ||
         cafe.address?.toLowerCase().includes(term) ||
         cafe.location?.toLowerCase().includes(term)
       )
@@ -80,7 +139,6 @@ useEffect(() => {
     }
   }, [searchTerm, cafes])
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -89,7 +147,6 @@ useEffect(() => {
     }))
   }
 
-  // Handle product input changes
   const handleProductChange = (index, e) => {
     const { name, value } = e.target
     const products = [...formData.products]
@@ -100,7 +157,6 @@ useEffect(() => {
     }))
   }
 
-  // Add new product field
   const addProductField = () => {
     setFormData(prev => ({
       ...prev,
@@ -108,7 +164,6 @@ useEffect(() => {
     }))
   }
 
-  // Remove product field
   const removeProductField = (index) => {
     if (formData.products.length > 1) {
       const products = [...formData.products]
@@ -120,13 +175,11 @@ useEffect(() => {
     }
   }
 
-  // Add new cafe
   const handleAddCafe = async (e) => {
     e.preventDefault()
     setSubmitting(true)
-    
+
     try {
-      // Filter out empty products
       const filteredProducts = formData.products.filter(
         product => product.productName.trim() && product.price
       )
@@ -137,7 +190,7 @@ useEffect(() => {
       }
 
       await api.post('/cafe/add-cafe', payload)
-      
+
       addNotification('Cafe added successfully')
       setShowModal(false)
       setFormData({
@@ -158,7 +211,6 @@ useEffect(() => {
     }
   }
 
-  // Edit cafe
   const handleEditCafe = (cafe) => {
     setEditingCafe(cafe)
     setFormData({
@@ -168,32 +220,42 @@ useEffect(() => {
       iframe: cafe.iframe || '',
       link: cafe.link,
       location: cafe.location,
-      products: cafe.products && cafe.products.length > 0 
-        ? cafe.products 
+      products: cafe.products && cafe.products.length > 0
+        ? cafe.products
         : [{ productName: '', price: '' }]
     })
     setShowModal(true)
   }
 
-  // Update cafe
   const handleUpdateCafe = async (e) => {
     e.preventDefault()
     setSubmitting(true)
-    
-    try {
-      // Filter out empty products
-      const filteredProducts = formData.products.filter(
-        product => product.productName.trim() && product.price
-      )
 
-      const payload = {
-        ...formData,
-        products: filteredProducts.length > 0 ? filteredProducts : undefined
+    try {
+      if (!editingCafe?._id) {
+        addNotification('No cafe selected to update', 'error')
+        return
       }
 
-      await api.put(`/cafe/${editingCafe._id}`, payload)
-      
+      const payload = {
+        name: formData.name || undefined,
+        address: formData.address || undefined,
+        phone: formData.phone || undefined,
+        iframe: formData.iframe || undefined,
+        link: formData.link || undefined,
+        location: formData.location || undefined,
+      }
+
+
+      await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, {
+        headers: {
+          Authorization: `Admin ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
       addNotification('Cafe updated successfully')
+
       setShowModal(false)
       setEditingCafe(null)
       setFormData({
@@ -202,24 +264,25 @@ useEffect(() => {
         phone: '',
         iframe: '',
         link: '',
-        location: '',
-        products: [{ productName: '', price: '' }]
+        location: ''
       })
+
       fetchCafes()
+
     } catch (error) {
       console.error('Error updating cafe:', error)
-      addNotification('Failed to update cafe', 'error')
+      const message = error.response?.data?.error || 'Failed to update cafe'
+      addNotification(message, 'error')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Delete cafe
   const handleDeleteCafe = async (id) => {
     if (!window.confirm('Are you sure you want to delete this cafe?')) return
-    
+
     try {
-      await api.delete(`/cafe/${id}`)
+      await api.delete(`/cafe/delete-cafe/${id}`)
       addNotification('Cafe deleted successfully')
       fetchCafes()
     } catch (error) {
@@ -228,7 +291,16 @@ useEffect(() => {
     }
   }
 
-  // Close Modal and reset state
+  const handleShowProducts = (cafe) => {
+    setSelectedCafe(cafe)
+    setShowProductsModal(true)
+  }
+
+  const handleCloseProductsModal = () => {
+    setShowProductsModal(false)
+    setSelectedCafe(null)
+  }
+
   const handleCloseModal = () => {
     setShowModal(false)
     setEditingCafe(null)
@@ -250,11 +322,10 @@ useEffect(() => {
         {notifications.map(notification => (
           <div
             key={notification.id}
-            className={`p-4 rounded-lg shadow-lg border-l-4 ${
-              notification.type === 'success'
-                ? 'bg-green-100 text-green-800 border-green-500'
-                : 'bg-red-100 text-red-800 border-red-500'
-            }`}
+            className={`p-4 rounded-lg shadow-lg border-l-4 ${notification.type === 'success'
+              ? 'bg-green-100 text-green-800 border-green-500'
+              : 'bg-red-100 text-red-800 border-red-500'
+              }`}
           >
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -353,68 +424,82 @@ useEffect(() => {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="overflow-x-auto rounded-lg shadow">
+              <table className="min-w-full table-auto border-collapse">
+                <thead className="bg-gray-100">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Products
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Name</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Address</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Phone</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Location</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Products</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredCafes.map((cafe) => (
-                    <tr key={cafe._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{cafe.name}</div>
-                        <div className="text-sm text-gray-500">
-                          <a href={cafe.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                            {cafe.link}
-                          </a>
+                    <tr key={cafe._id} className="hover:bg-gray-50 transition-colors">
+                      {/* Name + link */}
+                      <td className="px-6 py-4 max-w-[200px]">
+                        <div className="text-sm font-medium text-gray-900 truncate" title={cafe.name}>
+                          {cafe.name}
+                        </div>
+                        {cafe.link && (
+                          <div className="text-xs text-indigo-600 truncate" title={cafe.link}>
+                            <a
+                              href={cafe.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              {cafe.link}
+                            </a>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Address */}
+                      <td className="px-6 py-4 max-w-[220px]">
+                        <div className="text-sm text-gray-800 truncate" title={cafe.address}>
+                          {cafe.address}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs">{cafe.address}</div>
-                      </td>
+
+                      {/* Phone */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{cafe.phone}</div>
                       </td>
+
+                      {/* Location */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{cafe.location}</div>
+                        <div className="text-sm text-gray-700">{cafe.location}</div>
                       </td>
+
+                      {/* Products */}
                       <td className="px-6 py-4">
-                        {cafe.products && cafe.products.length > 0 ? (
-                          <div className="text-sm text-gray-900">
-                            {cafe.products.map((product, index) => (
-                              <div key={index} className="mb-1">
-                                {product.productName}: {product.price} LE
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">No products</span>
-                        )}
+                        <button
+                          onClick={() => handleShowProducts(cafe)}
+                          className="text-indigo-600 hover:text-indigo-800 text-xs font-medium flex items-center gap-1"
+                        >
+                          <span>عرض المنتجات</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2 space-x-reverse">
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEditCafe(cafe)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-100 transition-colors"
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition"
                             title="Edit"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,7 +508,7 @@ useEffect(() => {
                           </button>
                           <button
                             onClick={() => handleDeleteCafe(cafe._id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-100 transition-colors"
+                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition"
                             title="Delete"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,6 +522,7 @@ useEffect(() => {
                 </tbody>
               </table>
             </div>
+
           )}
         </div>
       </main>
@@ -644,6 +730,12 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      <CafeProductsModal
+        cafe={selectedCafe}
+        isOpen={showProductsModal}
+        onClose={handleCloseProductsModal}
+      />
     </div>
   )
 }
