@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { TiWarningOutline } from 'react-icons/ti';
 import 'animate.css';
 import { FaShoppingCart, FaHeart, FaUserCircle } from "react-icons/fa";
+import { CartContext } from '../../Context/CartContext';
 
 const Navbar = () => {
   const { token, setToken } = useContext(TokenContext);
@@ -16,6 +17,7 @@ const Navbar = () => {
   const mobileMenuRef = useRef(null);
   const mobileButtonRef = useRef(null);
   const navigate = useNavigate();
+  const { numOfCartItems } = useContext(CartContext)
 
   useEffect(() => {
     const handleClickOutsideUserMenu = (event) => {
@@ -68,7 +70,7 @@ const Navbar = () => {
     setIsUserMenuOpen(false);
     setLogoutModalOpen(true);
   };
-  
+
   return (
     <nav className="bg-[#FDE9EE] shadow-lg relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,6 +124,9 @@ const Navbar = () => {
                   to="/cart"
                   className="relative text-gray-700 hover:text-[#CF848A] transition-all duration-300">
                   <FaShoppingCart className="text-2xl" />
+                  <span className="absolute -top-2.5 -right-2.5 inline-flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
+                    {numOfCartItems}
+                  </span>
                 </Link>
                 <Link
                   to="/wishlist"
@@ -130,11 +135,12 @@ const Navbar = () => {
                 </Link>
 
                 <div className="relative">
-                  <FaUserCircle
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    ref={userButtonRef}
-                    className="text-2xl cursor-pointer text-gray-700 hover:text-[#CF848A] transition-colors duration-300"
-                  />
+                  <div ref={userButtonRef}>
+                    <FaUserCircle
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="text-2xl cursor-pointer text-gray-700 hover:text-[#CF848A] transition-colors duration-300"
+                    />
+                  </div>
 
                   {isUserMenuOpen && (
                     <div
@@ -142,7 +148,7 @@ const Navbar = () => {
                       ref={userMenuRef}
                     >
                       <div className="px-4 py-3 text-sm text-gray-900 ">
-                          
+
                         <p className='text-base font-semibold'>{localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).name : "User"}</p>
                       </div>
                       <Link

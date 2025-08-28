@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useToken } from '../../Context/TokenContext/TokenContext'
+import React, { useState, useEffect } from 'react';
 
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
@@ -12,7 +12,52 @@ const api = axios.create({
   }
 })
 
-const CafeProductsModal = ({ cafe, isOpen, onClose }) => {
+const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [editForm, setEditForm] = useState({ productName: '', price: '' })
+  const [updating, setUpdating] = useState(false)
+
+  useEffect(() => {
+    if (editingProduct) {
+      setEditForm({
+        productName: editingProduct.productName,
+        price: editingProduct.price
+      })
+    }
+  }, [editingProduct])
+
+  const handleEditClick = (product) => {
+    setEditingProduct(product)
+  }
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target
+    setEditForm(prev => ({
+      ...prev,
+      [name]: name === 'price' ? Number(value) : value
+    }))
+  }
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct || !editForm.productName || !editForm.price) return
+
+    setUpdating(true)
+    try {
+      await onUpdateProduct(cafe._id, editingProduct._id, editForm)
+      setEditingProduct(null)
+      setEditForm({ productName: '', price: '' })
+    } catch (error) {
+      console.error('Error updating product:', error)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingProduct(null)
+    setEditForm({ productName: '', price: '' })
+  }
+
   if (!isOpen) return null
 
   return (
@@ -36,14 +81,69 @@ const CafeProductsModal = ({ cafe, isOpen, onClose }) => {
           {cafe.products && cafe.products.length > 0 ? (
             <div className="space-y-4">
               {cafe.products.map((product, index) => (
-                <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{product.productName}</h4>
-                    <p className="text-sm text-gray-500 mt-1">السعر: {product.price} جنيه</p>
-                  </div>
-                  <div className="text-lg font-bold text-indigo-600">
-                    {product.price} ج.م
-                  </div>
+                <div key={index} className="flex justify-between items-start p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {editingProduct && editingProduct._id === product._id ? (
+                    <div className="flex-1">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج</label>
+                          <input
+                            type="text"
+                            name="productName"
+                            value={editForm.productName}
+                            onChange={handleEditChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">السعر</label>
+                          <input
+                            type="number"
+                            name="price"
+                            value={editForm.price}
+                            onChange={handleEditChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={handleUpdateProduct}
+                          disabled={updating}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {updating ? 'جاري التحديث...' : 'حفظ'}
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{product.productName}</h4>
+                        <p className="text-sm text-gray-500 mt-1">السعر: {product.price} جنيه</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg font-bold text-indigo-600">
+                          {product.price} ج.م
+                        </div>
+                        <button
+                          onClick={() => handleEditClick(product)}
+                          className="p-1 text-indigo-600 hover:text-indigo-800 rounded-full hover:bg-indigo-50"
+                          title="تعديل المنتج"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -246,7 +346,6 @@ function DashboardCafes() {
         location: formData.location || undefined,
       }
 
-
       await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, {
         headers: {
           Authorization: `Admin ${token}`,
@@ -277,6 +376,47 @@ function DashboardCafes() {
       setSubmitting(false)
     }
   }
+
+  // دالة جديدة لتحديث المنتج
+ const handleUpdateProduct = async (cafeId, productId, productData) => {
+  try {
+    console.log("Updating product with:", { cafeId, productId, productData });
+
+    // استخدام PUT زي ما الدكمنتيشن قال
+    const response = await api.put(
+      `/cafe/update-cafe-products/${cafeId}/${productId}`,
+      productData,
+      {
+        headers: {
+          Authorization: `Admin ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    addNotification('تم تحديث المنتج بنجاح');
+
+    // تحديث المقاهي
+    setCafes(prevCafes =>
+      prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
+    );
+
+    // تحديث المقهى المفتوح لو مفتوح
+    if (selectedCafe && selectedCafe._id === cafeId) {
+      setSelectedCafe(response.data.cafe);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Error updating product:', error);
+
+    // رسالة الخطأ من السيرفر أو رسالة عامة
+    const message = error.response?.data?.message || 'Failed to update product';
+    addNotification(message, 'error');
+
+    return null;
+  }
+};
 
   const handleDeleteCafe = async (id) => {
     if (!window.confirm('Are you sure you want to delete this cafe?')) return
@@ -314,6 +454,13 @@ function DashboardCafes() {
       products: [{ productName: '', price: '' }]
     })
   }
+
+  // دالة لتقصير النص مع إضافة نقاط
+  const truncateText = (text, maxLength = 25) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -442,7 +589,7 @@ function DashboardCafes() {
                       {/* Name + link */}
                       <td className="px-6 py-4 max-w-[200px]">
                         <div className="text-sm font-medium text-gray-900 truncate" title={cafe.name}>
-                          {cafe.name}
+                          {truncateText(cafe.name, 20)}
                         </div>
                         {cafe.link && (
                           <div className="text-xs text-indigo-600 truncate" title={cafe.link}>
@@ -452,7 +599,7 @@ function DashboardCafes() {
                               rel="noopener noreferrer"
                               className="hover:underline"
                             >
-                              {cafe.link}
+                              {truncateText(cafe.link, 25)}
                             </a>
                           </div>
                         )}
@@ -461,7 +608,7 @@ function DashboardCafes() {
                       {/* Address */}
                       <td className="px-6 py-4 max-w-[220px]">
                         <div className="text-sm text-gray-800 truncate" title={cafe.address}>
-                          {cafe.address}
+                          {truncateText(cafe.address, 30)}
                         </div>
                       </td>
 
@@ -470,9 +617,14 @@ function DashboardCafes() {
                         <div className="text-sm text-gray-900">{cafe.phone}</div>
                       </td>
 
-                      {/* Location */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-700">{cafe.location}</div>
+                      {/* Location - المحتوى المحسّن */}
+                      <td className="px-6 py-4 max-w-[200px]">
+                        <div 
+                          className="text-sm text-gray-700 truncate cursor-help" 
+                          title={cafe.location}
+                        >
+                          {truncateText(cafe.location, 25)}
+                        </div>
                       </td>
 
                       {/* Products */}
@@ -522,7 +674,6 @@ function DashboardCafes() {
                 </tbody>
               </table>
             </div>
-
           )}
         </div>
       </main>
@@ -735,6 +886,7 @@ function DashboardCafes() {
         cafe={selectedCafe}
         isOpen={showProductsModal}
         onClose={handleCloseProductsModal}
+        onUpdateProduct={handleUpdateProduct}
       />
     </div>
   )
