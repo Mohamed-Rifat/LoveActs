@@ -16,7 +16,6 @@ export const CartProvider = ({ children }) => {
     Authorization: `User ${token || localStorage.getItem("token")}`,
   };
 
-  // GET User Cart
   async function getCart() {
     const storedToken = token || localStorage.getItem("token");
     console.log("Token used for cart:", storedToken);
@@ -41,7 +40,6 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  // ADD to Cart
   async function addToCart(productId, quantity = 1) {
     if (!token && !localStorage.getItem("token")) return;
     setPending(prev => ({ ...prev, [`add-${productId}`]: true }));
@@ -59,7 +57,6 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-// REMOVE/UPDATE product from Cart (safe version)
 async function removeFromCart(productId, quantity = 1) {
   const storedToken = token || localStorage.getItem("token");
   console.log("=== Attempting to remove product from cart ===");
@@ -73,28 +70,16 @@ async function removeFromCart(productId, quantity = 1) {
     return null;
   }
 
-  const cartItem = cart.find(item => item.cartProductId === productId || item.productId === productId);
-  if (!cartItem) {
-    console.error("Product not found in current cart");
-    return null;
-  }
-
-  const productToRemoveId = cartItem.cartProductId; 
-
-  console.log("Using cartProductId for removal:", productToRemoveId);
-  console.log("Current cart products:");
-  cart.forEach(p => console.log(p));
-
   try {
-   const res = await axios.patch(
-    `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
-    { productId: cartProductId, quantity },
-    { headers: { Authorization: `User ${storedToken}` } }
-  );
+    const res = await axios.patch(
+      `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
+      { productId, quantity },   
+      { headers: { Authorization: `User ${storedToken}` } }
+    );
 
     console.log("Remove product response:", res.data);
 
-    await getCart(); 
+    await getCart();
     return res.data;
   } catch (err) {
     console.error("Error removing/updating product from cart:", err);
@@ -102,7 +87,6 @@ async function removeFromCart(productId, quantity = 1) {
   }
 }
 
-  // CLEAR Cart
   async function clearCart() {
     const storedToken = token || localStorage.getItem("token");
     

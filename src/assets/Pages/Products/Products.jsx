@@ -2,25 +2,26 @@ import { useEffect, useState } from "react";
 import { useCart } from "../../Context/CartContext";
 import Loader from "../../Components/Loader/Loader";
 import { FiShoppingCart, FiRefreshCw, FiX } from "react-icons/fi";
+import axios from "axios";
 
 export default function Products() {
-  const { addToCart, pending } = useCart();
+  const { addToCart, pending, getCart, numOfCartItems, setNumOfCartItems } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
+  const API_BASE = "https://flowers-vert-six.vercel.app/api";
+
+  // Fetch Products
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const response = await fetch(
-          "https://flowers-vert-six.vercel.app/api/product/user"
-        );
-        const data = await response.json();
-        setProducts(data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
+        const res = await axios.get(`${API_BASE}/product/user`);
+        setProducts(res.data);
+      } catch (err) {
+        console.error("Error fetching products:", err);
       } finally {
         setLoading(false);
       }
@@ -28,13 +29,22 @@ export default function Products() {
     fetchProducts();
   }, []);
 
+  // Open Modal
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setQuantity(1);
   };
+
+  // Close Modal
   const handleCloseModal = () => {
     setSelectedProduct(null);
     setQuantity(1);
+  };
+
+  // Add to Cart Handler
+  const handleAddToCart = async (productId, quantity) => {
+    await addToCart(productId, quantity);
+    await getCart(); // لتحديث العدد في Navbar
   };
 
   if (loading) return <Loader />;
@@ -69,7 +79,7 @@ export default function Products() {
                     View Details
                   </button>
                   <button
-                    onClick={() => addToCart(productId, 1)}
+                    onClick={() => handleAddToCart(productId, 1)}
                     disabled={product.isDeleted || pending[`add-${productId}`]}
                     className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -92,6 +102,7 @@ export default function Products() {
         })}
       </div>
 
+      {/* Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg relative p-6">
@@ -124,7 +135,7 @@ export default function Products() {
 
             <button
               onClick={() =>
-                addToCart(selectedProduct._id || selectedProduct.id, quantity)
+                handleAddToCart(selectedProduct._id || selectedProduct.id, quantity)
               }
               disabled={
                 selectedProduct.isDeleted ||
