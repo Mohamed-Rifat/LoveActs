@@ -29,10 +29,10 @@ export const CartProvider = ({ children }) => {
         { headers: { Authorization: `User ${storedToken}` } }
       );
       console.log("Cart response:", res.data);
-      
-    
+
+
       setCart(res.data.cart?.products || []);
-      setCartId(res.data.cart?._id || null); 
+      setCartId(res.data.cart?._id || null);
       setNumOfCartItems(res.data.cart?.products?.length || 0);
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -59,53 +59,68 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-// REMOVE/UPDATE product from Cart (safe version)
-async function removeFromCart(productId, quantity = 1) {
-  const storedToken = token || localStorage.getItem("token");
-  console.log("=== Attempting to remove product from cart ===");
-  console.log("Cart ID:", cartId);
-  console.log("Product ID passed:", productId);
-  console.log("Quantity:", quantity);
-  console.log("Token:", storedToken);
+  // REMOVE/UPDATE product from Cart (safe version)
+  async function removeFromCart(productId, quantity = 1) {
+    const storedToken = token || localStorage.getItem("token");
+    // console.log("=== Attempting to remove product from cart ===");
+    console.log("Cart ID:", cartId);
+    console.log("Product ID passed:", productId);
+    // console.log("Quantity:", quantity);
+    // console.log("Token:", storedToken);
 
-  if (!storedToken || !cartId) {
-    console.error("Missing token or cart ID");
-    return null;
+    if (!storedToken || !cartId) {
+      console.error("Missing token or cart ID");
+      return null;
+    }
+
+    // البحث عن الـ product في الـ cart بكل الطرق الممكنة
+    const cartItem = cart.find(item => {
+      const itemId = item._id || (item.productId && item.productId._id) || item.id;
+      return item.cartProductId === productId ||
+        item.productId === productId ||
+        itemId === productId ||
+        (item.productId && item.productId._id === productId);
+    });
+
+    console.log("Found cart item:", cartItem);
+
+    if (!cartItem) {
+      console.error("Product not found in current cart");
+      console.log("Available cart items:");
+      cart.forEach(item => {
+        console.log({
+          _id: item._id,
+          cartProductId: item.cartProductId,
+          productId: item.productId,
+          productId_id: item.productId && item.productId._id,
+          id: item.id
+        });
+      });
+      return null;
+    }
+
+    const productToRemoveId = productId;
+    console.log("Using product ID for removal:", productToRemoveId);
+
+    try {
+      const res = await axios.patch(
+        `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
+        { productId: productToRemoveId, quantity },
+        { headers: { Authorization: `User ${storedToken}` } }
+      );
+
+      console.log("Remove product response:", res.data);
+      await getCart();
+      return res.data;
+    } catch (err) {
+      console.error("Error removing/updating product from cart:", err);
+      return null;
+    }
   }
-
-  const cartItem = cart.find(item => item.cartProductId === productId || item.productId === productId);
-  if (!cartItem) {
-    console.error("Product not found in current cart");
-    return null;
-  }
-
-  const productToRemoveId = cartItem.cartProductId; 
-
-  console.log("Using cartProductId for removal:", productToRemoveId);
-  console.log("Current cart products:");
-  cart.forEach(p => console.log(p));
-
-  try {
-   const res = await axios.patch(
-    `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
-    { productId: cartProductId, quantity },
-    { headers: { Authorization: `User ${storedToken}` } }
-  );
-
-    console.log("Remove product response:", res.data);
-
-    await getCart(); 
-    return res.data;
-  } catch (err) {
-    console.error("Error removing/updating product from cart:", err);
-    return null;
-  }
-}
-
   // CLEAR Cart
   async function clearCart() {
     const storedToken = token || localStorage.getItem("token");
-    
+
     if (!storedToken || !cartId) {
       console.error("Missing token or cart ID");
       return null;
@@ -116,13 +131,13 @@ async function removeFromCart(productId, quantity = 1) {
         `https://flowers-vert-six.vercel.app/api/cart/clear-cart/${cartId}`,
         { headers: { Authorization: `User ${storedToken}` } }
       );
-console.log("Current cart products:", cart.map(p => ({
-  _id: p._id,
-  productId: p.productId?._id
-})));
+      console.log("Current cart products:", cart.map(p => ({
+        _id: p._id,
+        productId: p.productId?._id
+      })));
 
       console.log("Clear cart response:", res.data);
-      await getCart(); 
+      await getCart();
       return res.data;
     } catch (err) {
       console.error("Error clearing cart:", err);
@@ -148,7 +163,7 @@ console.log("Current cart products:", cart.map(p => ({
         clearCart,
         setCart,
         setNumOfCartItems,
-        getCart, 
+        getCart,
       }}
     >
       {children}

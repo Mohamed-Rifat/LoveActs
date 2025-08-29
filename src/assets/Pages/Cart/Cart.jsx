@@ -20,12 +20,12 @@ export default function Cart() {
     }, [items]);
 
     const getProductId = (item) => {
-        return item._id || (item.productId && item.productId._id) || item.id;
+        return item.productId._id;
     };
 
     const getProductData = (item) => {
         if (item.productId && typeof item.productId === 'object') {
-            return item.productId; 
+            return item.productId;
         }
         return item;
     };
@@ -42,6 +42,7 @@ export default function Cart() {
 
     const handleRemoveItem = async (productId) => {
         setIsRemoving(prev => ({ ...prev, [productId]: true }));
+        console.log("Removing product with ID:", productId);
         await removeFromCart(productId);
         setTimeout(() => {
             setIsRemoving(prev => {
@@ -216,7 +217,7 @@ export default function Cart() {
                                                         <motion.button
                                                             whileHover={{ scale: 1.05 }}
                                                             whileTap={{ scale: 0.95 }}
-                                                            onClick={() => handleRemoveItem(product.cartProductId)}
+                                                            onClick={() => handleRemoveItem(productId)}
                                                             disabled={isPending}
                                                             className="flex items-center gap-2 text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                         >
