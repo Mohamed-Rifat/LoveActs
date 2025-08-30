@@ -20,7 +20,7 @@ export default function Cart() {
     }, [items]);
 
     const getProductId = (item) => {
-        return item.productId._id;
+        return item?.productId?._id || item?._id || null;
     };
 
     const getProductData = (item) => {
@@ -134,7 +134,7 @@ export default function Cart() {
                     className="flex items-center justify-between mb-8"
                 >
                     <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-                    <span className="text-gray-600 bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                    <span className="text-gray-600 bg-green-100 px-3 py-1 rounded-full font-medium">
                         {numOfCartItems} {numOfCartItems === 1 ? 'item' : 'items'}
                     </span>
                 </motion.div>
