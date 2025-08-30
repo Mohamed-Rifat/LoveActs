@@ -100,7 +100,7 @@ export default function Home() {
   const [isAnimationDone, setIsAnimationDone] = useState(false);
   const showLoader = !isAnimationDone;
 
-   useEffect(() => {
+  useEffect(() => {
     if (showLoader) {
       const timer = setTimeout(() => {
         setIsAnimationDone(true);
@@ -111,39 +111,39 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-       <Helmet>
+      <Helmet>
         <title>Home | Love Acts</title>
         <meta name="description" content="Welcome to Love Acts homepage" />
       </Helmet>
 
       <AnimatePresence>
-      {showLoader && (
-        <motion.div
-          className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-pink-100 z-50"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <motion.img
-            src="/Logo.PNG"
-            alt="Love Acts Logo"
-            className="w-40 h-40 drop-shadow-xl"
-            initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
-            animate={{
-              opacity: 1,
-              scale: [0.5, 1.2, 1],
-              rotate: [ -20, 0, 5, 0 ],
-            }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{
-              duration: 3,
-              ease: "easeInOut"
-            }}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {showLoader && (
+          <motion.div
+            className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-pink-100 z-50"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <motion.img
+              src="/Logo.PNG"
+              alt="Love Acts Logo"
+              className="w-40 h-40 drop-shadow-xl"
+              initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+              animate={{
+                opacity: 1,
+                scale: [0.5, 1.2, 1],
+                rotate: [-20, 0, 5, 0],
+              }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{
+                duration: 3,
+                ease: "easeInOut"
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative h-96 md:h-screen max-h-[600px] overflow-hidden">
         {slides.map((slide, index) => (
@@ -256,8 +256,8 @@ export default function Home() {
                 key={category}
                 onClick={() => setActiveCategory(category)}
                 className={`px-4 py-2 rounded-full whitespace-nowrap ${activeCategory === category
-                    ? "bg-amber-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                  ? "bg-amber-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
               >
                 {category}
@@ -283,12 +283,13 @@ export default function Home() {
                   <p className="text-gray-600 mb-4">{item.description}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-amber-600">{item.price.toFixed(2)} EG</span>
-                    <button
+
+                    {!item.category && <button
                       onClick={() => addToCart(item.id)}
                       className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition"
                     >
                       Add to Cart
-                    </button>
+                    </button>}
                   </div>
                 </div>
               </div>
