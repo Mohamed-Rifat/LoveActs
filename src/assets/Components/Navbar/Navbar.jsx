@@ -117,14 +117,6 @@ const Navbar = () => {
                 >
                   Cafe
                 </Link>
-                {user?.role === "User" && (
-                  <Link
-                    to="/cart"
-                    className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
-                  >
-                    Cart
-                  </Link>
-                )}
                 <Link
                   to="/about"
                   className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
@@ -226,10 +218,20 @@ const Navbar = () => {
           </div>
 
           <div className="md:hidden flex items-center">
+             {user?.role === "User" && (
+                  <Link
+                    to="/cart"
+                    className="relative text-gray-700 hover:text-[#CF848A] transition-all duration-300">
+                    <FaShoppingCart className="text-2xl" />
+                    <span className="absolute -top-2.5 -right-2.5 inline-flex items-center justify-center w-5 h-5 text-xs bg-[#ffb9cb] rounded-full">
+                      {numOfCartItems}
+                    </span>
+                  </Link>
+                )}
             <button
               ref={mobileButtonRef}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 ms-5"
               aria-expanded={isMobileMenuOpen}
             >
               <span className="sr-only">Open main menu</span>
@@ -275,15 +277,6 @@ const Navbar = () => {
                 >
                   Cafe
                 </Link>
-                {user?.role === "User" && (
-                  <Link
-                    to="/cart"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
-                  >
-                    Cart
-                  </Link>
-                )}
                 <Link
                   to="/about"
                   onClick={() => setIsMobileMenuOpen(false)}
