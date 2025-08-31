@@ -378,45 +378,45 @@ function DashboardCafes() {
   }
 
   // دالة جديدة لتحديث المنتج
- const handleUpdateProduct = async (cafeId, productId, productData) => {
-  try {
-    console.log("Updating product with:", { cafeId, productId, productData });
+  const handleUpdateProduct = async (cafeId, productId, productData) => {
+    try {
+      console.log("Updating product with:", { cafeId, productId, productData });
 
-    // استخدام PUT زي ما الدكمنتيشن قال
-    const response = await api.put(
-      `/cafe/update-cafe-products/${cafeId}/${productId}`,
-      productData,
-      {
-        headers: {
-          Authorization: `Admin ${token}`,
-          'Content-Type': 'application/json',
-        },
+      // استخدام PUT زي ما الدكمنتيشن قال
+      const response = await api.put(
+        `/cafe/update-cafe-products/${cafeId}/${productId}`,
+        productData,
+        {
+          headers: {
+            Authorization: `Admin ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      addNotification('تم تحديث المنتج بنجاح');
+
+      // تحديث المقاهي
+      setCafes(prevCafes =>
+        prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
+      );
+
+      // تحديث المقهى المفتوح لو مفتوح
+      if (selectedCafe && selectedCafe._id === cafeId) {
+        setSelectedCafe(response.data.cafe);
       }
-    );
 
-    addNotification('تم تحديث المنتج بنجاح');
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
 
-    // تحديث المقاهي
-    setCafes(prevCafes =>
-      prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
-    );
+      // رسالة الخطأ من السيرفر أو رسالة عامة
+      const message = error.response?.data?.message || 'Failed to update product';
+      addNotification(message, 'error');
 
-    // تحديث المقهى المفتوح لو مفتوح
-    if (selectedCafe && selectedCafe._id === cafeId) {
-      setSelectedCafe(response.data.cafe);
+      return null;
     }
-
-    return response.data;
-  } catch (error) {
-    console.error('Error updating product:', error);
-
-    // رسالة الخطأ من السيرفر أو رسالة عامة
-    const message = error.response?.data?.message || 'Failed to update product';
-    addNotification(message, 'error');
-
-    return null;
-  }
-};
+  };
 
   const handleDeleteCafe = async (id) => {
     if (!window.confirm('Are you sure you want to delete this cafe?')) return
@@ -546,7 +546,7 @@ function DashboardCafes() {
         <div className="px-4 py-6 bg-white shadow rounded-lg overflow-hidden border border-gray-200">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
             </div>
           ) : filteredCafes.length === 0 ? (
             <div className="text-center py-12">
@@ -619,8 +619,8 @@ function DashboardCafes() {
 
                       {/* Location - المحتوى المحسّن */}
                       <td className="px-6 py-4 max-w-[200px]">
-                        <div 
-                          className="text-sm text-gray-700 truncate cursor-help" 
+                        <div
+                          className="text-sm text-gray-700 truncate cursor-help"
                           title={cafe.location}
                         >
                           {truncateText(cafe.location, 25)}
