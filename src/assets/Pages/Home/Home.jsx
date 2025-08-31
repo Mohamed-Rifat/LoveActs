@@ -1,35 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion } from "framer-motion";
+import axios from 'axios';
+import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [cafes, setCafes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAnimationDone, setIsAnimationDone] = useState(false);
+  const showLoader = !isAnimationDone;
+  const navigate = useNavigate();
+  const API_BASE = "https://flowers-vert-six.vercel.app/api";
+
   const slides = [
     {
       id: 1,
       title: "Luxury Rose Bouquets",
       description: "Fresh red roses for special occasions",
       buttonText: "Order Roses",
+      path: "/products",
       image: "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
       bgColor: "bg-gray-400/30 backdrop-blur-md"
     },
     {
       id: 2,
-      title: "Elegant White Arrangements",
-      description: "Pure white flowers for elegant events",
-      buttonText: "View White Collection",
-      image: "https://images.unsplash.com/photo-1459156212016-c812468e2115?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      bgColor: "bg-gray-400/30 backdrop-blur-md"
-    },
-    {
-      id: 3,
-      title: "Seasonal Flower Mix",
-      description: "Vibrant colors for every season",
-      buttonText: "Explore All Flowers",
-      image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+      title: "Unique Cafe Experience",
+      description: "Enjoy relaxing atmospheres with premium beverages",
+      buttonText: "Explore Cafes",
+      path: "/cafes",
+      image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
       bgColor: "bg-gray-400/30 backdrop-blur-md"
     }
   ];
+
+  const partners = [
+    {
+      name: "Partner 1",
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+    },
+    {
+      name: "Partner 2",
+      logo: "https://via.placeholder.com/150x80?text=Partner+2"
+    },
+    {
+      name: "Partner 3",
+      logo: "https://via.placeholder.com/150x80?text=Partner+3"
+    },
+    {
+      name: "Partner 4",
+      logo: "https://via.placeholder.com/150x80?text=Partner+4"
+    },
+    {
+      name: "Partner 5",
+      logo: "https://via.placeholder.com/150x80?text=Partner+5"
+    }
+  ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const productsRes = await axios.get(`${API_BASE}/product/user`);
+        setProducts(productsRes.data.slice(0, 6));
+
+        const cafesRes = await axios.get(`${API_BASE}/cafe/display-all-cafes`);
+        const cafesData = cafesRes.data?.cafeData || cafesRes.data || [];
+        setCafes(cafesData.slice(0, 3));
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,68 +87,6 @@ export default function Home() {
     }, 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
-  const [wordItems, setWordItems] = useState([
-    {
-      id: 1,
-      title: "Word Collection 1",
-      description: "Premium quality word products for your needs",
-      price: 29.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-      id: 2,
-      title: "Word Collection 2",
-      description: "Elegant and professional word solutions",
-      price: 39.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-      id: 3,
-      title: "Word Collection 3",
-      description: "Innovative word designs for modern users",
-      price: 19.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80"
-    }
-  ]);
-
-  const [cafeItems, setCafeItems] = useState([
-    {
-      id: 101,
-      title: "Espresso",
-      description: "Strong black coffee",
-      price: 12.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
-      category: "Hot Drinks"
-    },
-    {
-      id: 102,
-      title: "Iced Latte",
-      description: "Refreshing cold coffee",
-      price: 8.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
-      category: "Cold Drinks"
-    },
-    {
-      id: 103,
-      title: "Croissant",
-      description: "Freshly baked pastry",
-      price: 6.99,
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
-      category: "Bakery"
-    }
-  ]);
-
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [cart, setCart] = useState([]);
-
-  const addToCart = (productId, quantity = 1) => {
-    setCart(prev => [...prev, { productId, quantity }]);
-    console.log(`Added product ${productId} to cart`);
-  };
-
-  const text = "Love Acts".split("");
-  const [isAnimationDone, setIsAnimationDone] = useState(false);
-  const showLoader = !isAnimationDone;
 
   useEffect(() => {
     if (showLoader) {
@@ -109,11 +97,39 @@ export default function Home() {
     }
   }, [showLoader]);
 
+  const ProductSkeleton = () => (
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="relative h-52 w-full bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse">
+        <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white"></div>
+      </div>
+      <div className="p-5">
+        <div className="h-6 bg-gray-200 rounded mb-3"></div>
+        <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
+        <div className="flex justify-between items-center">
+          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const CafeSkeleton = () => (
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+      <div className="h-48 bg-gray-200"></div>
+      <div className="p-6">
+        <div className="h-6 bg-gray-200 rounded mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded mb-2 w-1/2"></div>
+        <div className="h-10 bg-gray-200 rounded mt-4"></div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Home | Love Acts</title>
-        <meta name="description" content="Welcome to Love Acts homepage" />
+        <meta name="description" content="Welcome to Love Acts - Luxury flowers and unique cafe experiences" />
       </Helmet>
 
       <AnimatePresence>
@@ -128,7 +144,7 @@ export default function Home() {
             <motion.img
               src="/Logo.PNG"
               alt="Love Acts Logo"
-              className="w-40 h-40 drop-shadow-xl"
+              className="h-80 drop-shadow-xl"
               initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
               animate={{
                 opacity: 1,
@@ -154,7 +170,7 @@ export default function Home() {
             <div className="absolute inset-0">
               <img
                 src={slide.image}
-                alt=""
+                alt={slide.title}
                 className="w-full h-full object-cover"
               />
               <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgColor} opacity-90`}></div>
@@ -162,17 +178,31 @@ export default function Home() {
 
             <div className="relative h-full flex items-center justify-center text-center px-4">
               <div className="max-w-4xl mx-auto text-white">
-                <h1 className="text-3xl md:text-5xl font-bold mb-4 animate-fadeIn">
+                <motion.h1
+                  className="text-3xl md:text-5xl font-bold mb-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   {slide.title}
-                </h1>
-                <p className="text-xl mb-8 max-w-2xl mx-auto animate-fadeIn">
+                </motion.h1>
+                <motion.p
+                  className="text-xl mb-8 max-w-2xl mx-auto"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
                   {slide.description}
-                </p>
-                <button
-                  className="bg-white text-amber-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition animate-fadeIn"
+                </motion.p>
+                <motion.button
+                  onClick={() => navigate(slide.path)}
+                  className="bg-white text-amber-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
                 >
                   {slide.buttonText}
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -212,88 +242,328 @@ export default function Home() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800">Word Collections</h2>
-            <button className="text-amber-600 hover:text-amber-700 font-medium">View All</button>
+            <motion.h2
+              className="text-3xl font-bold text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              Featured Products
+            </motion.h2>
+            <motion.button
+              className="text-amber-600 hover:text-amber-700 font-medium"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              onClick={() => navigate("/products")}
+            >
+              View All
+            </motion.button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {wordItems.map(item => (
-              <div key={item.id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-64 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.title}</h3>
-                  <p className="text-gray-600 mb-4">{item.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-amber-600">{item.price.toFixed(2)} EG</span>
-                    <button
-                      onClick={() => addToCart(item.id)}
-                      className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition"
-                    >
-                      Add to Cart
-                    </button>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              {products.map(product => {
+                const id = product._id || product.id;
+                return (
+                  <div key={id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition group">
+                    <div className="relative overflow-hidden h-64">
+                      <img
+                        src={product.image || "https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      <button className="absolute top-3 left-3 p-2 bg-white/80 rounded-full hover:bg-white transition">
+                        <FiHeart className="text-gray-600 hover:text-red-500" />
+                      </button>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{product.name}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {product.description || "Premium product from Love Acts"}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-amber-600">{product.price} EGP</span>
+                        <button className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition flex items-center">
+                          <FiShoppingCart className="ml-1" />
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </motion.div>
+          )}
         </div>
       </section>
 
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800">Cafe Menu</h2>
-            <button className="text-amber-600 hover:text-amber-700 font-medium">View All</button>
+            <motion.h2
+              className="text-3xl font-bold text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              Our Cafes
+            </motion.h2>
+            <motion.button
+              className="text-amber-600 hover:text-amber-700 font-medium"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              onClick={() => navigate("/cafes")}
+            >
+              View All
+            </motion.button>
           </div>
 
-          <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
-            {["All", "Hot Drinks", "Cold Drinks", "Bakery"].map(category => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap ${activeCategory === category
-                  ? "bg-amber-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <CafeSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              {cafes.map(cafe => {
+                const id = cafe._id || cafe.id;
+                return (
+                  <div key={id} className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-100">
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={cafe.image || "https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
+                        alt={cafe.name}
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      />
+                      {cafe.products && cafe.products.length > 0 && (
+                        <div className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                          {cafe.products.length} products
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <h2 className="text-xl font-semibold text-gray-900">
+                          {cafe.name || "Love Acts Cafe"}
+                        </h2>
+                        <div className="flex items-center text-yellow-400 ml-2">
+                          <FiStar className="fill-current" />
+                          <span className="text-sm text-gray-600 ml-1">4.8</span>
+                        </div>
+                      </div>
+
+                      {cafe.description && (
+                        <p className="text-gray-600 mb-4 line-clamp-2">{cafe.description}</p>
+                      )}
+
+                      <div className="space-y-2 mb-6">
+                        <div className="flex items-center text-gray-500">
+                          <FiMapPin className="ml-2" />
+                          {cafe.location ? (
+                            <span className="text-sm">{cafe.location}</span>
+                          ) : (
+                            <span className="text-sm">Location not specified</span>
+                          )}
+                        </div>
+
+                        {cafe.openingHours && (
+                          <div className="flex items-center text-gray-500">
+                            <FiClock className="ml-2" />
+                            <span className="text-sm">{cafe.openingHours}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-medium">
+                        <span>Explore Cafe</span>
+                        <FiChevronRight />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.h2
+            className="text-3xl font-bold text-center text-gray-800 mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            Why Choose Love Acts?
+          </motion.h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiShoppingCart className="text-amber-600 text-2xl" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Easy & Secure Shopping</h3>
+              <p className="text-gray-600">Seamless shopping experience with secure payment and fast delivery</p>
+            </motion.div>
+
+            <motion.div
+              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiCoffee className="text-green-600 text-2xl" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Unique Cafe Experience</h3>
+              <p className="text-gray-600">Enjoy comfortable atmospheres and specialty drinks at our cafes</p>
+            </motion.div>
+
+            <motion.div
+              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiStar className="text-blue-600 text-2xl" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">High Quality</h3>
+              <p className="text-gray-600">Premium quality products carefully selected to ensure your satisfaction</p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              Our Featured Partners
+            </motion.h2>
+            <motion.p
+              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              We collaborate with the best brands and suppliers to ensure quality service
+            </motion.p>
+          </div>
+
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            {partners.map((partner, index) => (
+              <div
+                key={index}
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center"
               >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {cafeItems.map(item => (
-              <div key={item.id} className="bg-white rounded-lg overflow-hidden hover:shadow-md transition">
                 <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-64 object-cover"
+                  src={partner.logo}
+                  alt={partner.name}
+                  className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity"
                 />
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-gray-800">{item.title}</h3>
-                    <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">
-                      {item.category}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mb-4">{item.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-amber-600">{item.price.toFixed(2)} EG</span>
-
-                    {!item.category && <button
-                      onClick={() => addToCart(item.id)}
-                      className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition"
-                    >
-                      Add to Cart
-                    </button>}
-                  </div>
-                </div>
               </div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gray-100 ">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col lg:flex-row items-center">
+            <div className="lg:w-1/2 mb-10 lg:mb-0 lg:pr-10">
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+                <FiSmartphone className="w-8 h-8" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Get Our Mobile App
+              </h2>
+              <p className="text-xl mb-8 ">
+                Order flowers, reserve cafe tables, and explore exclusive offers with our easy-to-use app
+              </p>
+
+              <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+                <span className=" font-semibold">Coming Soon</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a
+                  href="#"
+                  className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-full font-semibold flex items-center justify-center transition-all duration-300 cursor-not-allowed opacity-80"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <span>App Store</span>
+                </a>
+                <a
+                  href="#"
+                  className="bg-white/20  hover:bg-white/30 px-6 py-3 rounded-full font-semibold flex items-center justify-center transition-all duration-300 cursor-not-allowed opacity-80"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <span>Google Play</span>
+                </a>
+              </div>
+            </div>
+            <div className="lg:w-1/2 flex justify-center">
+              <div className="relative max-w-md">
+                <div className="absolute -inset-4"></div>
+                <div className="relative overflow-hidden">
+                  <img
+                    src="/Logo.PNG"
+                    alt="Love Acts Mobile App"
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
