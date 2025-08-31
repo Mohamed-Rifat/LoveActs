@@ -8,6 +8,7 @@ export default {
     extend: { 
      fontFamily: {
         script: ["'Qwitcher Grypen'", "cursive"], 
+        dancing: ['"Dancing Script"', 'cursive'],
       },},
   },
   plugins: [],
