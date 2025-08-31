@@ -65,7 +65,7 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
       <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center pb-3 border-b">
           <h3 className="text-xl font-semibold text-gray-900">
-            منتجات {cafe.name}
+            Products {cafe.name}
           </h3>
           <button
             onClick={onClose}
@@ -86,7 +86,7 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
                     <div className="flex-1">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                           <input
                             type="text"
                             name="productName"
@@ -96,7 +96,7 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">السعر</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                           <input
                             type="number"
                             name="price"
@@ -112,13 +112,13 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
                           disabled={updating}
                           className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
                         >
-                          {updating ? 'جاري التحديث...' : 'حفظ'}
+                          {updating ? 'Updating...' : 'Save'}
                         </button>
                         <button
                           onClick={cancelEdit}
                           className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
                         >
-                          إلغاء
+                          Cancel
                         </button>
                       </div>
                     </div>
@@ -126,16 +126,16 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
                     <>
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{product.productName}</h4>
-                        <p className="text-sm text-gray-500 mt-1">السعر: {product.price} جنيه</p>
+                        <p className="text-sm text-gray-500 mt-1">Price: {product.price} LE</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-lg font-bold text-indigo-600">
-                          {product.price} ج.م
+                          {product.price} LE
                         </div>
                         <button
                           onClick={() => handleEditClick(product)}
                           className="p-1 text-indigo-600 hover:text-indigo-800 rounded-full hover:bg-indigo-50"
-                          title="تعديل المنتج"
+                          title="Update Order"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -152,10 +152,11 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-16" />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">لا توجد منتجات</h3>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">No Products</h3>
               <p className="mt-1 text-sm text-gray-500">
-                لم يتم إضافة أي منتجات لهذا الكافيه بعد.
+                No products have been added for this cafe yet.
               </p>
+
             </div>
           )}
         </div>
@@ -165,7 +166,7 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
             onClick={onClose}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
           >
-            إغلاق
+            Close
           </button>
         </div>
       </div>
@@ -377,12 +378,10 @@ function DashboardCafes() {
     }
   }
 
-  // دالة جديدة لتحديث المنتج
   const handleUpdateProduct = async (cafeId, productId, productData) => {
     try {
       console.log("Updating product with:", { cafeId, productId, productData });
 
-      // استخدام PUT زي ما الدكمنتيشن قال
       const response = await api.put(
         `/cafe/update-cafe-products/${cafeId}/${productId}`,
         productData,
@@ -394,14 +393,12 @@ function DashboardCafes() {
         }
       );
 
-      addNotification('تم تحديث المنتج بنجاح');
+      addNotification('Product updated successfully');
 
-      // تحديث المقاهي
       setCafes(prevCafes =>
         prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
       );
 
-      // تحديث المقهى المفتوح لو مفتوح
       if (selectedCafe && selectedCafe._id === cafeId) {
         setSelectedCafe(response.data.cafe);
       }
@@ -410,7 +407,6 @@ function DashboardCafes() {
     } catch (error) {
       console.error('Error updating product:', error);
 
-      // رسالة الخطأ من السيرفر أو رسالة عامة
       const message = error.response?.data?.message || 'Failed to update product';
       addNotification(message, 'error');
 
@@ -455,7 +451,6 @@ function DashboardCafes() {
     })
   }
 
-  // دالة لتقصير النص مع إضافة نقاط
   const truncateText = (text, maxLength = 25) => {
     if (!text) return '';
     if (text.length <= maxLength) return text;
@@ -464,7 +459,6 @@ function DashboardCafes() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {notifications.map(notification => (
           <div
@@ -494,7 +488,6 @@ function DashboardCafes() {
         ))}
       </div>
 
-      {/* Header */}
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center">
@@ -516,9 +509,7 @@ function DashboardCafes() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Filters */}
         <div className="px-4 py-6 bg-white shadow rounded-lg mb-6 border border-gray-200">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -542,7 +533,6 @@ function DashboardCafes() {
           </div>
         </div>
 
-        {/* Cafes Table */}
         <div className="px-4 py-6 bg-white shadow rounded-lg overflow-hidden border border-gray-200">
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -586,7 +576,6 @@ function DashboardCafes() {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredCafes.map((cafe) => (
                     <tr key={cafe._id} className="hover:bg-gray-50 transition-colors">
-                      {/* Name + link */}
                       <td className="px-6 py-4 max-w-[200px]">
                         <div className="text-sm font-medium text-gray-900 truncate" title={cafe.name}>
                           {truncateText(cafe.name, 20)}
@@ -605,19 +594,16 @@ function DashboardCafes() {
                         )}
                       </td>
 
-                      {/* Address */}
                       <td className="px-6 py-4 max-w-[220px]">
                         <div className="text-sm text-gray-800 truncate" title={cafe.address}>
                           {truncateText(cafe.address, 30)}
                         </div>
                       </td>
 
-                      {/* Phone */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{cafe.phone}</div>
                       </td>
 
-                      {/* Location - المحتوى المحسّن */}
                       <td className="px-6 py-4 max-w-[200px]">
                         <div
                           className="text-sm text-gray-700 truncate cursor-help"
@@ -627,13 +613,11 @@ function DashboardCafes() {
                         </div>
                       </td>
 
-                      {/* Products */}
                       <td className="px-6 py-4">
                         <button
                           onClick={() => handleShowProducts(cafe)}
                           className="text-indigo-600 hover:text-indigo-800 text-xs font-medium flex items-center gap-1"
                         >
-                          <span>عرض المنتجات</span>
                           <svg
                             className="w-4 h-4"
                             fill="none"
@@ -643,10 +627,10 @@ function DashboardCafes() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
+                          <span>View Products</span>
                         </button>
                       </td>
 
-                      {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
                           <button
@@ -678,7 +662,6 @@ function DashboardCafes() {
         </div>
       </main>
 
-      {/* Add/Edit Cafe Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
           <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
@@ -788,7 +771,6 @@ function DashboardCafes() {
                 </div>
               </div>
 
-              {/* Products Section */}
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="text-lg font-medium text-gray-900">Products (Optional)</h4>
