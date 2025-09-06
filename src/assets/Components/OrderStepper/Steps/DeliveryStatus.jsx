@@ -2,13 +2,21 @@ import React, { useEffect } from "react";
 import loader from '../../Loader/Loader';
 
 export default function DeliveryStatus({ onNext }) {
+  // تأخير 3 ثواني للانتقال للخطوة التالية
   useEffect(() => {
     const timer = setTimeout(() => {
       onNext();
     }, 3000);
-
     return () => clearTimeout(timer);
   }, [onNext]);
+
+  // تحريك progress bar
+  useEffect(() => {
+    const progressBar = document.getElementById('progress-bar');
+    if (progressBar) {
+      progressBar.style.width = '100%';
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -30,8 +38,7 @@ export default function DeliveryStatus({ onNext }) {
             className="bg-blue-600 h-2 rounded-full transition-all duration-3000 ease-linear" 
             style={{ width: '0%' }}
             id="progress-bar"
-          >
-          </div>
+          />
         </div>
         
         <p className="text-sm text-gray-500">
@@ -41,10 +48,3 @@ export default function DeliveryStatus({ onNext }) {
     </div>
   );
 }
-
-useEffect(() => {
-  const progressBar = document.getElementById('progress-bar');
-  if (progressBar) {
-    progressBar.style.width = '100%';
-  }
-}, []);
