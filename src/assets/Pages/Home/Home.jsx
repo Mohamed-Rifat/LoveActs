@@ -43,19 +43,19 @@ export default function Home() {
     },
     {
       name: "Partner 2",
-      logo: "https://via.placeholder.com/150x80?text=Partner+2"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 3",
-      logo: "https://via.placeholder.com/150x80?text=Partner+3"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 4",
-      logo: "https://via.placeholder.com/150x80?text=Partner+4"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 5",
-      logo: "https://via.placeholder.com/150x80?text=Partner+5"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     }
   ];
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { createContext, useContext, useState, useEffect } from "react";
-import { useToken } from "../Context/TokenContext/TokenContext"; 
+import { useToken } from "../Context/TokenContext/TokenContext";
+
 export const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
@@ -11,12 +12,11 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState({});
 
+  // get user cart
   async function getCart() {
-    if (!token) return; 
+    if (!token) return;
+    if (user?.role !== "User") return;
 
-    if (user?.role !== "User") {
-      return;
-    }
     setLoading(true);
     try {
       const res = await axios.get(
@@ -33,6 +33,7 @@ export const CartProvider = ({ children }) => {
     }
   }
 
+  // add to cart
   async function addToCart(productId, quantity = 1) {
     if (!token) return;
     setPending(prev => ({ ...prev, [`add-${productId}`]: true }));
@@ -50,42 +51,40 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  async function removeFromCart(productId, quantity = 1) {
-    if (!token || !cartId) return null;
-    const cartItem = cart.find(item => {
-      const itemId = item._id || (item.productId && item.productId._id) || item.id;
-      return item.cartProductId === productId ||
-        item.productId === productId ||
-        itemId === productId ||
-        (item.productId && item.productId._id === productId);
-    });
+async function removeFromCart(cartItemId, quantity = 1) {
+  if (!token || !cartId) return null;
 
-    if (!cartItem) return null;
+  try {
+    console.log("---- REMOVE FROM CART ----");
+    console.log("cartId:", cartId);
+    console.log("cartItemId:", cartItemId);
+    console.log("quantity:", quantity);
 
-    try {
-      const res = await axios.patch(
-        `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
-        { productId, quantity },
-        { headers: { Authorization: `User ${token}` } }
-      );
-      await getCart();
-      return res.data;
-    } catch (err) {
-      console.error("Error removing/updating product from cart:", err);
-      return null;
-    }
+    const res = await axios.patch(
+      `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
+      { productId: cartItemId, quantity }, 
+      { headers: { Authorization: `User ${token}` } }
+    );
+    await getCart();
+    return res.data;
+  } catch (err) {
+    console.error("Error removing/updating product from cart:", err);
+    return null;
   }
-  async function clearCart() {
-    if (!token || !cartId) return null;
+}
+
+
+  async function clearAllCart() {
+    if (!token) return null;
     try {
       const res = await axios.delete(
-        `https://flowers-vert-six.vercel.app/api/cart/clear-cart/${cartId}`,
+        "https://flowers-vert-six.vercel.app/api/cart/clear-cart",
         { headers: { Authorization: `User ${token}` } }
       );
       await getCart();
       return res.data;
     } catch (err) {
-      console.error("Error clearing cart:", err);
+      console.error("Error clearing all cart:", err);
       return null;
     }
   }
@@ -104,7 +103,7 @@ export const CartProvider = ({ children }) => {
         pending,
         addToCart,
         removeFromCart,
-        clearCart,
+        clearAllCart,
         setCart,
         setNumOfCartItems,
         getCart,

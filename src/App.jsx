@@ -22,6 +22,7 @@ import Settings from './assets/Pages/Settings/Settings';
 import PersonalInfo from './assets/Components/PersonalInfo/PersonalInfo';
 import Privacy from './assets/Components/Privacy/Privacy';
 import Orders from './assets/Components/Orders/Orders';
+import CheckoutStepper from "./assets/Components/OrderStepper/OrderStepper";
 const queryClient = new QueryClient();
 
 const routes = createBrowserRouter([
@@ -39,6 +40,7 @@ const routes = createBrowserRouter([
       { path: "products", element:  <Products />  },
       { path: "cart", element:  <Cart />  },
       { path: "about", element:  <About />  },
+     { path:"/checkout" ,element: <CheckoutStepper />},
       {
           path: 'settings', element:
             <ProtectedRoutes>
