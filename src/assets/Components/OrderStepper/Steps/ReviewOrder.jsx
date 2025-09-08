@@ -4,6 +4,13 @@ import { CartContext } from "../../../Context/CartContext";
 export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, onBack, userData }) {
   const { cart } = useContext(CartContext);
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+
+  const today = new Date();
+  const formattedToday = today.toISOString().split('T')[0];
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 365);
+  const formattedNextWeek = nextWeek.toISOString().split('T')[0];
 
   const deliveryTimes = [
     { id: "10-12", label: "10:00 AM - 12:00 PM", value: "10-12" },
@@ -17,12 +24,16 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
     setSelectedTime(event.target.value);
   };
 
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+  };
+
   const handleConfirm = () => {
-    if (!selectedTime) {
-      alert("Please select a pickup time");
+    if (!selectedTime || !selectedDate) {
+      alert("Please select both date and pickup time");
       return;
     }
-    onConfirm(selectedTime);
+    onConfirm(selectedDate, selectedTime);
   };
 
   const totalPrice = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -72,33 +83,65 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
 
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h3 className="text-xl font-semibold text-blue-700 flex items-center justify-center mb-4">
-              <span className="mr-2">⏰</span>
-              Choose Pickup Time
+              <span className="mr-2">📅</span>
+              Choose Pickup Date and Time
             </h3>
 
             <div className="mt-4">
-              <p className="text-center text-lg font-medium mb-4">Available Pickup Times</p>
-              <div className="flex flex-col md:flex-row flex-wrap justify-center gap-3">
-                {deliveryTimes.map((time) => (
-                  <div key={time.id} className="min-w-[140px]">
-                    <label className={`block cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                      selectedTime === time.value
-                        ? 'border-blue-600 bg-blue-100 shadow-md'
-                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="deliveryTime"
-                        value={time.value}
-                        checked={selectedTime === time.value}
-                        onChange={handleTimeChange}
-                        className="sr-only"
-                      />
-                      <span className="text-center block">{time.label}</span>
-                    </label>
-                  </div>
-                ))}
+              <div className="flex flex-col md:flex-row gap-6 items-center justify-center mb-6">
+                <div className="w-full md:w-auto">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center md:text-left">
+                    Select Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    min={formattedToday}
+                    max={formattedNextWeek}
+                    className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div className="w-full md:w-auto">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center md:text-left">
+                    Select Time Slot
+                  </label>
+                  <select
+                    value={selectedTime}
+                    onChange={handleTimeChange}
+                    className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a time</option>
+                    {deliveryTimes.map((time) => (
+                      <option key={time.id} value={time.value}>
+                        {time.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              {selectedDate && selectedTime && (
+                <div className="bg-green-100 p-4 rounded-xl text-green-800 text-center">
+                  <div className="flex items-center justify-center">
+                    <span className="mr-2">📅</span>
+                    <p className="font-bold">
+                      {new Date(selectedDate).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                    <span className="mx-2">|</span>
+                    <span className="mr-2">⏰</span>
+                    <p className="font-bold">
+                      {deliveryTimes.find(t => t.value === selectedTime)?.label}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -166,17 +209,30 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                   )}
                 </div>
 
-                {selectedTime && (
+                {selectedDate && selectedTime && (
                   <div>
                     <h4 className="text-lg font-semibold border-b-2 border-blue-600 pb-2 mb-4">
-                      Pickup Time
+                      Pickup Date & Time
                     </h4>
                     <div className="bg-green-100 p-4 rounded-xl text-green-800">
-                      <div className="flex items-center">
-                        <span className="mr-2">⏰</span>
-                        <p className="font-bold">
-                          {deliveryTimes.find(t => t.value === selectedTime)?.label}
-                        </p>
+                      <div className="flex flex-col items-center">
+                        <div className="flex items-center mb-2">
+                          <span className="mr-2">📅</span>
+                          <p className="font-bold">
+                            {new Date(selectedDate).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="mr-2">⏰</span>
+                          <p className="font-bold">
+                            {deliveryTimes.find(t => t.value === selectedTime)?.label}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -204,9 +260,9 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selectedTime}
+            disabled={!selectedTime || !selectedDate}
             className={`px-8 py-3 rounded-lg transition-colors ${
-              selectedTime
+              selectedTime && selectedDate
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}

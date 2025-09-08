@@ -1,17 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import { useToken } from './../../Context/TokenContext/TokenContext'
 
-const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Authorization': `Admin ${AUTH_TOKEN}`
-  }
-})
+
 
 function App() {
+  const { token } = useToken()
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +24,15 @@ function App() {
   const [notifications, setNotifications] = useState([])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
+  const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
+
+
+  const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+      Authorization: token ? `Admin ${token}` : ''
+    }
+  })
 
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
@@ -147,51 +151,67 @@ function App() {
   }
 
   const handleUpdateProduct = async (e) => {
-    e.preventDefault()
-    setUploading(true)
+    e.preventDefault();
+    setUploading(true);
 
     try {
+      let response;
+
       if (formData.image) {
-        const data = new FormData()
-        data.append('name', formData.name)
-        data.append('price', formData.price)
-        data.append('description', formData.description)
-        data.append('image', formData.image)
+        const data = new FormData();
+        data.append('name', formData.name);
+        data.append('price', formData.price);
+        data.append('description', formData.description);
+        data.append('image', formData.image);
+for (let pair of data.entries()) {
+  console.log(pair[0]+ ': '+ pair[1]);
+}
 
-        await api.put(`/product/${editingProduct._id}`, data, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
+        response = await axios.put(
+          `${API_BASE_URL}/product/${editingProduct._id}`,
+          data,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
           }
-        })
+        );
       } else {
-        await api.put(`/product/${editingProduct._id}`, {
-          name: formData.name,
-          price: formData.price,
-          description: formData.description
-        })
+        response = await axios.put(
+          `${API_BASE_URL}/product/${editingProduct._id}`,
+          {
+            name: formData.name,
+            price: Number(formData.price),
+            description: formData.description
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
       }
 
-      addNotification('Product updated successfully')
-      setShowModal(false)
-      setEditingProduct(null)
-      setFormData({ name: '', price: '', description: '', image: null })
-      setImagePreview(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      fetchProducts()
+      addNotification('Product updated successfully');
+      setShowModal(false);
+      setEditingProduct(null);
+      setFormData({ name: '', price: '', description: '', image: null });
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      fetchProducts();
+
     } catch (error) {
-      console.error('Error updating product:', error)
-
-      if (error.response && error.response.data && error.response.data.message) {
-        addNotification(`Failed to update product: ${error.response.data.message}`, 'error')
-      } else {
-        addNotification('Failed to update product', 'error')
-      }
+      console.error('Error updating product:', error);
+      const message = error.response?.data?.message || 'Failed to update product';
+      addNotification(message, 'error');
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
+
+
 
   const handleSoftDelete = async (id) => {
     if (!window.confirm('Are you sure you want to soft delete this product?')) return

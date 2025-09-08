@@ -418,23 +418,6 @@ export default function Products() {
                     {selectedProduct.name}
                   </motion.h2>
 
-                  {/* <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    className="flex items-center gap-2 mb-4"
-                  >
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <FiStar
-                          key={i}
-                          className={`h-5 w-5 ${i < 4 ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-gray-500 text-sm">(42 reviews)</span>
-                  </motion.div> */}
-
                   <motion.p 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

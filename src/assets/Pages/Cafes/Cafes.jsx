@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { CartContext } from "../../Context/CartContext";
-import { FiShoppingCart, FiX, FiMapPin, FiClock, FiCoffee, FiStar, FiSearch, FiChevronRight } from "react-icons/fi";
+import { FiX, FiCoffee, FiStar, FiSearch, FiChevronRight } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Cafes() {
@@ -13,7 +13,21 @@ export default function Cafes() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const { addToCart } = useContext(CartContext);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState("name");
 
+  const itemsPerPage = 8;
+  const sortedProducts = [...(selectedCafe?.products || [])].sort((a, b) => {
+    if (sortOption === "priceAsc") return a.price - b.price;
+    if (sortOption === "priceDesc") return b.price - a.price;
+    return a.productName.localeCompare(b.productName);
+  });
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   useEffect(() => {
     const fetchCafes = async () => {
       try {
@@ -140,8 +154,28 @@ export default function Cafes() {
           </p>
         </motion.div>
 
-        <div className="mb-10 bg-white rounded-2xl shadow-sm p-6">
+        <div className="mb-10 p-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveFilter("all")}
+                className={`px-4 py-2 rounded-xl transition ${activeFilter === "all"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+              >
+                All Cafes
+              </button>
+              <button
+                onClick={() => setActiveFilter("withProducts")}
+                className={`px-4 py-2 rounded-xl transition ${activeFilter === "withProducts"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+              >
+                With Products
+              </button>
+            </div>
             <div className="relative w-full md:w-1/3">
               <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -151,27 +185,6 @@ export default function Cafes() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
               />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveFilter("all")}
-                className={`px-4 py-2 rounded-xl transition ${activeFilter === "all"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-              >
-                All Cafes
-              </button>
-              <button
-                onClick={() => setActiveFilter("withProducts")}
-                className={`px-4 py-2 rounded-xl transition ${activeFilter === "withProducts"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-              >
-                With Products
-              </button>
             </div>
           </div>
         </div>
@@ -189,20 +202,19 @@ export default function Cafes() {
             <p className="text-gray-500">Try adjusting your search criteria</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {filteredCafes.map((cafe) => (
               <motion.div
                 key={cafe._id || cafe.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-100"
+                className="bg-white overflow-hidden transition-all duration-300 border border-gray-100"
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={cafe.image || "/Logo.PNG"}
                     alt={cafe.name}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                    className="w-full h-full "
                   />
                   {cafe.products && cafe.products.length > 0 && (
                     <div className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
@@ -210,61 +222,31 @@ export default function Cafes() {
                     </div>
                   )}
                 </div>
-
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
                     <h2 className="text-xl font-semibold text-gray-900 truncate">
                       {cafe.name || "Unnamed Cafe"}
                     </h2>
-                    <div className="flex items-center text-yellow-400 ml-2">
-                      <FiStar className="fill-current" />
-                      <span className="text-sm text-gray-600 ml-1">4.8</span>
-                    </div>
                   </div>
-
-                  {cafe.description && (
-                    <p className="text-gray-600 mb-4 line-clamp-2">{cafe.description}</p>
-                  )}
-
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-gray-500">
-                      <FiMapPin className="mr-2" />
-                      {cafe.location ? (
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.location)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-indigo-600 hover:underline truncate"
-                        >
-                          {cafe.location}
-                        </a>
-                      ) : (
-                        <span className="text-sm">Location not specified</span>
-                      )}
-                    </div>
-
-                    {cafe.openingHours && (
-                      <div className="flex items-center text-gray-500">
-                        <FiClock className="mr-2" />
-                        <span className="text-sm">{cafe.openingHours}</span>
-                      </div>
-                    )}
-                  </div>
-
                   <button
                     onClick={() => handleViewProducts(cafe)}
                     disabled={!cafe.products || cafe.products.length === 0}
-                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className={`w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium transition-all duration-300
+    ${cafe.products && cafe.products.length > 0
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:scale-105"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"}`
+                    }
                   >
                     {cafe.products && cafe.products.length > 0 ? (
                       <>
                         View Products
-                        <FiChevronRight />
+                        <FiChevronRight className="transition-transform group-hover:translate-x-1" />
                       </>
                     ) : (
                       "No Products Available"
                     )}
                   </button>
+
                 </div>
               </motion.div>
             ))}
@@ -281,28 +263,16 @@ export default function Cafes() {
               onClick={handleCloseProducts}
             >
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className={`bg-white shadow-xl overflow-hidden flex flex-col w-full h-full rounded-none sm:max-w-2xl sm:max-h-[90vh]`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {selectedCafe.name}'s Menu
-                    </h2>
-                    {selectedCafe.location && (
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedCafe.location)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:underline text-sm mt-1 block"
-                      >
-                        {selectedCafe.location}
-                      </a>
-                    )}
-                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {selectedCafe.name}'s Menu
+                  </h2>
                   <button
                     onClick={handleCloseProducts}
                     className="text-gray-400 hover:text-gray-600 transition-colors p-1"
@@ -313,51 +283,109 @@ export default function Cafes() {
 
                 <div className="flex-1 overflow-y-auto p-6">
                   {selectedCafe.products && selectedCafe.products.length > 0 ? (
-                    <div className="grid gap-4">
-                      {selectedCafe.products.map((product) => (
-                        <motion.div
-                          key={product._id || product.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all"
-                        >
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-lg">
+                    <>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+                        <h3 className="text-lg font-semibold text-gray-800">Drinks</h3>
+
+                        <div className="relative inline-block w-48">
+                          <select
+                            onChange={(e) => setSortOption(e.target.value)}
+                            className="appearance-none w-full bg-white border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 text-sm font-medium 
+               text-gray-700 shadow-sm cursor-pointer
+               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+               hover:border-gray-300 transition-all duration-200"
+                          >
+                            <option value="name">Sort by Name</option>
+                            <option value="priceAsc">Price: Low to High</option>
+                            <option value="priceDesc">Price: High to Low</option>
+                          </select>
+
+                          <svg
+                            className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none transition-colors group-hover:text-indigo-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </div>
+
+                      </div>
+
+                      <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {paginatedProducts.map((product) => (
+                          <motion.div
+                            key={product._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white p-4 flex flex-col items-center text-center rounded-xl shadow-sm"
+                          >
+                            <img
+                              src={product.image || "/Logo.PNG"}
+                              alt={`${product.productName} from ${selectedCafe.name}`}
+                              className="w-20 h-20 object-cover rounded-full mb-3 border"
+                            />
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate w-full">
                               {product.productName}
                             </h3>
-                            {product.description && (
-                              <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                                {product.description}
-                              </p>
-                            )}
                             {product.price && (
-                              <p className="text-indigo-600 font-bold text-lg mt-2">
-                                ${product.price}
+                              <p className="text-indigo-600 font-bold mt-1 text-sm sm:text-base">
+                                {product.price} LE
                               </p>
                             )}
-                          </div>
+                          </motion.div>
+                        ))}
+                      </div>
 
-                          <button
-                            onClick={() => handleAddToCart(product, selectedCafe.name)}
-                            className="bg-green-500 text-white p-3 rounded-xl hover:bg-green-600 transition-colors ml-4"
-                          >
-                            <FiShoppingCart size={20} />
-                          </button>
-                        </motion.div>
-                      ))}
-                    </div>
+                      <div className="flex justify-center items-center gap-4 mt-6">
+                        <button
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((prev) => prev - 1)}
+                          className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-gray-600">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((prev) => prev + 1)}
+                          className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div className="text-center py-12">
-                      <FiCoffee className="text-gray-300 text-4xl mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No Products Available</h3>
-                      <p className="text-gray-500">This cafe hasn't added any products yet.</p>
+                      <img
+                        src="/coffee-illustration.png"
+                        alt="No drinks illustration"
+                        className="w-32 h-32 mx-auto mb-4 opacity-80"
+                      />
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                        No Drinks Available
+                      </h3>
+                      <p className="text-gray-500">
+                        This cafe hasn't added any drinks yet. Check back later ☕
+                      </p>
                     </div>
                   )}
                 </div>
+
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     </div>
   );

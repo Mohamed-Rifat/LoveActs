@@ -156,7 +156,6 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
               <p className="mt-1 text-sm text-gray-500">
                 No products have been added for this cafe yet.
               </p>
-
             </div>
           )}
         </div>
@@ -189,6 +188,7 @@ function DashboardCafes() {
     iframe: '',
     link: '',
     location: '',
+    image: null,
     products: [{ productName: '', price: '' }]
   })
   const [notifications, setNotifications] = useState([])
@@ -241,11 +241,19 @@ function DashboardCafes() {
   }, [searchTerm, cafes])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    const { name, value, type, files } = e.target
+
+    if (type === 'file') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: files[0]
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const handleProductChange = (index, e) => {
@@ -281,16 +289,34 @@ function DashboardCafes() {
     setSubmitting(true)
 
     try {
-      const filteredProducts = formData.products.filter(
-        product => product.productName.trim() && product.price
-      )
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('address', formData.address)
+      formDataToSend.append('phone', formData.phone)
+      formDataToSend.append('link', formData.link)
+      formDataToSend.append('location', formData.location)
 
-      const payload = {
-        ...formData,
-        products: filteredProducts.length > 0 ? filteredProducts : undefined
+      if (formData.iframe) {
+        formDataToSend.append('iframe', formData.iframe)
       }
 
-      await api.post('/cafe/add-cafe', payload)
+      if (formData.image) {
+        formDataToSend.append('image', formData.image)
+      }
+
+      // Add products
+      formData.products.forEach((product, index) => {
+        if (product.productName && product.price) {
+          formDataToSend.append(`products[${index}][productName]`, product.productName)
+          formDataToSend.append(`products[${index}][price]`, product.price)
+        }
+      })
+
+      await api.post('/cafe/add-cafe', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
 
       addNotification('Cafe added successfully')
       setShowModal(false)
@@ -301,6 +327,7 @@ function DashboardCafes() {
         iframe: '',
         link: '',
         location: '',
+        image: null,
         products: [{ productName: '', price: '' }]
       })
       fetchCafes()
@@ -321,6 +348,7 @@ function DashboardCafes() {
       iframe: cafe.iframe || '',
       link: cafe.link,
       location: cafe.location,
+      image: null,
       products: cafe.products && cafe.products.length > 0
         ? cafe.products
         : [{ productName: '', price: '' }]
@@ -338,24 +366,28 @@ function DashboardCafes() {
         return
       }
 
-      const payload = {
-        name: formData.name || undefined,
-        address: formData.address || undefined,
-        phone: formData.phone || undefined,
-        iframe: formData.iframe || undefined,
-        link: formData.link || undefined,
-        location: formData.location || undefined,
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('address', formData.address)
+      formDataToSend.append('phone', formData.phone)
+      formDataToSend.append('link', formData.link)
+      formDataToSend.append('location', formData.location)
+
+      if (formData.iframe) {
+        formDataToSend.append('iframe', formData.iframe)
       }
 
-      await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, {
+      if (formData.image) {
+        formDataToSend.append('image', formData.image)
+      }
+
+      await api.put(`/cafe/update-cafe/${editingCafe._id}`, formDataToSend, {
         headers: {
-          Authorization: `Admin ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         }
       })
 
       addNotification('Cafe updated successfully')
-
       setShowModal(false)
       setEditingCafe(null)
       setFormData({
@@ -364,9 +396,10 @@ function DashboardCafes() {
         phone: '',
         iframe: '',
         link: '',
-        location: ''
+        location: '',
+        image: null,
+        products: [{ productName: '', price: '' }]
       })
-
       fetchCafes()
 
     } catch (error) {
@@ -387,7 +420,6 @@ function DashboardCafes() {
         productData,
         {
           headers: {
-            Authorization: `Admin ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -447,6 +479,7 @@ function DashboardCafes() {
       iframe: '',
       link: '',
       location: '',
+      image: null,
       products: [{ productName: '', price: '' }]
     })
   }
@@ -565,6 +598,7 @@ function DashboardCafes() {
               <table className="min-w-full table-auto border-collapse">
                 <thead className="bg-gray-100">
                   <tr>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Image</th>
                     <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Name</th>
                     <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Address</th>
                     <th className="px-6 py-3 text-sm font-semibold text-gray-600 text-left">Phone</th>
@@ -576,6 +610,19 @@ function DashboardCafes() {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredCafes.map((cafe) => (
                     <tr key={cafe._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 max-w-[120px]">
+                        {cafe.image ? (
+                          <img
+                            src={cafe.image} 
+                            alt={cafe.name}
+                            className="w-16 h-16 object-cover rounded-md"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-xs">
+                            <img src='/Logo.PNG'></img>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 max-w-[200px]">
                         <div className="text-sm font-medium text-gray-900 truncate" title={cafe.name}>
                           {truncateText(cafe.name, 20)}
@@ -752,6 +799,19 @@ function DashboardCafes() {
                     value={formData.link}
                     onChange={handleInputChange}
                     required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                    Cafe Image
+                  </label>
+                  <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    onChange={handleInputChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
