@@ -4,11 +4,13 @@ import { FiShoppingCart, FiTrash2, FiPlus, FiMinus, FiArrowLeft, FiCreditCard } 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function Cart() {
-    const { cart: items = [], loading, addToCart, removeFromCart, pending, numOfCartItems } = useCart();
+    const { cart: items = [], loading, addToCart, removeFromCart, pending, numOfCartItems, clearAllCart } = useCart();
     const [quantities, setQuantities] = useState({});
     const [isRemoving, setIsRemoving] = useState({});
+    const navigate = useNavigate();
 
     useEffect(() => {
         const initialQuantities = {};
@@ -30,14 +32,15 @@ export default function Cart() {
         return item;
     };
 
-    const updateQuantity = (productId, newQuantity) => {
-        if (newQuantity <= 0) {
-            handleRemoveItem(productId);
-            return;
+    const updateQuantity = (cartItemId, newQuantity) => {
+        const currentQuantity = quantities[cartItemId];
+
+        if (newQuantity < currentQuantity) {
+            removeFromCart(cartItemId, 1);
+        } else {
+            addToCart(cartItemId, 1);
         }
 
-        setQuantities(prev => ({ ...prev, [productId]: newQuantity }));
-        addToCart(productId, newQuantity);
     };
 
     const handleRemoveItem = async (productId) => {
@@ -255,7 +258,6 @@ export default function Cart() {
                         </motion.div>
                     </div>
 
-                    {/* Order Summary */}
                     <motion.div
                         initial={{ x: 20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
@@ -264,6 +266,16 @@ export default function Cart() {
                     >
                         <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">Order Summary</h2>
+                            <motion.button
+                                whileHover={{ scale: 1.02, backgroundColor: "#dc2626" }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={clearAllCart}
+                                className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg mt-4"
+                            >
+                                <FiTrash2 />
+                                Clear Cart
+                            </motion.button>
+
 
                             <div className="space-y-4 mb-6">
                                 <div className="flex justify-between">
@@ -290,6 +302,7 @@ export default function Cart() {
                             <motion.button
                                 whileHover={{ scale: 1.02, backgroundColor: "#059669" }}
                                 whileTap={{ scale: 0.98 }}
+                                onClick={() => navigate("/checkout")}
                                 className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                             >
                                 <FiCreditCard />

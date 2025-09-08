@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import axios from 'axios';
 import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "../../Context/CartContext";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -12,9 +13,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isAnimationDone, setIsAnimationDone] = useState(false);
   const showLoader = !isAnimationDone;
+  const { addToCart, pending, getCart } = useCart();
   const navigate = useNavigate();
   const API_BASE = "https://flowers-vert-six.vercel.app/api";
 
+
+
+  const handleAddToCart = async (productId, quantity) => {
+    await addToCart(productId, quantity);
+    await getCart(); // لتحديث حالة السلة فوراً
+  };
   const slides = [
     {
       id: 1,
@@ -43,19 +51,19 @@ export default function Home() {
     },
     {
       name: "Partner 2",
-      logo: "https://via.placeholder.com/150x80?text=Partner+2"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 3",
-      logo: "https://via.placeholder.com/150x80?text=Partner+3"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 4",
-      logo: "https://via.placeholder.com/150x80?text=Partner+4"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     },
     {
       name: "Partner 5",
-      logo: "https://via.placeholder.com/150x80?text=Partner+5"
+      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
     }
   ];
 
@@ -298,7 +306,7 @@ export default function Home() {
                       </p>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-amber-600">{product.price} EGP</span>
-                        <button className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition flex items-center">
+                        <button className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition flex items-center" onClick={() => handleAddToCart(id, 1)}>
                           <FiShoppingCart className="ml-1" />
                           Add to Cart
                         </button>

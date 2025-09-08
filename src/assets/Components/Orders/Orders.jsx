@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaSpinner, FaCheckCircle, FaTimesCircle, FaBoxOpen, FaClock, FaTruck, FaMapMarkerAlt, FaPhone, FaCoffee, FaCalendarAlt, FaReceipt } from 'react-icons/fa';
 
-// Mock data for when orders are empty
 const mockOrders = [
   {
     _id: "mock1",
