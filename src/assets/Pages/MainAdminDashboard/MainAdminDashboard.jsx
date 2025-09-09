@@ -1,11 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import toast from 'react-hot-toast';
-import { useToken } from '../../Context/TokenContext/TokenContext';
-import { useNavigate } from "react-router-dom";
-import { TiWarningOutline } from "react-icons/ti";
-
 import {
     Menu as MenuIcon,
     Dashboard as DashboardIcon,
@@ -31,8 +26,14 @@ import DashboardCafes from '../DashboardCafes/DashboardCafes';
 import DashboardProducts from '../DashboardProducts/DashboardProducts';
 
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api';
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM';
 
-
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Authorization': `Admin ${AUTH_TOKEN}`
+    }
+});
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -54,29 +55,6 @@ const AdminDashboard = () => {
     const [chartData, setChartData] = useState([]);
     const [categoryData, setCategoryData] = useState([]);
     const [trendData, setTrendData] = useState([]);
-    const [logoutModalOpen, setLogoutModalOpen] = useState(false);
-    const { token, removeToken } = useToken();
-    const navigate = useNavigate();
-
-    const api = axios.create({
-        baseURL: API_BASE_URL,
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
-    const handleLogout = () => {
-        removeToken();
-        setLogoutModalOpen(false);
-        toast.success("Goodbye! 👋", { duration: 4000 });
-        navigate('/login');
-    };
-
-
-    const handleLogoutClick = (e) => {
-        e.stopPropagation();
-        setLogoutModalOpen(true);
-    };
-
 
     useEffect(() => {
         if (activeSection === 'dashboard') {
@@ -536,7 +514,10 @@ const AdminDashboard = () => {
                     <div className="p-4 border-t border-gray-200">
                         <button
                             className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            onClick={handleLogout}
+                            onClick={() => {
+                                localStorage.removeItem('token');
+                                window.location.href = '/login';
+                            }}
                         >
                             <LogoutIcon className="mr-3" />
                             Logout
@@ -570,39 +551,7 @@ const AdminDashboard = () => {
                     {renderContent()}
                 </main>
             </div>
-            {logoutModalOpen && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-                    onClick={() => setLogoutModalOpen(false)}
-                >
-                    <div
-                        className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full animate__animated animate__shakeX"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className='flex flex-wrap items-center'>
-                            <TiWarningOutline className='text-5xl text-yellow-400' />
-                            <h2 className="text-3xl font-bold text-red-600 ml-2">Warning</h2>
-                        </div>
-                        <p className="text-gray-700 mt-2">Are you sure you want to log out?</p>
-                        <div className="flex justify-end gap-3 mt-4">
-                            <button
-                                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                                onClick={() => setLogoutModalOpen(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                                onClick={handleLogout}
-                            >
-                                Log Out
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
-
     );
 };
 
