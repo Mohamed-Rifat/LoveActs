@@ -287,7 +287,8 @@ const Navbar = () => {
                 {user?.role === "Admin" && (
                   <Link
                     to="/admindashboard"
-                    className="text-gray-700 hover:text-[#CF848A] px-1 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:scale-105"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#CF848A] hover:bg-gray-100"
                   >
                     Admin Dashboard
                   </Link>

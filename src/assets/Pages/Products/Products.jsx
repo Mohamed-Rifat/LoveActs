@@ -107,17 +107,17 @@ export default function Products() {
     await getCart();
   };
 
-  const toggleFavorite = (productId) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId);
-      } else {
-        newFavorites.add(productId);
-      }
-      return newFavorites;
-    });
-  };
+  // const toggleFavorite = (productId) => {
+  //   setFavorites(prev => {
+  //     const newFavorites = new Set(prev);
+  //     if (newFavorites.has(productId)) {
+  //       newFavorites.delete(productId);
+  //     } else {
+  //       newFavorites.add(productId);
+  //     }
+  //     return newFavorites;
+  //   });
+  // };
 
   const sortOptions = [
     { label: "Default", value: "default" },
@@ -241,7 +241,7 @@ export default function Products() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
           >
             {filteredProducts.map((p) => {
               const id = p._id || p.id;
@@ -254,9 +254,9 @@ export default function Products() {
                   layout
                   variants={itemVariants}
                   whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 relative"
+                  className="group bg-white relative"
                 >
-                  <motion.button
+                  {/* <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => toggleFavorite(id)}
                     className={`absolute top-3 left-3 z-10 p-2 rounded-full backdrop-blur-sm ${
@@ -266,7 +266,7 @@ export default function Products() {
                     } transition-colors`}
                   >
                     <FiHeart className={isFavorite ? "fill-current" : ""} />
-                  </motion.button>
+                  </motion.button> */}
 
                   {p.isDeleted && (
                     <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold z-10">
@@ -295,26 +295,18 @@ export default function Products() {
                     </motion.button>
                   </div>
 
-                  {/* Product Info */}
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">{p.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">{p.name?.split(" ").slice(0, 2).join(" ")}</h3>
                       <span className="text-lg font-bold text-indigo-600">{p.price} LE</span>
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 h-10">
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2 ">
                       {p.description || "No description available"}
                     </p>
 
-                    <div className="flex items-center justify-between">
-                      <motion.button
-                        whileHover={{ x: 5 }}
-                        onClick={() => handleViewDetails(p)}
-                        className="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-1 transition"
-                      >
-                        Details
-                        <FiChevronRight className="h-4 w-4" />
-                      </motion.button>
+                    <div className="flex flex-col md:flex-row items-center justify-between">
+                      
 
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -343,7 +335,6 @@ export default function Products() {
           </motion.div>
         )}
 
-        {/* No Results Message */}
         {!loading && filteredProducts.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -368,7 +359,6 @@ export default function Products() {
           </motion.div>
         )}
 
-        {/* Product Modal */}
         <AnimatePresence>
           {selectedProduct && (
             <motion.div
@@ -386,7 +376,6 @@ export default function Products() {
                 className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Product Image */}
                 <div className="md:w-2/5 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
                   <motion.img
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -398,7 +387,6 @@ export default function Products() {
                   />
                 </div>
 
-                {/* Product Details */}
                 <div className="md:w-3/5 p-6 md:p-8 flex flex-col">
                   <motion.button
                     whileHover={{ scale: 1.1 }}

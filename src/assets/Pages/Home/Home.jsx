@@ -21,7 +21,7 @@ export default function Home() {
 
   const handleAddToCart = async (productId, quantity) => {
     await addToCart(productId, quantity);
-    await getCart(); // لتحديث حالة السلة فوراً
+    await getCart(); 
   };
   const slides = [
     {
@@ -247,110 +247,106 @@ export default function Home() {
         </button>
       </div>
 
-     <section className="py-16 bg-white">
-  <div className="container mx-auto px-4">
-    <div className="flex justify-between items-center mb-12">
-      <motion.h2
-        className="text-3xl font-bold text-gray-800"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-      >
-        Featured Products
-      </motion.h2>
-      <motion.button
-        className="text-amber-600 hover:text-amber-700 font-medium"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        onClick={() => navigate("/products")}
-      >
-        View All
-      </motion.button>
-    </div>
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-12">
+            <motion.h2
+              className="text-3xl font-bold text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              Featured Products
+            </motion.h2>
+            <motion.button
+              className="text-amber-600 hover:text-amber-700 font-medium"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              onClick={() => navigate("/products")}
+            >
+              View All
+            </motion.button>
+          </div>
 
-    {loading ? (
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(3)].map((_, i) => (
-          <ProductSkeleton key={i} />
-        ))}
-      </div>
-    ) : (
-      <motion.div
-        className="grid grid-cols-2 lg:grid-cols-3 gap-6"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        {products.map((product) => {
-          const id = product._id || product.id;
-          return (
-            <div
-              key={id}
-              className="
+          {loading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              className="grid grid-cols-2 lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              {products.map((product) => {
+                const id = product._id || product.id;
+                return (
+                  <div
+                    key={id}
+                    className="
                 bg-transparent p-2 shadow-none border-none rounded-none text-center
                 lg:bg-gray-50 lg:rounded-lg lg:hover:shadow-md lg:transition lg:overflow-hidden
               "
-            >
-              <div className="relative overflow-hidden w-28 h-28 mx-auto lg:w-full lg:h-64">
-                <img
-                  src={
-                    product.image ||
-                    "https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?auto=format&fit=crop&w=800&q=80"
-                  }
-                  alt={product.name}
-                  className="
+                  >
+                    <div className="relative overflow-hidden w-28 h-28 mx-auto lg:w-full lg:h-64">
+                      <img
+                        src={
+                          product.image ||
+                          "https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?auto=format&fit=crop&w=800&q=80"
+                        }
+                        alt={product.name}
+                        className="
                     w-full h-full object-cover rounded-full lg:rounded-none
                     group-hover:scale-100 lg:group-hover:scale-105 lg:transition lg:duration-300
                   "
-                />
-                <button className="hidden lg:block absolute top-3 left-3 p-2 bg-white/80 rounded-full hover:bg-white transition">
+                      />
+                      {/* <button className="hidden lg:block absolute top-3 left-3 p-2 bg-white/80 rounded-full hover:bg-white transition">
                   <FiHeart className="text-gray-600 hover:text-red-500" />
-                </button>
-              </div>
+                </button> */}
+                    </div>
 
-              <div className="p-2 lg:p-6">
-                <h3 className="text-sm lg:text-xl font-semibold text-gray-800 mb-1 lg:mb-2">
-                  {product.name}
-                </h3>
+                    <div className="p-2 lg:p-6">
+                      <h3 className="text-sm lg:text-xl font-semibold text-gray-800 mb-1 lg:mb-2">
+                        {product.name}
+                      </h3>
 
-                {/* السعر */}
-                <span className="block text-xs lg:text-lg font-bold text-amber-600 mb-2 lg:mb-0">
-                  {product.price} EGP
-                </span>
+                      <span className="block text-xs lg:text-lg font-bold text-amber-600 mb-2 lg:mb-0">
+                        {product.price} EGP
+                      </span>
 
-                {/* الوصف يظهر بس في الشاشات الكبيرة */}
-                <p className="hidden lg:block text-gray-600 mb-4 line-clamp-2">
-                  {product.description || "Premium product from Love Acts"}
-                </p>
+                      <p className="hidden lg:block text-gray-600 mb-4 line-clamp-2">
+                        {product.description || "Premium product from Love Acts"}
+                      </p>
 
-                {/* زرار Add يبان في الموبايل والـ Desktop */}
-                <div className="flex justify-center lg:justify-between items-center">
-                  <button
-                    onClick={() => handleAddToCart(id, 1)}
-                    className="
-                      bg-amber-600 text-white 
-                      text-xs px-2 py-1 rounded 
-                      hover:bg-amber-700 transition
-                      lg:text-base lg:px-4 lg:py-2
-                      flex items-center
-                    "
-                  >
-                    <FiShoppingCart className="mr-1" />
-                    Add
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </motion.div>
-    )}
-  </div>
-</section>
+                      <div className="flex justify-center lg:justify-between items-center">
+                        <button
+                          onClick={() => handleAddToCart(id, 1)}
+                          className="
+                             bg-amber-600 text-white
+                               text-xs px-2 py-1 rounded
+                             hover:bg-amber-700 transition
+                               lg:text-base lg:px-4 lg:py-2
+                               flex items-center justify-center
+                               w-auto lg:w-full">
+                          <FiShoppingCart className="mr-1" />
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+        </div>
+      </section>
 
 
 
@@ -387,13 +383,13 @@ export default function Home() {
             </div>
           ) : (
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+              // className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                 {cafes.map(cafe => {
                   const id = cafe._id || cafe.id;
                   return (
@@ -426,9 +422,10 @@ export default function Home() {
 
 
                     </div>
-           
-              );
-        })} </div>
+
+                  );
+                })}
+                 </div>
             </motion.div>
           )}
         </div>
