@@ -1,12 +1,12 @@
-import { useCart } from "../../Context/CartContext";
 import Loader from "../../Components/Loader/Loader";
 import { FiShoppingCart, FiTrash2, FiPlus, FiMinus, FiArrowLeft, FiCreditCard } from "react-icons/fi";
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "../../hooks/UseCart";
 
 export default function Cart() {
-  const { cart: items = [], loading, addToCart, removeFromCart, pending, numOfCartItems, clearAllCart } = useCart();
+  const { cart: items = [], loading, addToCart, removeFromCart, pending, numOfCartItems, clearAllCart, setCart, setNumOfCartItems } = useCart();
   const [quantities, setQuantities] = useState({});
   const navigate = useNavigate();
 
@@ -24,6 +24,15 @@ export default function Cart() {
     });
     setQuantities(initialQuantities);
   }, [items]);
+
+  const handleClearCart = async () => {
+    setQuantities({});
+    setCart([]);
+    setNumOfCartItems(0);
+    await clearAllCart();
+  }
+
+
 
   const updateQuantity = (cartItemId, newQuantity) => {
     if (newQuantity < 1) return; // منع تقليل أقل من 1
@@ -253,7 +262,7 @@ export default function Cart() {
               <motion.button
                 whileHover={{ scale: 1.02, backgroundColor: "#dc2626" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={clearAllCart}
+                onClick={() => handleClearCart()}
                 className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg mt-4"
               >
                 <FiTrash2 />

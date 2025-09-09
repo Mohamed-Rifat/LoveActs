@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { useCart } from "../../Context/CartContext";
 import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp, FiStar, FiChevronRight, FiHeart } from "react-icons/fi";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "../../hooks/UseCart";
 
 const ProductSkeleton = () => (
   <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">

@@ -3,6 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle, ArrowRight, Shield, Key, Check } from 'lucide-react';
 import 'animate.css';
+import axios from 'axios';
 
 // Simple OTP Input Component since we can't import external libraries
 const OtpInput = ({ value, onChange, numInputs = 6 }) => {
@@ -53,6 +54,7 @@ export default function ModernResetPasswordFlow() {
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const emailRef = useRef('');
+    const baseUrl = 'https://flowers-vert-six.vercel.app/api/user';
 
     // Step 1: Email form
     const emailFormik = useFormik({
@@ -71,14 +73,16 @@ export default function ModernResetPasswordFlow() {
             try {
                 emailRef.current = values.email;
 
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                setStep(2);
-                setSuccessMsg('Verification code sent to your email!');
-
-                setTimeout(() => setSuccessMsg(''), 3000);
-
+                await axios.post(`${baseUrl}/send-otp`, { email: values.email })
+                    .then((response) => {
+                        if (response.status === 200) {
+                            setStep(2);
+                            setSuccessMsg('Verification code sent to your email!');
+                            console.log('OTP sent successfully');
+                        }
+                    }).catch((error) => {
+                        setErrorMsg(error.response?.data?.error?.ar || 'Failed to send verification code. Please try again.');
+                    });
             } catch (error) {
                 setErrorMsg('Failed to send verification code. Please try again.');
             } finally {

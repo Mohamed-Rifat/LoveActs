@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
-import { useCart } from "../../../Context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "../../../hooks/UseCart";
 
 export default function FinalMessage() {
   const { clearAllCart } = useCart();
