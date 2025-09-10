@@ -2,9 +2,10 @@ import React, { useContext, useState } from "react";
 import { CartContext } from "../../../Context/CartContext";
 import { useToken } from "../../../Context/TokenContext/TokenContext";
 import axios from "axios";
+import { useCart } from "../../../hooks/UseCart";
 
 export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, onBack, userData }) {
-    const { cart, clearAllCart } = useContext(CartContext);
+    const { cart, clearAllCart, cartId } = useCart();
     const { token } = useToken();
     const [selectedTime, setSelectedTime] = useState("");
     const [selectedDate, setSelectedDate] = useState("");
@@ -42,7 +43,7 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
 
         try {
             const orderPayload = {
-                cartId: cart.length > 0 ? cart[0]._id : null, 
+                cartId,
                 address: userData.address || {
                     street: "Not specified",
                     city: "Not specified",
@@ -60,12 +61,12 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                 "https://flowers-vert-six.vercel.app/api/order",
                 orderPayload,
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `User ${token}` }
                 }
             );
 
 
-            setMessage({ type: "success", text: res.data.message || "Order placed successfully!" });
+            setMessage({ type: "success", text: response?.data?.message || "Order placed successfully!" });
             clearAllCart();
             if (onConfirm) onConfirm(selectedDate, selectedTime);
         } catch (err) {

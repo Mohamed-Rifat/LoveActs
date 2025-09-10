@@ -1,8 +1,8 @@
 import axios from "axios";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
 import { useToken } from "../Context/TokenContext/TokenContext";
 
-export const CartContext = createContext(null);
+export const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
   const { token, user } = useToken();
@@ -18,6 +18,8 @@ export const CartProvider = ({ children }) => {
     if (user?.role !== "User") return;
 
     setLoading(true);
+    console.log(token);
+
     try {
       const res = await axios.get(
         "https://flowers-vert-six.vercel.app/api/cart/get-user-cart",
@@ -51,27 +53,27 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-async function removeFromCart(cartItemId, quantity = 1) {
-  if (!token || !cartId) return null;
+  async function removeFromCart(cartItemId, quantity = 1) {
+    if (!token || !cartId) return null;
 
-  try {
-    console.log("---- REMOVE FROM CART ----");
-    console.log("cartId:", cartId);
-    console.log("cartItemId:", cartItemId);
-    console.log("quantity:", quantity);
+    try {
+      console.log("---- REMOVE FROM CART ----");
+      console.log("cartId:", cartId);
+      console.log("cartItemId:", cartItemId);
+      console.log("quantity:", quantity);
 
-    const res = await axios.patch(
-      `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
-      { productId: cartItemId, quantity }, 
-      { headers: { Authorization: `User ${token}` } }
-    );
-    await getCart();
-    return res.data;
-  } catch (err) {
-    console.error("Error removing/updating product from cart:", err);
-    return null;
+      const res = await axios.patch(
+        `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
+        { productId: cartItemId, quantity },
+        { headers: { Authorization: `User ${token}` } }
+      );
+      await getCart();
+      return res.data;
+    } catch (err) {
+      console.error("Error removing/updating product from cart:", err);
+      return null;
+    }
   }
-}
 
 
   async function clearAllCart() {
@@ -114,4 +116,3 @@ async function removeFromCart(cartItemId, quantity = 1) {
   );
 };
 
-export const useCart = () => useContext(CartContext);

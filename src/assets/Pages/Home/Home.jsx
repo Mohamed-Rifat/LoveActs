@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import axios from 'axios';
 import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../../Context/CartContext";
+import { useCart } from '../../hooks/UseCart';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
