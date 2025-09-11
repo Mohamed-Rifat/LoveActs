@@ -4,12 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/UseCart";
+import axios from "axios";
+import { useToken } from '../../Context/TokenContext/TokenContext';
 
 export default function Cart() {
   const { cart: items = [], loading, addToCart, removeFromCart, pending, numOfCartItems, clearAllCart, setCart, setNumOfCartItems } = useCart();
   const [quantities, setQuantities] = useState({});
   const navigate = useNavigate();
-
+  const { token } = useToken();
   const getProductId = (item) => item?.productId?._id || item?._id || null;
   const getProductData = (item) => (item.productId && typeof item.productId === 'object' ? item.productId : item);
   const formatPrice = (price) => parseFloat(price).toFixed(2);
@@ -35,7 +37,7 @@ export default function Cart() {
 
 
   const updateQuantity = (cartItemId, newQuantity) => {
-    if (newQuantity < 1) return; // منع تقليل أقل من 1
+    if (newQuantity < 1) return; 
     const currentQuantity = quantities[cartItemId];
     if (newQuantity < currentQuantity) {
       removeFromCart(cartItemId, 1);
@@ -45,7 +47,27 @@ export default function Cart() {
   };
 
   const handleRemoveItem = async (productId) => {
-    await removeFromCart(productId);
+    const cartItemId = getProductId(items.find(item => getProductId(item) === productId));
+    const quantityToRemove = quantities[productId] || 1;
+    console.log("cartItemId:", cartItemId, "productId:", productId);
+    try {
+      await axios.patch(
+        "https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart",
+        { productId: productId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+
+      setCart(prev => prev.filter(item => getProductId(item) !== productId));
+      setNumOfCartItems(prev => prev - quantityToRemove);
+      setQuantities(prev => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
+    } catch (error) {
+      console.error("Failed to remove item:", error);
+    }
   };
 
   const subtotal = useMemo(() => {
@@ -55,9 +77,8 @@ export default function Cart() {
       return total + price * item.quantity;
     }, 0);
   }, [items]);
-
   const tax = useMemo(() => subtotal * 0.14, [subtotal]);
-  const total = useMemo(() => subtotal + tax, [subtotal, tax]);
+  const total = useMemo(() => subtotal, [subtotal]);
 
   if (loading) return <Loader />;
 
@@ -274,15 +295,8 @@ export default function Cart() {
                   <span className="text-gray-600">Subtotal</span>
                   <span className="text-gray-900 font-medium">${formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="text-gray-900 font-medium">Free</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tax</span>
-                  <span className="text-gray-900 font-medium">${formatPrice(tax)}</span>
-                </div>
               </div>
+
 
               <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
                 <span className="text-lg font-bold text-gray-900">Total</span>

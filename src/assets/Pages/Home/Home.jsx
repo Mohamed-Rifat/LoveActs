@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion } from "framer-motion";
 import axios from 'axios';
-import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone } from "react-icons/fi";
+import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone, FiRefreshCw } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
+import toast from "react-hot-toast";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -21,7 +22,7 @@ export default function Home() {
 
   const handleAddToCart = async (productId, quantity) => {
     await addToCart(productId, quantity);
-    await getCart(); 
+    await getCart();
   };
   const slides = [
     {
@@ -326,18 +327,40 @@ export default function Home() {
                       </p>
 
                       <div className="flex justify-center lg:justify-between items-center">
-                        <button
-                          onClick={() => handleAddToCart(id, 1)}
-                          className="
-                             bg-amber-600 text-white
-                               text-xs px-2 py-1 rounded
-                             hover:bg-amber-700 transition
-                               lg:text-base lg:px-4 lg:py-2
-                               flex items-center justify-center
-                               w-auto lg:w-full">
-                          <FiShoppingCart className="mr-1" />
-                          Add
-                        </button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={async () => {
+                            try {
+                              await handleAddToCart(id, 1);
+                              toast.success("Added to cart 🛒");
+                            } catch (err) {
+                              toast.error("Something went wrong while adding!");
+                            }
+                          }}
+                          disabled={pending[`add-${id}`]}
+                          className="bg-amber-600 text-white text-xs px-2 py-1 rounded hover:bg-amber-700 transition
+             lg:text-base lg:px-4 lg:py-2 flex items-center justify-center w-auto lg:w-full
+             disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {pending[`add-${id}`] ? (
+                            <>
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              >
+                                <FiRefreshCw className="h-4 w-4 mr-1" />
+                              </motion.div>
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <FiShoppingCart className="mr-1" />
+                              Add
+                            </>
+                          )}
+                        </motion.button>
+
                       </div>
                     </div>
                   </div>
@@ -425,7 +448,7 @@ export default function Home() {
 
                   );
                 })}
-                 </div>
+              </div>
             </motion.div>
           )}
         </div>

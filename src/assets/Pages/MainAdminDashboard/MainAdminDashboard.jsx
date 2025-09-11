@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import DashboardCafes from '../DashboardCafes/DashboardCafes';
 import DashboardProducts from '../DashboardProducts/DashboardProducts';
+import DashboardOrders from '../DashboardOrders/DashboardOrders';
 
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api';
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM';
@@ -246,10 +247,10 @@ const AdminDashboard = () => {
                 return <DashboardCafes />;
             case 'products':
                 return <DashboardProducts />;
-            case 'users':
-                return <div className="p-6">Users Management - Under Development</div>;
-            case 'settings':
-                return <div className="p-6">Settings - Under Development</div>;
+            case 'orders':
+                return <DashboardOrders/>;
+            // case 'settings':
+            //     return <div className="p-6">Settings - Under Development</div>;
             default:
                 return (
                     <div className="p-6">
@@ -261,7 +262,6 @@ const AdminDashboard = () => {
                             </div>
                         ) : (
                             <>
-                                {/* Statistics Cards */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
                                         <div className="flex items-center justify-between">
@@ -303,7 +303,6 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* Charts Section */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
@@ -343,7 +342,6 @@ const AdminDashboard = () => {
 
                                 </div>
 
-                                {/* Additional Statistics and Actions */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 md:col-span-2">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h3>
@@ -386,7 +384,6 @@ const AdminDashboard = () => {
                                             </button>
                                         </div>
                                     </div>
-                                    {/* Recent Activities */}
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Recent Activity</h3>
                                         <div className="space-y-4">
@@ -417,7 +414,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Helper function to get activity icon
     const getActivityIcon = (type) => {
         switch (type) {
             case 'edit':
@@ -431,7 +427,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Helper function to get activity color
     const getActivityColor = (type) => {
         switch (type) {
             case 'edit':
@@ -445,7 +440,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Helper function to format date
     const formatDate = (timestamp) => {
         const date = new Date(timestamp);
         const now = new Date();
@@ -469,8 +463,8 @@ const AdminDashboard = () => {
         { id: 'dashboard', text: 'Dashboard', icon: <DashboardIcon /> },
         { id: 'cafes', text: 'Cafes', icon: <CafeIcon /> },
         { id: 'products', text: 'Products', icon: <ProductsIcon /> },
-        { id: 'users', text: 'Users', icon: <UsersIcon /> },
-        { id: 'settings', text: 'Settings', icon: <SettingsIcon /> }
+        { id: 'orders', text: 'Users Orders', icon: <UsersIcon /> },
+        // { id: 'settings', text: 'Settings', icon: <SettingsIcon /> }
     ];
 
     return (
