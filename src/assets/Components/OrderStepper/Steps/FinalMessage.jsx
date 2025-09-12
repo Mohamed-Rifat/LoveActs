@@ -7,9 +7,9 @@ export default function FinalMessage() {
   const { clearAllCart } = useCart();
   const navigate = useNavigate();
 
-  const handleFinish = () => {
-    clearAllCart();        
-    navigate("/");         
+  const handleFinish = async () => {
+    await clearAllCart();   // 🧹 يمسح الكارت
+    navigate("/");          // ↩️ يرجع للهوم
   };
 
   return (

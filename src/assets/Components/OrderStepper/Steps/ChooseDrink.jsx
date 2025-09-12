@@ -183,7 +183,7 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink, onNext }) {
                             )}
                           </div>
                           <p className="font-semibold text-blue-600 ml-2">
-                            ${drink.price}
+                            {drink.price} LE
                           </p>
                         </div>
                       </button>

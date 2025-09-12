@@ -16,7 +16,6 @@ export default function Cart() {
   const getProductData = (item) => (item.productId && typeof item.productId === 'object' ? item.productId : item);
   const formatPrice = (price) => parseFloat(price).toFixed(2);
 
-  // تحديث الكميات تلقائياً عند تغير العناصر
   useEffect(() => {
     if (!items) return;
     const initialQuantities = {};
@@ -34,10 +33,8 @@ export default function Cart() {
     await clearAllCart();
   }
 
-
-
   const updateQuantity = (cartItemId, newQuantity) => {
-    if (newQuantity < 1) return; 
+    if (newQuantity < 1) return;
     const currentQuantity = quantities[cartItemId];
     if (newQuantity < currentQuantity) {
       removeFromCart(cartItemId, 1);
@@ -52,9 +49,9 @@ export default function Cart() {
     console.log("cartItemId:", cartItemId, "productId:", productId);
     try {
       await axios.patch(
-        "https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart",
+        "https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/",
         { productId: productId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `User ${token}` } }
       );
 
 
@@ -204,7 +201,7 @@ export default function Cart() {
                           {product.category?.name && (
                             <p className="text-xs text-gray-500 mb-2">{product.category.name}</p>
                           )}
-                          <p className="text-xl font-bold text-green-600 mb-4">${formatPrice(product.price)}</p>
+                          <p className="text-xl font-bold text-green-600 mb-4">{formatPrice(product.price)} LE</p>
 
                           <div className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
@@ -246,7 +243,7 @@ export default function Cart() {
 
                         <div className="flex flex-col items-end justify-between">
                           <p className="text-lg font-bold text-gray-900">
-                            ${formatPrice((typeof product.price === 'string' ? parseFloat(product.price) : product.price) * item.quantity)}
+                            {formatPrice((typeof product.price === 'string' ? parseFloat(product.price) : product.price) * item.quantity)} LE
                           </p>
                         </div>
                       </div>
@@ -290,17 +287,9 @@ export default function Cart() {
                 Clear Cart
               </motion.button>
 
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900 font-medium">${formatPrice(subtotal)}</span>
-                </div>
-              </div>
-
-
               <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-xl font-bold text-green-600">${formatPrice(total)}</span>
+                <span className="text-xl font-bold text-green-600">{formatPrice(total)} LE</span>
               </div>
 
               <motion.button

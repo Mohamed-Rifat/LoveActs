@@ -29,8 +29,8 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
     const handleTimeChange = (event) => setSelectedTime(event.target.value);
     const handleDateChange = (event) => setSelectedDate(event.target.value);
 
-    const totalPrice = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-    const finalTotal = totalPrice + (selectedDrink?.price || 0);
+    const totalPrice = cart.reduce((total, item) => total + (Number(item.productId.price) * Number(item.quantity || 1)), 0);
+    const finalTotal = totalPrice + Number(selectedDrink?.price || 0);
 
     const handleConfirm = async () => {
         if (!selectedTime || !selectedDate) {
@@ -209,10 +209,10 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                                                 <div>
                                                     <p className="font-medium">{item.name}</p>
                                                     <p className="text-sm text-gray-600">
-                                                        Quantity: {item.quantity} | Price: {item.price} EGP
+                                                        Quantity: {item.quantity} | Price: {item.productId.price} EGP
                                                     </p>
                                                 </div>
-                                                <p className="font-bold">{item.price * item.quantity} EGP</p>
+                                                <p className="font-bold">{Number(item.productId.price) * Number(item.quantity || 1)} EGP</p>
                                             </div>
                                         ))
                                     ) : (
