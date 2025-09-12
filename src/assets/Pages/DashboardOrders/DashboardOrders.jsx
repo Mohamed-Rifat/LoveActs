@@ -82,76 +82,135 @@ const updateOrderStatus = async ({ token, orderId, status }) => {
   }
 };
 
-// Component to display order details
 const OrderDetailsDialog = ({ order, open, onClose }) => {
   if (!order) return null;
 
+  const totalWithCafe = (order.totalPrice || 0) + (order.cafeProduct?.price || 0);
+
+const products = [
+  ...(Array.isArray(order.productId) 
+      ? order.productId 
+      : order.productId 
+        ? [order.productId] 
+        : []),
+  ...(order.cafeProduct ? [{ ...order.cafeProduct, isCafeProduct: true }] : [])
+];
+
+
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.4rem' }}>
         Order Details #{order._id.slice(-6).toUpperCase()}
       </DialogTitle>
+
       <DialogContent dividers>
-        <Grid container spacing={2}>
+        {/* User Info */}
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Customer Info</Typography>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary">User</Typography>
-            <Typography variant="body1">{order.user?.name || "Unknown"}</Typography>
+            <Typography variant="subtitle2" color="textSecondary">Name</Typography>
+            <Typography variant="body1" fontWeight="medium">{order.userId?.name || "Unknown"}</Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary">Email</Typography>
-            <Typography variant="body1">{order.user?.email || "Unknown"}</Typography>
+            <Typography variant="body1" fontWeight="medium">{order.userId?.email || "Unknown"}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary">Phone</Typography>
+            <Typography variant="body1" fontWeight="medium">{order.contactPhone || "Not Provided"}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary">Total</Typography>
+            <Typography variant="body1" fontWeight="medium">{totalWithCafe} LE</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary">Created At</Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {new Date(order.createdAt).toLocaleString()}
+            </Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary">Status</Typography>
             <Chip 
               label={order.status} 
               color={getStatusColor(order.status)} 
-              sx={{ mt: 0.5 }}
+              sx={{ mt: 0.5, fontWeight: 'bold', textTransform: 'capitalize' }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary">Total</Typography>
-            <Typography variant="body1">${order.totalPrice || 0}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary">Created At</Typography>
-            <Typography variant="body1">
-              {new Date(order.createdAt).toLocaleString()}
-            </Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" color="textSecondary" sx={{ mt: 2 }}>
-              Products
-            </Typography>
-            {order.products?.map((product, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+        </Grid>
+
+        {/* Cafe Info */}
+        {order.cafe && (
+          <>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Cafe Info</Typography>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" color="textSecondary">Cafe Name</Typography>
+                <Typography variant="body1" fontWeight="medium">{order.cafe.name}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" color="textSecondary">Phone</Typography>
+                <Typography variant="body1" fontWeight="medium">{order.cafe.phone}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="textSecondary">Address</Typography>
+                <Typography variant="body1" fontWeight="medium">{order.cafe.address}</Typography>
+              </Grid>
+            </Grid>
+          </>
+        )}
+
+        {/* Products List */}
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+          Products
+        </Typography>
+
+        <Grid container spacing={2}>
+          {products.map((product, index) => (
+            <Grid item xs={12} sm={6} key={index}>
+              <Card 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 1,
+                  border: product.isCafeProduct ? '1px solid #FFA500' : '1px solid #E0E0E0',
+                  bgcolor: product.isCafeProduct ? alpha('#FFA500', 0.1) : '#fff',
+                  borderRadius: 2,
+                  boxShadow: 1,
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.02)' }
+                }}
+              >
                 <Box
                   component="img"
-                  src={product.image || "/placeholder-image.jpg"}
-                  alt={product.name}
-                  sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 1, mr: 2 }}
+                  src={product.image || "/Logo.PNG"}
+                  alt={product.name || product.productName}
+                  sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1, mr: 2 }}
                 />
-                <Box>
-                  <Typography variant="body2" fontWeight="medium">
-                    {product.name}
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight="bold">
+                    {product.name || product.productName} {product.isCafeProduct ? "(Cafe Drink)" : ""}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Quantity: {product.quantity} | Price: ${product.price}
+                    {product.quantity ? `Quantity: ${product.quantity} | ` : ''}Price: {product.price} LE
                   </Typography>
                 </Box>
-              </Box>
-            ))}
-          </Grid>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+
+      <DialogActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+        <Button onClick={onClose} variant="contained" color="primary">
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-// Helper function to get status color
 const getStatusColor = (status) => {
   switch (status) {
     case "pending": return "warning";
@@ -305,71 +364,50 @@ export default function DashboardOrders() {
           </Typography>
         </Box>
       ) : isMobile ? (
-        <Grid container spacing={2}>
-          {orders.map((order) => (
-            <Grid item xs={12} key={order._id}>
-              <Card 
-                className="rounded-xl"
-                sx={{ 
-                  boxShadow: theme.shadows[3],
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[6],
-                  }
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
-                      Order #{order._id.slice(-6).toUpperCase()}
+        <Grid spacing={2}>
+          {orders.map((order) => {
+            const totalWithCafe = (order.totalPrice || 0) + (order.cafeProduct?.price || 0);
+
+            return (
+              <Grid item xs={12} key={order._id}>
+                <Card className=" m-2 " sx={{ boxShadow: theme.shadows[3] }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                        Order #{order._id.slice(-6).toUpperCase()}
+                      </Typography>
+                      <IconButton size="small" onClick={() => handleViewDetails(order)} color="info">
+                        <ViewIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                    
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      User: {order.userId?.name || "Unknown"}
                     </Typography>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleViewDetails(order)}
-                      color="info"
-                    >
-                      <ViewIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                  
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
-                    User: {order.user?.name || "Unknown"}
-                  </Typography>
-                  
-                  
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body2" fontWeight="medium">
-                      Total: ${order.totalPrice || 0}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                    <Chip 
-                      label={order.status} 
-                      color={getStatusColor(order.status)} 
-                      size="small"
-                      sx={{ minWidth: 80 }}
-                    />
-                    <Select 
-                      size="small" 
-                      value={order.status} 
-                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                      sx={{ minWidth: 120 }}
-                    >
-                      <MenuItem value="pending">Pending</MenuItem>
-                      <MenuItem value="processing">Processing</MenuItem>
-                      <MenuItem value="delivered">Delivered</MenuItem>
-                      <MenuItem value="cancelled">Cancelled</MenuItem>
-                    </Select>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" fontWeight="medium">
+                        Total: ${totalWithCafe}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                      <Chip label={order.status} color={getStatusColor(order.status)} size="small" sx={{ minWidth: 80 }} />
+                      <Select size="small" value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} sx={{ minWidth: 120 }}>
+                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="processing">Processing</MenuItem>
+                        <MenuItem value="delivered">Delivered</MenuItem>
+                        <MenuItem value="cancelled">Cancelled</MenuItem>
+                      </Select>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       ) : (
         <Box sx={{ overflowX: 'auto', borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
@@ -379,76 +417,48 @@ export default function DashboardOrders() {
                 <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Order ID</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>User</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Created At</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {orders.map((order, index) => (
-                <TableRow 
-                  key={order._id}
-                  sx={{ 
-                    '&:hover': {
-                      bgcolor: theme.palette.mode === 'dark' 
-                        ? alpha(theme.palette.primary.main, 0.03) 
-                        : alpha(theme.palette.primary.main, 0.02),
-                    }
-                  }}
-                >
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace' }}>
-                    #{order._id.slice(-6).toUpperCase()}
-                  </TableCell>
-                  <TableCell>{order.userId?.name || "Unknown"}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={order.status} 
-                      color={getStatusColor(order.status)} 
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>${order.totalPrice || 0}</TableCell>
-                  <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleViewDetails(order)}
-                        color="info"
-                        sx={{ 
-                          border: `1px solid ${theme.palette.info.main}`, 
-                          borderRadius: 1 
-                        }}
-                      >
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                      <Select
-                        size="small"
-                        value={order.status}
-                        onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                        sx={{ minWidth: 120 }}
-                      >
-                        <MenuItem value="pending">Pending</MenuItem>
-                        <MenuItem value="processing">Processing</MenuItem>
-                        <MenuItem value="delivered">Delivered</MenuItem>
-                        <MenuItem value="cancelled">Cancelled</MenuItem>
-                      </Select>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {orders.map((order, index) => {
+                const totalWithCafe = (order.totalPrice || 0) + (order.cafeProduct?.price || 0);
+
+                return (
+                  <TableRow key={order._id} sx={{ '&:hover': { bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.03) : alpha(theme.palette.primary.main, 0.02) } }}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace' }}>#{order._id.slice(-6).toUpperCase()}</TableCell>
+                    <TableCell>{order.userId?.name || "Unknown"}</TableCell>
+                    <TableCell>{totalWithCafe} LE</TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                     <TableCell>
+                      <Chip label={order.status} color={getStatusColor(order.status)} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <IconButton size="small" onClick={() => handleViewDetails(order)} color="info" sx={{ border: `1px solid ${theme.palette.info.main}`, borderRadius: 1 }}>
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                        <Select size="small" value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} sx={{ minWidth: 120 }}>
+                          <MenuItem value="pending">Pending</MenuItem>
+                          <MenuItem value="processing">Processing</MenuItem>
+                          <MenuItem value="delivered">Delivered</MenuItem>
+                          <MenuItem value="cancelled">Cancelled</MenuItem>
+                        </Select>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Box>
       )}
 
-      <OrderDetailsDialog 
-        order={selectedOrder} 
-        open={detailsOpen} 
-        onClose={() => setDetailsOpen(false)} 
-      />
+      <OrderDetailsDialog order={selectedOrder} open={detailsOpen} onClose={() => setDetailsOpen(false)} />
     </Paper>
   );
 }

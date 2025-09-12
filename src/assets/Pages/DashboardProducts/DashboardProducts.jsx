@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useToken } from './../../Context/TokenContext/TokenContext'
-
-
-
+import 'animate.css';
 
 function App() {
   const { token } = useToken()
@@ -33,6 +31,26 @@ function App() {
       Authorization: token ? `Admin ${token}` : ''
     }
   })
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: '', 
+    productId: null,
+    message: ''
+  })
+
+  const openConfirmModal = (type, product) => {
+    setConfirmModal({
+      isOpen: true,
+      type,
+      productId: product._id,
+      message:
+        type === 'soft'
+          ? `Are you sure you want to soft delete "${product.name}"?`
+          : `Are you sure you want to permanently delete "${product.name}"? This action cannot be undone.`,
+      animationClass: 'animate__animated animate__shakeX'
+    })
+  }
 
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
@@ -156,28 +174,27 @@ function App() {
 
     try {
       let response;
+      let headers = {
+        'Authorization': `Admin ${token}`,
+      };
 
-      if (formData.image) {
+      if (formData.image || editingProduct.image) {
         const data = new FormData();
         data.append('name', formData.name);
         data.append('price', formData.price);
         data.append('description', formData.description);
-        data.append('image', formData.image);
-for (let pair of data.entries()) {
-  console.log(pair[0]+ ': '+ pair[1]);
-}
+
+        data.append('image', formData.image || editingProduct.image);
+
+        headers['Content-Type'] = 'multipart/form-data';
 
         response = await axios.put(
           `${API_BASE_URL}/product/${editingProduct._id}`,
           data,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          }
+          { headers }
         );
       } else {
+        headers['Content-Type'] = 'application/json';
         response = await axios.put(
           `${API_BASE_URL}/product/${editingProduct._id}`,
           {
@@ -185,12 +202,7 @@ for (let pair of data.entries()) {
             price: Number(formData.price),
             description: formData.description
           },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
+          { headers }
         );
       }
 
@@ -210,34 +222,6 @@ for (let pair of data.entries()) {
       setUploading(false);
     }
   };
-
-
-
-  const handleSoftDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to soft delete this product?')) return
-
-    try {
-      await api.patch(`/product/${id}/soft-delete`)
-      addNotification('Product soft deleted successfully')
-      fetchProducts()
-    } catch (error) {
-      console.error('Error soft deleting product:', error)
-      addNotification('Failed to soft delete product', 'error')
-    }
-  }
-
-  const handleHardDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this product? This action cannot be undone.')) return
-
-    try {
-      await api.delete(`/product/${id}`)
-      addNotification('Product permanently deleted successfully')
-      fetchProducts()
-    } catch (error) {
-      console.error('Error hard deleting product:', error)
-      addNotification('Failed to hard delete product', 'error')
-    }
-  }
 
   const handleRestoreProduct = async (id) => {
     try {
@@ -259,6 +243,26 @@ for (let pair of data.entries()) {
       fileInputRef.current.value = ''
     }
   }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmModal.productId) return;
+
+    try {
+      if (confirmModal.type === 'soft') {
+        await api.patch(`/product/${confirmModal.productId}/soft-delete`);
+        addNotification('Product soft deleted successfully');
+      } else {
+        await api.delete(`/product/${confirmModal.productId}`);
+        addNotification('Product permanently deleted successfully');
+      }
+      fetchProducts();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      addNotification('Failed to delete product', 'error');
+    } finally {
+      setConfirmModal({ ...confirmModal, isOpen: false, productId: null });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -290,6 +294,28 @@ for (let pair of data.entries()) {
           </div>
         ))}
       </div>
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className={`bg-white rounded-lg shadow-lg p-6 max-w-sm w-full ${confirmModal.animationClass}`}>
+            <h3 className="text-lg font-semibold mb-4">{confirmModal.message}</h3>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -454,7 +480,7 @@ for (let pair of data.entries()) {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleSoftDelete(product._id)}
+                                onClick={() => openConfirmModal('soft', product)}
                                 className="text-yellow-600 hover:text-yellow-900 p-1 rounded-full hover:bg-yellow-100 transition-colors"
                                 title="Soft Delete"
                               >
@@ -465,7 +491,7 @@ for (let pair of data.entries()) {
                             </>
                           )}
                           <button
-                            onClick={() => handleHardDelete(product._id)}
+                            onClick={() => openConfirmModal('hard', product)}
                             className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-100 transition-colors"
                             title="Hard Delete"
                           >

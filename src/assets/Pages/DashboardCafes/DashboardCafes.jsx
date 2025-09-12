@@ -2,15 +2,7 @@ import axios from 'axios'
 import { useToken } from '../../Context/TokenContext/TokenContext'
 import React, { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM'
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Authorization': `Admin ${AUTH_TOKEN}`
-  }
-})
 
 const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
   const [editingProduct, setEditingProduct] = useState(null)
@@ -39,19 +31,30 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
   }
 
   const handleUpdateProduct = async () => {
-    if (!editingProduct || !editForm.productName || !editForm.price) return
+  if (!editingProduct || !editForm.productName || !editForm.price) return;
+console.log("Cafe ID:", cafe._id);
+console.log("Editing Product ID:", editingProduct._id);
 
-    setUpdating(true)
-    try {
-      await onUpdateProduct(cafe._id, editingProduct._id, editForm)
-      setEditingProduct(null)
-      setEditForm({ productName: '', price: '' })
-    } catch (error) {
-      console.error('Error updating product:', error)
-    } finally {
-      setUpdating(false)
-    }
+  setUpdating(true);
+  try {
+    await onUpdateProduct(
+      cafe._id,
+      editingProduct._id,
+      {
+        productName: editForm.productName, 
+        price: Number(editForm.price),   
+      }
+    );
+
+    setEditingProduct(null);
+    setEditForm({ productName: '', price: '' });
+  } catch (error) {
+    console.error('Error updating product:', error);
+  } finally {
+    setUpdating(false);
   }
+};
+
 
   const cancelEdit = () => {
     setEditingProduct(null)
@@ -195,6 +198,14 @@ function DashboardCafes() {
   const [submitting, setSubmitting] = useState(false)
   const [showProductsModal, setShowProductsModal] = useState(false)
   const [selectedCafe, setSelectedCafe] = useState(null)
+  const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api'
+
+  const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+      'Authorization': `Admin ${token}`
+    }
+  })
 
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
@@ -380,10 +391,17 @@ function DashboardCafes() {
       if (formData.image) {
         formDataToSend.append('image', formData.image)
       }
-
-      await api.put(`/cafe/update-cafe/${editingCafe._id}`, formDataToSend, {
+      const dataToSend = {
+        name: formData.name,
+        address: formData.address,
+        phone: formData.phone,
+        link: formData.link,
+        location: formData.location,
+        iframe: formData.iframe || ''
+      }
+      await api.put(`/cafe/update-cafe/${editingCafe._id}`, dataToSend, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'application/json'
         }
       })
 
@@ -411,40 +429,46 @@ function DashboardCafes() {
     }
   }
 
-  const handleUpdateProduct = async (cafeId, productId, productData) => {
-    try {
-      console.log("Updating product with:", { cafeId, productId, productData });
+ const handleUpdateProduct = async (cafeId, productId, productData) => {
+  try {
+    console.log("Updating product with:", { cafeId, productId, productData });
 
-      const response = await api.put(
-        `/cafe/update-cafe-products/${cafeId}/${productId}`,
-        productData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      addNotification('Product updated successfully');
-
-      setCafes(prevCafes =>
-        prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
-      );
-
-      if (selectedCafe && selectedCafe._id === cafeId) {
-        setSelectedCafe(response.data.cafe);
+    const response = await api.put(
+      `/cafe/update-cafe-products/${cafeId}/${productId}`,
+      {
+        productName: productData.productName,  
+        price: productData.price
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Admin ${token}`,  
+        },
       }
+    );
 
-      return response.data;
-    } catch (error) {
-      console.error('Error updating product:', error);
+    addNotification('Product updated successfully');
 
-      const message = error.response?.data?.message || 'Failed to update product';
-      addNotification(message, 'error');
+    setCafes(prevCafes =>
+      prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
+    );
 
-      return null;
+    if (selectedCafe && selectedCafe._id === cafeId) {
+      setSelectedCafe(response.data.cafe);
     }
-  };
+
+    return response.data;
+  } catch (error) {
+    console.error('Error updating product:', error);
+
+    const message = error.response?.data?.message || 'Failed to update product';
+    addNotification(message, 'error');
+
+    return null;
+  }
+};
+
+
 
   const handleDeleteCafe = async (id) => {
     if (!window.confirm('Are you sure you want to delete this cafe?')) return
@@ -613,7 +637,7 @@ function DashboardCafes() {
                       <td className="px-6 py-4 max-w-[120px]">
                         {cafe.image ? (
                           <img
-                            src={cafe.image} 
+                            src={cafe.image}
                             alt={cafe.name}
                             className="w-16 h-16 object-cover rounded-md"
                           />

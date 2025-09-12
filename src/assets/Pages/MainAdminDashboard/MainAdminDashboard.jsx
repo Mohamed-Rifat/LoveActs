@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
     Menu as MenuIcon,
@@ -16,7 +16,12 @@ import {
     Edit as EditIcon,
     TrendingUp as TrendingUpIcon,
     Inventory as InventoryIcon,
-    Category as CategoryIcon
+    Category as CategoryIcon,
+    ShoppingCart as OrdersIcon,
+    Pending as PendingIcon,
+    CheckCircle as CompletedIcon,
+    Cancel as CancelledIcon,
+    Autorenew as ProcessingIcon
 } from '@mui/icons-material';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -25,20 +30,12 @@ import {
 import DashboardCafes from '../DashboardCafes/DashboardCafes';
 import DashboardProducts from '../DashboardProducts/DashboardProducts';
 import DashboardOrders from '../DashboardOrders/DashboardOrders';
+import { useToken } from '../../Context/TokenContext/TokenContext';
 
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api';
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTQ4ZDQyNmQ2NDY5ZjVhZjZiZGMyNSIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1NDY1NTU3NH0.HNMW34AFxC3wNd3eWNofNY9aIUTDGjviQ8e6sHAUlGM';
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Authorization': `Admin ${AUTH_TOKEN}`
-    }
-});
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 const AdminDashboard = () => {
+    const { token, user, logout } = useToken();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [stats, setStats] = useState({
@@ -49,21 +46,39 @@ const AdminDashboard = () => {
         totalProducts: 0,
         activeProducts: 0,
         outOfStockProducts: 0,
-        newProductsThisWeek: 0
+        newProductsThisWeek: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        processingOrders: 0,
+        completedOrders: 0,
+        cancelledOrders: 0
     });
     const [recentActivities, setRecentActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [chartData, setChartData] = useState([]);
     const [categoryData, setCategoryData] = useState([]);
     const [trendData, setTrendData] = useState([]);
+    const [orderStatusData, setOrderStatusData] = useState([]);
+
+    const api = useMemo(() => {
+        return axios.create({
+            baseURL: API_BASE_URL,
+            headers: token ? { 'Authorization': `Admin ${token}` } : {}
+        });
+    }, [token]);
 
     useEffect(() => {
-        if (activeSection === 'dashboard') {
+        if (activeSection === 'dashboard' && token) {
             fetchDashboardData();
         }
-    }, [activeSection]);
+    }, [activeSection, token, api]);
 
     const fetchDashboardData = async () => {
+        if (!token) {
+            console.error('No token available');
+            return;
+        }
+
         try {
             setLoading(true);
 
@@ -72,6 +87,9 @@ const AdminDashboard = () => {
 
             const productsResponse = await api.get('/product/');
             const productsData = productsResponse.data || [];
+
+            const ordersResponse = await api.get('/order/admin/orders');
+            const ordersData = ordersResponse.data.orders || [];
 
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -86,6 +104,11 @@ const AdminDashboard = () => {
                 return productDate >= oneWeekAgo;
             }).length;
 
+            const pendingOrders = ordersData.filter(order => order.status === 'pending').length;
+            const processingOrders = ordersData.filter(order => order.status === 'processing').length;
+            const completedOrders = ordersData.filter(order => order.status === 'delivered').length;
+            const cancelledOrders = ordersData.filter(order => order.status === 'cancelled').length;
+
             setStats({
                 totalCafes: cafesData.length,
                 activeCafes: cafesData.filter(cafe => !cafe.isDeleted).length,
@@ -94,10 +117,16 @@ const AdminDashboard = () => {
                 totalProducts: productsData.length,
                 activeProducts: productsData.filter(product => !product.isDeleted).length,
                 outOfStockProducts: productsData.filter(product => product.stock === 0).length,
-                newProductsThisWeek: newProductsThisWeek
+                newProductsThisWeek: newProductsThisWeek,
+                totalOrders: ordersData.length,
+                pendingOrders: pendingOrders,
+                processingOrders: processingOrders,
+                completedOrders: completedOrders,
+                cancelledOrders: cancelledOrders
             });
 
-            prepareChartData(cafesData, productsData);
+            prepareChartData(cafesData, productsData, ordersData);
+            prepareOrderStatusData(ordersData);
 
             const activities = [];
 
@@ -128,6 +157,33 @@ const AdminDashboard = () => {
                 });
             }
 
+            if (ordersData.length > 0) {
+                const latestOrder = ordersData[ordersData.length - 1];
+                activities.push({
+                    type: 'order',
+                    description: `New order #${latestOrder._id.slice(-6).toUpperCase()}`,
+                    timestamp: new Date(latestOrder.createdAt || Date.now())
+                });
+
+                const pendingOrder = ordersData.find(order => order.status === 'pending');
+                if (pendingOrder) {
+                    activities.push({
+                        type: 'pending',
+                        description: `Pending order needs attention`,
+                        timestamp: new Date(pendingOrder.createdAt || Date.now() - 2 * 60 * 60 * 1000)
+                    });
+                }
+
+                const processingOrder = ordersData.find(order => order.status === 'processing');
+                if (processingOrder) {
+                    activities.push({
+                        type: 'processing',
+                        description: `Order in processing`,
+                        timestamp: new Date(processingOrder.updatedAt || Date.now() - 1 * 60 * 60 * 1000)
+                    });
+                }
+            }
+
             activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             setRecentActivities(activities.slice(0, 4));
@@ -138,7 +194,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const prepareChartData = (cafesData, productsData) => {
+    const prepareChartData = (cafesData, productsData, ordersData) => {
         const monthlyData = [];
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -163,10 +219,17 @@ const AdminDashboard = () => {
                     productDate.getFullYear() === monthDate.getFullYear();
             }).length;
 
+            const ordersThisMonth = ordersData.filter(order => {
+                const orderDate = new Date(order.createdAt);
+                return orderDate.getMonth() === monthDate.getMonth() &&
+                    orderDate.getFullYear() === monthDate.getFullYear();
+            }).length;
+
             monthlyData.push({
                 name: monthName,
                 cafes: cafesThisMonth,
-                products: productsThisMonth
+                products: productsThisMonth,
+                orders: ordersThisMonth
             });
         }
 
@@ -203,16 +266,42 @@ const AdminDashboard = () => {
                     productDate.getFullYear() === dayDate.getFullYear();
             }).length;
 
+            const ordersThisDay = ordersData.filter(order => {
+                const orderDate = new Date(order.createdAt);
+                return orderDate.getDate() === dayDate.getDate() &&
+                    orderDate.getMonth() === dayDate.getMonth() &&
+                    orderDate.getFullYear() === dayDate.getFullYear();
+            }).length;
+
             trendData.push({
                 day: dayName,
                 cafes: cafesThisDay,
-                products: productsThisDay
+                products: productsThisDay,
+                orders: ordersThisDay
             });
         }
 
         setChartData(monthlyData);
         setCategoryData(categoryDistribution);
         setTrendData(trendData);
+    };
+
+    const prepareOrderStatusData = (ordersData) => {
+        const statusCount = {
+            pending: ordersData.filter(order => order.status === 'pending').length,
+            processing: ordersData.filter(order => order.status === 'processing').length,
+            delivered: ordersData.filter(order => order.status === 'delivered').length,
+            cancelled: ordersData.filter(order => order.status === 'cancelled').length
+        };
+
+        const statusData = [
+            { name: 'Pending', value: statusCount.pending, color: '#FF8042' },
+            { name: 'Processing', value: statusCount.processing, color: '#0088FE' },
+            { name: 'Delivered', value: statusCount.delivered, color: '#00C49F' },
+            { name: 'Cancelled', value: statusCount.cancelled, color: '#FF0000' }
+        ];
+
+        setOrderStatusData(statusData);
     };
 
     const handleDrawerToggle = () => {
@@ -241,6 +330,15 @@ const AdminDashboard = () => {
         setActiveSection('products');
     };
 
+    const handleViewAllOrders = () => {
+        setActiveSection('orders');
+    };
+
+    const handleLogout = () => {
+        logout();
+        window.location.href = '/login';
+    };
+
     const renderContent = () => {
         switch (activeSection) {
             case 'cafes':
@@ -248,9 +346,7 @@ const AdminDashboard = () => {
             case 'products':
                 return <DashboardProducts />;
             case 'orders':
-                return <DashboardOrders/>;
-            // case 'settings':
-            //     return <div className="p-6">Settings - Under Development</div>;
+                return <DashboardOrders />;
             default:
                 return (
                     <div className="p-6">
@@ -301,6 +397,71 @@ const AdminDashboard = () => {
                                         </div>
                                         <p className="text-sm text-gray-500 mt-4">Total products in system</p>
                                     </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-700">Total Orders</h3>
+                                                <p className="text-2xl font-bold mt-2 text-purple-600">{stats.totalOrders}</p>
+                                            </div>
+                                            <div className="p-3 bg-purple-100 rounded-lg">
+                                                <OrdersIcon className="text-purple-600" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4">All time orders</p>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-700">Pending Orders</h3>
+                                                <p className="text-2xl font-bold mt-2 text-orange-600">{stats.pendingOrders}</p>
+                                            </div>
+                                            <div className="p-3 bg-orange-100 rounded-lg">
+                                                <PendingIcon className="text-orange-600" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4">Orders awaiting processing</p>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-700">Processing Orders</h3>
+                                                <p className="text-2xl font-bold mt-2 text-blue-600">{stats.processingOrders}</p>
+                                            </div>
+                                            <div className="p-3 bg-blue-100 rounded-lg">
+                                                <ProcessingIcon className="text-blue-600" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4">Orders in progress</p>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-700">Completed Orders</h3>
+                                                <p className="text-2xl font-bold mt-2 text-green-600">{stats.completedOrders}</p>
+                                            </div>
+                                            <div className="p-3 bg-green-100 rounded-lg">
+                                                <CompletedIcon className="text-green-600" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4">Successfully delivered orders</p>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-700">Cancelled Orders</h3>
+                                                <p className="text-2xl font-bold mt-2 text-red-600">{stats.cancelledOrders}</p>
+                                            </div>
+                                            <div className="p-3 bg-red-100 rounded-lg">
+                                                <CancelledIcon className="text-red-600" />
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-4">Cancelled orders</p>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -319,10 +480,40 @@ const AdminDashboard = () => {
                                                     <Legend />
                                                     <Bar dataKey="cafes" fill="#F59E0B" name="Cafes" />
                                                     <Bar dataKey="products" fill="#3B82F6" name="Products" />
+                                                    <Bar dataKey="orders" fill="#8B5CF6" name="Orders" />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                                        <h3 className="text-xl font-semibold mb-4 text-gray-800">Order Status Distribution</h3>
+                                        <div className="h-80">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={orderStatusData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={false}
+                                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                        outerRadius={80}
+                                                        fill="#8884d8"
+                                                        dataKey="value"
+                                                    >
+                                                        {orderStatusData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                    <Legend />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Weekly Trends</h3>
                                         <div className="h-80">
@@ -335,15 +526,13 @@ const AdminDashboard = () => {
                                                     <Legend />
                                                     <Line type="monotone" dataKey="cafes" stroke="#F59E0B" strokeWidth={2} activeDot={{ r: 8 }} />
                                                     <Line type="monotone" dataKey="products" stroke="#3B82F6" strokeWidth={2} />
+                                                    <Line type="monotone" dataKey="orders" stroke="#8B5CF6" strokeWidth={2} />
                                                 </LineChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
 
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 md:col-span-2">
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <button
@@ -382,9 +571,21 @@ const AdminDashboard = () => {
                                                 </div>
                                                 <span className="text-purple-700 font-medium">View All Products</span>
                                             </button>
+                                            <button
+                                                className="flex flex-col items-center justify-center p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
+                                                onClick={handleViewAllOrders}
+                                            >
+                                                <div className="p-3 bg-indigo-100 rounded-full mb-2">
+                                                    <OrdersIcon className="text-indigo-600" />
+                                                </div>
+                                                <span className="text-indigo-700 font-medium">View All Orders</span>
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 md:col-span-2">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Recent Activity</h3>
                                         <div className="space-y-4">
                                             {recentActivities.length > 0 ? (
@@ -405,8 +606,6 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                 </div>
-
-
                             </>
                         )}
                     </div>
@@ -422,6 +621,12 @@ const AdminDashboard = () => {
                 return <AddIcon className="text-amber-600 text-sm" />;
             case 'feature':
                 return <StarIcon className="text-blue-600 text-sm" />;
+            case 'order':
+                return <OrdersIcon className="text-purple-600 text-sm" />;
+            case 'pending':
+                return <PendingIcon className="text-orange-600 text-sm" />;
+            case 'processing':
+                return <ProcessingIcon className="text-blue-600 text-sm" />;
             default:
                 return <EditIcon className="text-gray-600 text-sm" />;
         }
@@ -434,6 +639,12 @@ const AdminDashboard = () => {
             case 'add':
                 return { bg: 'bg-amber-100', text: 'text-amber-600' };
             case 'feature':
+                return { bg: 'bg-blue-100', text: 'text-blue-600' };
+            case 'order':
+                return { bg: 'bg-purple-100', text: 'text-purple-600' };
+            case 'pending':
+                return { bg: 'bg-orange-100', text: 'text-orange-600' };
+            case 'processing':
                 return { bg: 'bg-blue-100', text: 'text-blue-600' };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-600' };
@@ -464,7 +675,6 @@ const AdminDashboard = () => {
         { id: 'cafes', text: 'Cafes', icon: <CafeIcon /> },
         { id: 'products', text: 'Products', icon: <ProductsIcon /> },
         { id: 'orders', text: 'Users Orders', icon: <UsersIcon /> },
-        // { id: 'settings', text: 'Settings', icon: <SettingsIcon /> }
     ];
 
     return (
@@ -508,10 +718,7 @@ const AdminDashboard = () => {
                     <div className="p-4 border-t border-gray-200">
                         <button
                             className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            onClick={() => {
-                                localStorage.removeItem('token');
-                                window.location.href = '/login';
-                            }}
+                            onClick={handleLogout}
                         >
                             <LogoutIcon className="mr-3" />
                             Logout
@@ -533,9 +740,9 @@ const AdminDashboard = () => {
                             {drawerItems.find(item => item.id === activeSection)?.text || 'Dashboard'}
                         </h1>
                         <div className="flex items-center">
-                            <span className="text-sm text-gray-600 mr-2">Welcome, Admin</span>
+                            <span className="text-sm text-gray-600 mr-2">Welcome, {user?.name || 'Admin'}</span>
                             <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                                <span className="text-amber-700 font-medium">A</span>
+                                <span className="text-amber-700 font-medium">{user?.name?.[0] || 'A'}</span>
                             </div>
                         </div>
                     </div>

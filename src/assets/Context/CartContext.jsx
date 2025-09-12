@@ -16,10 +16,7 @@ export const CartProvider = ({ children }) => {
   async function getCart() {
     if (!token) return;
     if (user?.role !== "User") return;
-
     setLoading(true);
-    console.log(token);
-
     try {
       const res = await axios.get(
         "https://flowers-vert-six.vercel.app/api/cart/get-user-cart",
@@ -29,7 +26,13 @@ export const CartProvider = ({ children }) => {
       setCartId(res.data.cart?._id || null);
       setNumOfCartItems(res.data.cart?.products?.length || 0);
     } catch (err) {
-      console.error("Error fetching cart:", err);
+      if (err.response?.status === 404) {
+        setCart([]);
+        setCartId(null);
+        setNumOfCartItems(0);
+      } else {
+        console.error("Error fetching cart:", err);
+      }
     } finally {
       setLoading(false);
     }
