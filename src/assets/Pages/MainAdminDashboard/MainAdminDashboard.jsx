@@ -71,7 +71,7 @@ const AdminDashboard = () => {
         if (activeSection === 'dashboard' && token) {
             fetchDashboardData();
         }
-    }, [activeSection, token, api]);
+    }, [activeSection, token]);
 
     const fetchDashboardData = async () => {
         if (!token) {

@@ -2,8 +2,6 @@ import axios from 'axios'
 import { useToken } from '../../Context/TokenContext/TokenContext'
 import React, { useState, useEffect } from 'react';
 
-
-
 const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
   const [editingProduct, setEditingProduct] = useState(null)
   const [editForm, setEditForm] = useState({ productName: '', price: '' })
@@ -29,32 +27,6 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
       [name]: name === 'price' ? Number(value) : value
     }))
   }
-
-  const handleUpdateProduct = async () => {
-  if (!editingProduct || !editForm.productName || !editForm.price) return;
-console.log("Cafe ID:", cafe._id);
-console.log("Editing Product ID:", editingProduct._id);
-
-  setUpdating(true);
-  try {
-    await onUpdateProduct(
-      cafe._id,
-      editingProduct._id,
-      {
-        productName: editForm.productName, 
-        price: Number(editForm.price),   
-      }
-    );
-
-    setEditingProduct(null);
-    setEditForm({ productName: '', price: '' });
-  } catch (error) {
-    console.error('Error updating product:', error);
-  } finally {
-    setUpdating(false);
-  }
-};
-
 
   const cancelEdit = () => {
     setEditingProduct(null)
@@ -109,21 +81,7 @@ console.log("Editing Product ID:", editingProduct._id);
                           />
                         </div>
                       </div>
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={handleUpdateProduct}
-                          disabled={updating}
-                          className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
-                        >
-                          {updating ? 'Updating...' : 'Save'}
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                      
                     </div>
                   ) : (
                     <>
@@ -135,15 +93,6 @@ console.log("Editing Product ID:", editingProduct._id);
                         <div className="text-lg font-bold text-indigo-600">
                           {product.price} LE
                         </div>
-                        <button
-                          onClick={() => handleEditClick(product)}
-                          className="p-1 text-indigo-600 hover:text-indigo-800 rounded-full hover:bg-indigo-50"
-                          title="Update Order"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
                       </div>
                     </>
                   )}
@@ -315,7 +264,6 @@ function DashboardCafes() {
         formDataToSend.append('image', formData.image)
       }
 
-      // Add products
       formData.products.forEach((product, index) => {
         if (product.productName && product.price) {
           formDataToSend.append(`products[${index}][productName]`, product.productName)
@@ -350,99 +298,119 @@ function DashboardCafes() {
     }
   }
 
-  const handleEditCafe = (cafe) => {
-    setEditingCafe(cafe)
-    setFormData({
-      name: cafe.name,
-      address: cafe.address,
-      phone: cafe.phone,
-      iframe: cafe.iframe || '',
-      link: cafe.link,
-      location: cafe.location,
-      image: null,
-      products: cafe.products && cafe.products.length > 0
-        ? cafe.products
-        : [{ productName: '', price: '' }]
-    })
-    setShowModal(true)
-  }
+const handleEditCafe = (cafe) => {
+  setEditingCafe(cafe);
+  setFormData({
+    name: cafe.name || '',
+    address: cafe.address || '',
+    phone: cafe.phone || '',
+    iframe: cafe.iframe || '',
+    link: cafe.link || '',
+    location: cafe.location || '',
+    image: cafe.image || null, 
+    products: cafe.products && cafe.products.length > 0
+      ? cafe.products.map(p => ({
+          productName: p.productName || '',
+          price: p.price || ''
+        }))
+      : [{ productName: '', price: '' }]
+  });
+  setShowModal(true);
+};
 
-  const handleUpdateCafe = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+const handleUpdateCafe = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
 
-    try {
-      if (!editingCafe?._id) {
-        addNotification('No cafe selected to update', 'error')
-        return
-      }
+  try {
+    if (!editingCafe?._id) {
+      addNotification('No cafe selected to update', 'error');
+      return;
+    }
 
-      const formDataToSend = new FormData()
-      formDataToSend.append('name', formData.name)
-      formDataToSend.append('address', formData.address)
-      formDataToSend.append('phone', formData.phone)
-      formDataToSend.append('link', formData.link)
-      formDataToSend.append('location', formData.location)
+    let payload;
+    let headers;
 
-      if (formData.iframe) {
-        formDataToSend.append('iframe', formData.iframe)
-      }
+    if (formData.image && typeof formData.image !== "string") {
+      payload = new FormData();
+      payload.append('name', formData.name);
+      payload.append('address', formData.address);
+      payload.append('phone', formData.phone);
+      payload.append('link', formData.link);
+      payload.append('location', formData.location);
+      payload.append('iframe', formData.iframe || '');
+      payload.append('image', formData.image);
 
-      if (formData.image) {
-        formDataToSend.append('image', formData.image)
-      }
-      const dataToSend = {
+      formData.products.forEach((p, i) => {
+        payload.append(`products[${i}][productName]`, p.productName);
+        payload.append(`products[${i}][price]`, p.price);
+      });
+
+      headers = { 'Content-Type': 'multipart/form-data', Authorization: `Admin ${token}` };
+
+    } else {
+      payload = {
         name: formData.name,
         address: formData.address,
         phone: formData.phone,
         link: formData.link,
         location: formData.location,
-        iframe: formData.iframe || ''
-      }
-      await api.put(`/cafe/update-cafe/${editingCafe._id}`, dataToSend, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+        iframe: formData.iframe || '',
+        products: formData.products,
+        image: typeof formData.image === "string" ? formData.image : undefined, 
+      };
 
-      addNotification('Cafe updated successfully')
-      setShowModal(false)
-      setEditingCafe(null)
-      setFormData({
-        name: '',
-        address: '',
-        phone: '',
-        iframe: '',
-        link: '',
-        location: '',
-        image: null,
-        products: [{ productName: '', price: '' }]
-      })
-      fetchCafes()
-
-    } catch (error) {
-      console.error('Error updating cafe:', error)
-      const message = error.response?.data?.error || 'Failed to update cafe'
-      addNotification(message, 'error')
-    } finally {
-      setSubmitting(false)
+      headers = { 'Content-Type': 'application/json', Authorization: `Admin ${token}` };
     }
+
+    await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, { headers });
+
+    addNotification('Cafe updated successfully');
+    setShowModal(false);
+    setEditingCafe(null);
+    setFormData({
+      name: '',
+      address: '',
+      phone: '',
+      iframe: '',
+      link: '',
+      location: '',
+      image: null,
+      products: [{ productName: '', price: '' }],
+    });
+
+    fetchCafes();
+  } catch (error) {
+  console.error('Error updating cafe:', error);
+
+  let message = error.response?.data?.error || 'Failed to update cafe';
+
+  if (typeof message === "object") {
+    message = message.en || 'Failed to update cafe';
   }
 
- const handleUpdateProduct = async (cafeId, productId, productData) => {
+  addNotification(message, 'error');
+} finally {
+    setSubmitting(false);
+  }
+};
+
+
+
+const handleUpdateProduct = async (cafeId, productId, productData) => {
   try {
     console.log("Updating product with:", { cafeId, productId, productData });
 
     const response = await api.put(
       `/cafe/update-cafe-products/${cafeId}/${productId}`,
       {
-        productName: productData.productName,  
-        price: productData.price
+        productName: productData.productName,
+        price: productData.price,
       },
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Admin ${token}`,  
+          Authorization: `Admin ${token}`,
         },
       }
     );
@@ -467,6 +435,7 @@ function DashboardCafes() {
     return null;
   }
 };
+
 
 
 
@@ -873,9 +842,7 @@ function DashboardCafes() {
                 {formData.products.map((product, index) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 p-3 bg-gray-50 rounded-md">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Product Name
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                       <input
                         type="text"
                         name="productName"
@@ -885,9 +852,7 @@ function DashboardCafes() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Price (LE)
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price (LE)</label>
                       <input
                         type="number"
                         name="price"

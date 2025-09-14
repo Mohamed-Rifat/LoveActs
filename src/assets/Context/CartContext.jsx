@@ -12,7 +12,6 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState({});
 
-  // get user cart
   async function getCart() {
     if (!token) return;
     if (user?.role !== "User") return;
@@ -38,7 +37,6 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  // add to cart
   async function addToCart(productId, quantity = 1) {
     if (!token) return;
     setPending(prev => ({ ...prev, [`add-${productId}`]: true }));
@@ -60,11 +58,6 @@ export const CartProvider = ({ children }) => {
     if (!token || !cartId) return null;
 
     try {
-      console.log("---- REMOVE FROM CART ----");
-      console.log("cartId:", cartId);
-      console.log("cartItemId:", cartItemId);
-      console.log("quantity:", quantity);
-
       const res = await axios.patch(
         `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
         { productId: cartItemId, quantity },
