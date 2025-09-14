@@ -3,7 +3,7 @@ import { FiCoffee, FiX, FiSearch } from "react-icons/fi";
 import { motion } from "framer-motion";
 import axios from "axios";
 
-export default function ChooseCafe({ onSelectCafe, onSelectDrink, onNext }) {
+export default function ChooseCafe({ onSelectCafe, onSelectDrink }) {
   const [cafes, setCafes] = useState([]);
   const [selectedCafe, setSelectedCafe] = useState(null);
   const [selectedDrink, setSelectedDrink] = useState(null);
@@ -52,7 +52,7 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink, onNext }) {
       onSelectCafe(selectedCafe);
       onSelectDrink(selectedDrink);
       setOpenPopup(false);
-      onNext();
+      
     }
   };
 

@@ -1,10 +1,9 @@
-import React, { useContext, useState } from "react";
-import { CartContext } from "../../../Context/CartContext";
+import React, { useState } from "react";
 import { useToken } from "../../../Context/TokenContext/TokenContext";
 import axios from "axios";
 import { useCart } from "../../../hooks/UseCart";
 
-export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, onBack, userData }) {
+export default function ReviewOrder({ selectedCafe, selectedDrink, userData, deliveryOption, finalTotal, onBack, onConfirm }) {
     const { cart, clearAllCart, cartId } = useCart();
     const { token } = useToken();
     const [selectedTime, setSelectedTime] = useState("");
@@ -30,7 +29,10 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
     const handleDateChange = (event) => setSelectedDate(event.target.value);
 
     const totalPrice = cart.reduce((total, item) => total + (Number(item.productId.price) * Number(item.quantity || 1)), 0);
-    const finalTotal = totalPrice + Number(selectedDrink?.price || 0);
+    const baseTotal = totalPrice + Number(selectedDrink?.price || 0);
+//    const subtotal = selectedDrink?.price || 0;
+  const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
+  const total =  baseTotal + deliveryFee;
 
     const handleConfirm = async () => {
         if (!selectedTime || !selectedDate) {
@@ -44,10 +46,10 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
         try {
             const orderPayload = {
                 cartId,
-                address: userData.address || {
-                    street: "Not specified",
-                    city: "Not specified",
-                    country: "Not specified"
+                address: {
+                    street: userData?.street || "Not specified",
+                    city: userData?.city || "Not specified",
+                    country: userData?.country || "Not specified",
                 },
                 contactPhone: userData.phone || "Not specified",
                 cafe: selectedCafe?._id || null,
@@ -64,7 +66,6 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                     headers: { Authorization: `User ${token}` }
                 }
             );
-
 
             setMessage({ type: "success", text: response?.data?.message || "Order placed successfully!" });
             clearAllCart();
@@ -122,6 +123,30 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                                 <input
                                     value={userData?.phone || ""}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                                <input
+                                    value={userData?.street || ""}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                <input
+                                    value={userData?.city || ""}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                <input
+                                    value={userData?.country || ""}
                                     disabled
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                                 />
@@ -192,6 +217,7 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                         </div>
                     </div>
 
+                    {/* Order Details */}
                     <div className="bg-white rounded-2xl shadow-lg p-6">
                         <h3 className="text-xl font-semibold text-blue-700 flex items-center justify-center mb-4">
                             <span className="mr-2">📦</span>
@@ -284,10 +310,18 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                                 )}
 
                                 {(cart.length > 0 || selectedDrink) && (
-                                    <div className="bg-blue-700 p-4 rounded-xl text-white">
+                                    <div className="bg-blue-700 p-4 rounded-xl text-white space-y-2">
                                         <div className="flex justify-between text-lg font-semibold">
+                                            <span>Subtotal:</span>
+                                            <span>{baseTotal} EGP</span>
+                                        </div>
+                                        <div className="flex justify-between text-lg font-semibold">
+                                            <span>Delivery Fee:</span>
+                                            <span>{deliveryFee} EGP</span>
+                                        </div>
+                                        <div className="flex justify-between text-lg font-bold border-t border-white pt-2">
                                             <span>Total Amount:</span>
-                                            <span>{finalTotal} EGP</span>
+                                            <span>{total} EGP</span>
                                         </div>
                                     </div>
                                 )}
@@ -296,6 +330,7 @@ export default function ReviewOrder({ selectedDrink, selectedCafe, onConfirm, on
                     </div>
                 </div>
 
+                {/* Buttons */}
                 <div className="flex justify-center gap-4 mt-8">
                     <button
                         onClick={onBack}

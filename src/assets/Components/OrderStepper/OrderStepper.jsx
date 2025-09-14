@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Stepper, Step, StepLabel, Box, Paper, Container, Typography, IconButton } from "@mui/material";
 import { FiCoffee, FiX, FiCheckCircle } from "react-icons/fi";
-
+import { useLocation } from "react-router-dom";
 import ChooseDrink from "./Steps/ChooseDrink";
 import ConfirmPersonalInfo from "./Steps/ConfirmPersonalInfo";
 import ReviewOrder from "./Steps/ReviewOrder";
@@ -21,6 +21,8 @@ export default function OrderStepper({ onClose }) {
   const [selectedCafe, setSelectedCafe] = useState(null);
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [userData, setUserData] = useState({ name: "", email: "", phone: "" });
+  const location = useLocation();
+  const { deliveryOption, finalTotal } = location.state || {};
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -56,7 +58,7 @@ export default function OrderStepper({ onClose }) {
       case 1:
         return <ConfirmPersonalInfo userInitialData={userData} onConfirm={handlePersonalInfoConfirm} onBack={handleBack} />;
       case 2:
-        return <ReviewOrder selectedCafe={selectedCafe} selectedDrink={selectedDrink} userData={userData} onBack={handleBack} onConfirm={handleNext} />;
+        return <ReviewOrder selectedCafe={selectedCafe} selectedDrink={selectedDrink} userData={userData} deliveryOption={deliveryOption} finalTotal={finalTotal} onBack={handleBack} onConfirm={handleNext} />;
       case 3:
         return <DeliveryStatus onNext={handleNext} />;
       case 4:

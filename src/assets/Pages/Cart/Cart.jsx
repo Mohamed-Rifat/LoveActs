@@ -15,6 +15,38 @@ export default function Cart() {
   const getProductId = (item) => item?.productId?._id || item?._id || null;
   const getProductData = (item) => (item.productId && typeof item.productId === 'object' ? item.productId : item);
   const formatPrice = (price) => parseFloat(price).toFixed(2);
+  const [showModal, setShowModal] = useState(false);
+  const [deliveryOption, setDeliveryOption] = useState(null); // "pickup" | "delivery"
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
+  const deliveryFee = 50;
+
+  // 🟢 Subtotal
+  const subtotal = useMemo(() => {
+    return (items || []).reduce((total, item) => {
+      const product = getProductData(item);
+      const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+      return total + price * item.quantity;
+    }, 0);
+  }, [items]);
+
+  // 🟢 Total (هو نفسه Subtotal عشان مفيش Tax)
+  const total = useMemo(() => subtotal, [subtotal]);
+
+  // 🟢 Final Total (لو في توصيل)
+  const finalTotal = useMemo(() => {
+    return deliveryOption === "delivery" ? total + deliveryFee : total;
+  }, [deliveryOption, total]);
+
+  const handleProceedClick = () => {
+    setShowModal(true);
+  };
+
+  const handleConfirmOption = () => {
+    setIsConfirmed(true);
+    setShowModal(false);
+    navigate("/checkout", { state: { deliveryOption, finalTotal } });
+  };
 
   useEffect(() => {
     if (!items) return;
@@ -54,7 +86,6 @@ export default function Cart() {
         { headers: { Authorization: `User ${token}` } }
       );
 
-
       setCart(prev => prev.filter(item => getProductId(item) !== productId));
       setNumOfCartItems(prev => prev - quantityToRemove);
       setQuantities(prev => {
@@ -66,16 +97,6 @@ export default function Cart() {
       console.error("Failed to remove item:", error);
     }
   };
-
-  const subtotal = useMemo(() => {
-    return (items || []).reduce((total, item) => {
-      const product = getProductData(item);
-      const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-      return total + price * item.quantity;
-    }, 0);
-  }, [items]);
-  const tax = useMemo(() => subtotal * 0.14, [subtotal]);
-  const total = useMemo(() => subtotal, [subtotal]);
 
   if (loading) return <Loader />;
 
@@ -253,6 +274,73 @@ export default function Cart() {
               </AnimatePresence>
             </motion.div>
 
+            <AnimatePresence>
+  {showModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full text-center"
+      >
+        <h2 className="text-xl font-bold mb-4">Choose Delivery Option</h2>
+
+        <div className="flex flex-col gap-3 mb-6">
+          <button
+            onClick={() => setDeliveryOption("pickup")}
+            className={`py-3 rounded-lg border ${
+              deliveryOption === "pickup"
+                ? "bg-green-600 text-white"
+                : "bg-gray-50 hover:bg-gray-100"
+            }`}
+          >
+            Pickup from Store
+          </button>
+          <button
+            onClick={() => setDeliveryOption("delivery")}
+            className={`py-3 rounded-lg border ${
+              deliveryOption === "delivery"
+                ? "bg-green-600 text-white"
+                : "bg-gray-50 hover:bg-gray-100"
+            }`}
+          >
+            Home Delivery
+          </button>
+        </div>
+
+        {deliveryOption === "delivery" && (
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800 mb-4">
+            📦 Delivery service has an extra fee of <b>50 EGP</b>.  
+            <br /> Currently available only in <b>New Cairo</b>, coming soon across all Egypt 🇪🇬
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowModal(false)}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!deliveryOption}
+            onClick={handleConfirmOption}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            Confirm
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -295,7 +383,7 @@ export default function Cart() {
               <motion.button
                 whileHover={{ scale: 1.02, backgroundColor: "#059669" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate("/checkout")}
+                onClick={handleProceedClick}
                 className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
               >
                 <FiCreditCard />

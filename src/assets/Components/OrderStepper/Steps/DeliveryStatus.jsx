@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import loader from '../../Loader/Loader';
 
 export default function DeliveryStatus({ onNext }) {
-  // تأخير 3 ثواني للانتقال للخطوة التالية
   useEffect(() => {
     const timer = setTimeout(() => {
       onNext();
@@ -10,7 +9,6 @@ export default function DeliveryStatus({ onNext }) {
     return () => clearTimeout(timer);
   }, [onNext]);
 
-  // تحريك progress bar
   useEffect(() => {
     const progressBar = document.getElementById('progress-bar');
     if (progressBar) {
@@ -22,7 +20,7 @@ export default function DeliveryStatus({ onNext }) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md w-full mx-4">
         <div className="flex justify-center mb-6">
-          {loader}
+          <loader/>
         </div>
         
         <h2 className="text-2xl font-bold text-gray-800 mb-3">

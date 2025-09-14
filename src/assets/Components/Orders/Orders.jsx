@@ -1,71 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FaSpinner, FaCheckCircle, FaTimesCircle, FaBoxOpen, FaClock, FaTruck, FaMapMarkerAlt, FaPhone, FaCoffee, FaCalendarAlt, FaReceipt } from 'react-icons/fa';
-
-const mockOrders = [
-  {
-    _id: "mock1",
-    totalPrice: 45.99,
-    contactPhone: "+201234567890",
-    status: "delivered",
-    cafe: "Mock Cafe Alpha",
-    cafeProduct: {
-      name: "Premium Coffee Bundle",
-      price: 45.99
-    },
-    address: {
-      street: "123 Main Street",
-      city: "Cairo",
-      country: "Egypt"
-    },
-    createdAt: "2025-08-25T10:30:00.000Z",
-    updatedAt: "2025-08-25T14:30:00.000Z"
-  },
-  {
-    _id: "mock2",
-    totalPrice: 28.50,
-    contactPhone: "+201234567890",
-    status: "pending",
-    cafe: "Mock Cafe Beta",
-    cafeProduct: {
-      name: "Iced Latte Deluxe",
-      price: 28.50
-    },
-    address: {
-      street: "456 Garden Ave",
-      city: "Alexandria",
-      country: "Egypt"
-    },
-    createdAt: "2025-08-28T08:15:00.000Z",
-    updatedAt: "2025-08-28T08:15:00.000Z"
-  },
-  {
-    _id: "mock3",
-    totalPrice: 67.25,
-    contactPhone: "+201234567890",
-    status: "cancelled",
-    cafe: "Mock Cafe Gamma",
-    cafeProduct: {
-      name: "Espresso Master Set",
-      price: 67.25
-    },
-    address: {
-      street: "789 Coffee Lane",
-      city: "Giza",
-      country: "Egypt"
-    },
-    createdAt: "2025-08-20T16:45:00.000Z",
-    updatedAt: "2025-08-21T09:20:00.000Z",
-    cancelledAt: "2025-08-21T09:20:00.000Z"
-  }
-];
+import { Link } from 'react-router-dom';
+import {
+  FaSpinner, FaCheckCircle, FaTimesCircle, FaBoxOpen,
+  FaClock, FaTruck, FaMapMarkerAlt, FaPhone, FaCoffee,
+  FaCalendarAlt, FaReceipt, FaShoppingBag, FaStore
+} from 'react-icons/fa';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState(null);
-  const [showMockData, setShowMockData] = useState(false);
 
   const token = localStorage.getItem('token')?.replace(/^User\s+|^Admin\s+/, '');
 
@@ -82,19 +28,11 @@ export default function Orders() {
         });
 
         const backendOrders = response.data.orders || [];
-
-        if (backendOrders.length === 0) {
-          setOrders(mockOrders);
-          setShowMockData(true);
-        } else {
-          setOrders(backendOrders);
-          setShowMockData(false);
-        }
+        console.log("📦 Orders from backend:", backendOrders);
+        setOrders(backendOrders);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
-        setError('Failed to load orders');
-        setOrders(mockOrders);
-        setShowMockData(true);
+        setError('Failed to load orders. Please try again later.');
       } finally {
         setLoadingOrders(false);
       }
@@ -155,7 +93,6 @@ export default function Orders() {
     }).format(new Date(dateString));
   };
 
-  // Helper function to safely render cafe name
   const renderCafeName = (cafe) => {
     if (typeof cafe === 'string') {
       return cafe;
@@ -164,6 +101,7 @@ export default function Orders() {
     }
     return 'Unknown Cafe';
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-[#FDE9EE] to-rose-50">
@@ -190,17 +128,7 @@ export default function Orders() {
           </div>
         )}
 
-        {showMockData && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-600 flex items-center gap-2">
-              <FaSpinner />
-              Showing demo data. Real orders will appear here once you make a purchase.
-            </p>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loadingOrders && orders.length === 0 && (
+        {loadingOrders && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="loader">
               <div className="truckWrapper">
@@ -442,185 +370,217 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"
           </div>
         )}
 
-        {/* Main Content */}
         {!loadingOrders && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Orders List */}
-            <div className="lg:col-span-1">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-rose-100 overflow-hidden">
-                <div className="p-6 bg-gradient-to-r from-rose-400 to-pink-500 text-white">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <FaBoxOpen />
-                    Orders ({orders.length})
-                  </h2>
-                </div>
+          <>
+            {orders.length === 0 ? (
 
-                <div className="max-h-[600px] overflow-y-auto">
-                  {orders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <FaBoxOpen className="text-3xl text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Orders Yet</h3>
-                      <p className="text-gray-500 text-sm">Start exploring our menu to place your first order!</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-100">
-                      {orders.map((order) => (
-                        <div
-                          key={order._id}
-                          onClick={() => selectOrderFromList(order)}
-                          className={`p-6 cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-50 hover:to-pink-50 hover:shadow-md ${selectedOrder?._id === order._id
-                            ? 'bg-gradient-to-r from-rose-50 to-pink-50 border-r-4 border-rose-400 shadow-sm'
-                            : ''
-                            }`}
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 bg-gradient-to-r from-rose-100 to-pink-100 rounded-lg flex items-center justify-center">
-                                <FaCoffee className="text-rose-600 text-sm" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-800">#{order._id.slice(-6).toUpperCase()}</p>
-                                <p className="text-xs text-gray-500">{renderCafeName(order.cafe)}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-gray-800">{formatCurrency(order.totalPrice)}</p>
-                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                                {getStatusIcon(order.status)}
-                                <span className="capitalize">{order.status}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-700 truncate">
-                              {order.cafeProduct?.name || 'Product name not available'}
-                            </p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <FaCalendarAlt />
-                                {new Date(order.createdAt).toLocaleDateString()}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <FaMapMarkerAlt />
-                                {order.address?.city || 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                <div className="w-40 h-40 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                  <FaBoxOpen className="text-5xl text-rose-500" />
                 </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">No Orders Yet</h3>
+                <p className="text-gray-600 max-w-md mb-8">
+                  You haven't placed any orders yet. Explore our delicious coffee selection and place your first order!
+                </p>
+                <Link
+                  to="/cafes"
+                  className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:from-rose-600 hover:to-pink-700"
+                >
+                  <FaStore className="text-lg" />
+                  Browse Cafes & Products
+                </Link>
               </div>
-            </div>
-
-            {/* Order Details */}
-            <div className="lg:col-span-2">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-rose-100 overflow-hidden h-fit">
-                {selectedOrder ? (
-                  <>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-rose-100 overflow-hidden">
                     <div className="p-6 bg-gradient-to-r from-rose-400 to-pink-500 text-white">
                       <h2 className="text-xl font-semibold flex items-center gap-2">
-                        <FaReceipt />
-                        Order Details
+                        <FaBoxOpen />
+                        Orders ({orders.length})
                       </h2>
                     </div>
 
-                    <div className="p-8 space-y-8">
-                      {/* Order Header */}
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6">
-                        <div className="space-y-2">
-                          <h3 className="text-2xl font-bold text-gray-800">
-                            Order #{selectedOrder._id.slice(-8).toUpperCase()}
-                          </h3>
-                          <p className="text-gray-600">Placed on {formatDate(selectedOrder.createdAt)}</p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">Status:</span>
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedOrder.status)}`}>
-                              {getStatusIcon(selectedOrder.status)}
-                              <span className="capitalize">{selectedOrder.status}</span>
+                    <div className="max-h-[600px] overflow-y-auto">
+                      <div className="divide-y divide-gray-100">
+                        {orders.map((order) => (
+                          <div
+                            key={order._id}
+                            onClick={() => selectOrderFromList(order)}
+                            className={`p-6 cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-50 hover:to-pink-50 hover:shadow-md ${selectedOrder?._id === order._id
+                              ? 'bg-gradient-to-r from-rose-50 to-pink-50 border-r-4 border-rose-400 shadow-sm'
+                              : ''
+                              }`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 bg-gradient-to-r from-rose-100 to-pink-100 rounded-lg flex items-center justify-center">
+                                  <FaCoffee className="text-rose-600 text-sm" />
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-gray-800">#{order._id.slice(-6).toUpperCase()}</p>
+                                  <p className="text-xs text-gray-500">{renderCafeName(order.cafe)}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-800"> {formatCurrency(
+                                  (order.totalPrice || 0) +
+                                  (order.cafeProduct?.price || 0)
+                                )}</p>
+                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                                  {getStatusIcon(order.status)}
+                                  <span className="capitalize">{order.status}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-gray-700 truncate">
+                                {order.cafeProduct?.name || 'Product name not available'}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <FaCalendarAlt />
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <FaMapMarkerAlt />
+                                  {order.address
+                                    ? `${order.address.street}, ${order.address.city}, ${order.address.country}`
+                                    : 'N/A'}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-xl border border-rose-100">
-                          <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-                          <p className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-pink-700 bg-clip-text text-transparent">
-                            {formatCurrency(selectedOrder.totalPrice)}
-                          </p>
-                        </div>
+                        ))}
                       </div>
-
-                      {/* Product Details */}
-                      <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-6 border border-rose-100">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                          <FaCoffee className="text-rose-500" />
-                          Product Details
-                        </h4>
-                        <div className="bg-white rounded-lg p-4 border border-rose-200 shadow-sm">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-semibold text-gray-800">{selectedOrder.cafeProduct?.name || 'Product name not available'}</p>
-                              <p className="text-sm text-gray-600">From {renderCafeName(selectedOrder.cafe)}</p>
-                            </div>
-                            <p className="text-lg font-bold text-rose-600">
-                              {formatCurrency(selectedOrder.cafeProduct?.price || selectedOrder.totalPrice)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Contact & Delivery Info */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <FaPhone className="text-blue-500" />
-                            Contact Information
-                          </h4>
-                          <p className="text-gray-700 font-medium">{selectedOrder.contactPhone || 'N/A'}</p>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-100">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-emerald-500" />
-                            Delivery Address
-                          </h4>
-                          <div className="text-gray-700 space-y-1">
-                            <p>{selectedOrder.address?.street || 'N/A'}</p>
-                            <p>{selectedOrder.address?.city || 'N/A'}, {selectedOrder.address?.country || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Timeline */}
-                      {selectedOrder.cancelledAt && (
-                        <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <FaTimesCircle className="text-red-500" />
-                            Cancellation Details
-                          </h4>
-                          <p className="text-gray-700">
-                            Order was cancelled on {formatDate(selectedOrder.cancelledAt)}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20">
-                    <div className="w-20 h-20 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-6">
-                      <FaBoxOpen className="text-3xl text-rose-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">Select an Order</h3>
-                    <p className="text-gray-500">Choose an order from the list to view detailed information</p>
                   </div>
-                )}
+                </div>
+
+                <div className="lg:col-span-2">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-rose-100 overflow-hidden h-fit">
+                    {selectedOrder ? (
+                      <>
+                        <div className="p-6 bg-gradient-to-r from-rose-400 to-pink-500 text-white">
+                          <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaReceipt />
+                            Order Details
+                          </h2>
+                        </div>
+
+                        <div className="p-8 space-y-8">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6">
+                            <div className="space-y-2">
+                              <h3 className="text-2xl font-bold text-gray-800">
+                                Order #{selectedOrder._id.slice(-8).toUpperCase()}
+                              </h3>
+                              <p className="text-gray-600">Placed on {formatDate(selectedOrder.createdAt)}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-600">Status:</span>
+                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedOrder.status)}`}>
+                                  {getStatusIcon(selectedOrder.status)}
+                                  <span className="capitalize">{selectedOrder.status}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-xl border border-rose-100">
+                              <p className="text-sm text-gray-600 mb-1">Total Amount</p>
+                              <p className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-pink-700 bg-clip-text text-transparent">
+                                {formatCurrency(
+                                  (selectedOrder.totalPrice || 0) + (selectedOrder.cafeProduct?.price || 0)
+                                )}
+                              </p>
+                            </div>
+
+                          </div>
+                          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-lg font-medium">
+                            ⚠️ A delivery charge of 50 EGP will be added to the total amount if the order is for delivery. If the order is for pickup, the 50 EGP will not be charged.
+                          </div>
+                          <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-6 border border-rose-100">
+                            <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                              <FaCoffee className="text-rose-500" />
+                              Product Details
+                            </h4>
+
+                            {selectedOrder.productId && (
+                              <div className="bg-white rounded-lg p-4 border border-rose-200 shadow-sm mb-4">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <p className="font-semibold text-gray-800">{selectedOrder.productId.name}</p>
+                                    <p className="text-sm text-gray-600">Main Product</p>
+                                  </div>
+                                  <p className="text-lg font-bold text-rose-600">
+                                    {formatCurrency(selectedOrder.totalPrice)}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {selectedOrder.cafeProduct && (
+                              <div className="bg-white rounded-lg p-4 border border-rose-200 shadow-sm">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <p className="font-semibold text-gray-800">{selectedOrder.cafeProduct.name}</p>
+                                    <p className="text-sm text-gray-600">From {renderCafeName(selectedOrder.cafe)}</p>
+                                  </div>
+                                  <p className="text-lg font-bold text-rose-600">
+                                    {formatCurrency(selectedOrder.cafeProduct.price)}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaPhone className="text-blue-500" />
+                                Contact Information
+                              </h4>
+                              <p className="text-gray-700 font-medium">{selectedOrder.contactPhone || 'N/A'}</p>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-100">
+                              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaMapMarkerAlt className="text-emerald-500" />
+                                Delivery Address
+                              </h4>
+                              <div className="text-gray-700 space-y-1">
+                                <p>{selectedOrder.address?.street || 'N/A'}</p>
+                                <p>{selectedOrder.address?.city || 'N/A'}, {selectedOrder.address?.country || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {selectedOrder.cancelledAt && (
+                            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
+                              <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaTimesCircle className="text-red-500" />
+                                Cancellation Details
+                              </h4>
+                              <p className="text-gray-700">
+                                Order was cancelled on {formatDate(selectedOrder.cancelledAt)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-20">
+                        <div className="w-20 h-20 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-6">
+                          <FaBoxOpen className="text-3xl text-rose-500" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">Select an Order</h3>
+                        <p className="text-gray-500">Choose an order from the list to view detailed information</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>
