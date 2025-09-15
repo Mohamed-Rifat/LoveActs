@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion } from "framer-motion";
 import axios from 'axios';
-import { FiShoppingCart, FiHeart, FiSearch, FiCoffee, FiStar, FiMapPin, FiClock, FiChevronRight, FiSmartphone, FiRefreshCw } from "react-icons/fi";
+import { FiShoppingCart, FiCoffee, FiStar, FiSmartphone, FiRefreshCw } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
 import toast from "react-hot-toast";
@@ -78,7 +78,7 @@ export default function Home() {
 
         const cafesRes = await axios.get(`${API_BASE}/cafe/display-all-cafes`);
         const cafesData = cafesRes.data?.cafeData || cafesRes.data || [];
-        setCafes(cafesData.slice(0, 3));
+        setCafes(cafesData.slice(0, 6));
 
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -406,7 +406,6 @@ export default function Home() {
             </div>
           ) : (
             <motion.div
-              // className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
@@ -426,26 +425,14 @@ export default function Home() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        {/* {cafe.products && cafe.products.length > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                    {cafe.products.length}
-                  </div>
-                )} */}
                       </div>
 
                       <div className="mb-3">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
                           {cafe.name || "Love Acts Cafe"}
                         </h3>
-                        {/* <div className="flex items-center justify-center text-yellow-400">
-                          <FiStar className="fill-current text-sm" />
-                          <span className="text-xs text-gray-600 ml-1">4.8</span>
-                        </div> */}
                       </div>
-
-
                     </div>
-
                   );
                 })}
               </div>

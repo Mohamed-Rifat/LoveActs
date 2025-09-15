@@ -540,6 +540,8 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"
                                 Contact Information
                               </h4>
                               <p className="text-gray-700 font-medium">{selectedOrder.contactPhone || 'N/A'}</p>
+                              <p className="text-gray-700 font-medium">{selectedOrder.cafeProduct.selectedDate || 'N/A'}</p>
+                              <p className="text-gray-700 font-medium">{selectedOrder.cafeProduct.selectedTimeSlote || 'N/A'}</p>
                             </div>
 
                             <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-100">

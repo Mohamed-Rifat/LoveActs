@@ -36,7 +36,7 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
       <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center pb-3 border-b">
           <h3 className="text-xl font-semibold text-gray-900">
@@ -81,16 +81,32 @@ const CafeProductsModal = ({ cafe, isOpen, onClose, onUpdateProduct }) => {
                           />
                         </div>
                       </div>
-                      
+
                     </div>
                   ) : (
                     <>
+                      <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 flex items-center justify-center me-4">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src="/Logo.PNG"
+                            alt="logo"
+                            className="w-10 h-10 object-contain"
+                          />
+                        )}
+                      </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{product.productName}</h4>
+
+                        <h4 className="font-medium text-gray-900 mt-2">{product.productName}</h4>
                         <p className="text-sm text-gray-500 mt-1">Price: {product.price} LE</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="text-lg font-bold text-indigo-600">
+                        <div className="text-lg font-bold text-indigo-600 mt-4">
                           {product.price} LE
                         </div>
                       </div>
@@ -141,7 +157,7 @@ function DashboardCafes() {
     link: '',
     location: '',
     image: null,
-    products: [{ productName: '', price: '' }]
+    products: [{ productName: '', price: '', image: null }]
   })
   const [notifications, setNotifications] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -298,143 +314,143 @@ function DashboardCafes() {
     }
   }
 
-const handleEditCafe = (cafe) => {
-  setEditingCafe(cafe);
-  setFormData({
-    name: cafe.name || '',
-    address: cafe.address || '',
-    phone: cafe.phone || '',
-    iframe: cafe.iframe || '',
-    link: cafe.link || '',
-    location: cafe.location || '',
-    image: cafe.image || null, 
-    products: cafe.products && cafe.products.length > 0
-      ? cafe.products.map(p => ({
+  const handleEditCafe = (cafe) => {
+    setEditingCafe(cafe);
+    setFormData({
+      name: cafe.name || '',
+      address: cafe.address || '',
+      phone: cafe.phone || '',
+      iframe: cafe.iframe || '',
+      link: cafe.link || '',
+      location: cafe.location || '',
+      image: cafe.image || null,
+      products: cafe.products && cafe.products.length > 0
+        ? cafe.products.map(p => ({
           productName: p.productName || '',
           price: p.price || ''
         }))
-      : [{ productName: '', price: '' }]
-  });
-  setShowModal(true);
-};
+        : [{ productName: '', price: '' }]
+    });
+    setShowModal(true);
+  };
 
-const handleUpdateCafe = async (e) => {
-  e.preventDefault();
-  setSubmitting(true);
+  const handleUpdateCafe = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
 
-  try {
-    if (!editingCafe?._id) {
-      addNotification('No cafe selected to update', 'error');
-      return;
-    }
+    try {
+      if (!editingCafe?._id) {
+        addNotification('No cafe selected to update', 'error');
+        return;
+      }
 
-    let payload;
-    let headers;
+      let payload;
+      let headers;
 
-    if (formData.image && typeof formData.image !== "string") {
-      payload = new FormData();
-      payload.append('name', formData.name);
-      payload.append('address', formData.address);
-      payload.append('phone', formData.phone);
-      payload.append('link', formData.link);
-      payload.append('location', formData.location);
-      payload.append('iframe', formData.iframe || '');
-      payload.append('image', formData.image);
+      if (formData.image && typeof formData.image !== "string") {
+        payload = new FormData();
+        payload.append('name', formData.name);
+        payload.append('address', formData.address);
+        payload.append('phone', formData.phone);
+        payload.append('link', formData.link);
+        payload.append('location', formData.location);
+        payload.append('iframe', formData.iframe || '');
+        payload.append('image', formData.image);
 
-      formData.products.forEach((p, i) => {
-        payload.append(`products[${i}][productName]`, p.productName);
-        payload.append(`products[${i}][price]`, p.price);
+        formData.products.forEach((p, i) => {
+          payload.append(`products[${i}][productName]`, p.productName);
+          payload.append(`products[${i}][price]`, p.price);
+        });
+
+        headers = { 'Content-Type': 'multipart/form-data', Authorization: `Admin ${token}` };
+
+      } else {
+        payload = {
+          name: formData.name,
+          address: formData.address,
+          phone: formData.phone,
+          link: formData.link,
+          location: formData.location,
+          iframe: formData.iframe || '',
+          products: formData.products,
+          image: typeof formData.image === "string" ? formData.image : undefined,
+        };
+
+        headers = { 'Content-Type': 'application/json', Authorization: `Admin ${token}` };
+      }
+
+      await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, { headers });
+
+      addNotification('Cafe updated successfully');
+      setShowModal(false);
+      setEditingCafe(null);
+      setFormData({
+        name: '',
+        address: '',
+        phone: '',
+        iframe: '',
+        link: '',
+        location: '',
+        image: null,
+        products: [{ productName: '', price: '' }],
       });
 
-      headers = { 'Content-Type': 'multipart/form-data', Authorization: `Admin ${token}` };
+      fetchCafes();
+    } catch (error) {
+      console.error('Error updating cafe:', error);
 
-    } else {
-      payload = {
-        name: formData.name,
-        address: formData.address,
-        phone: formData.phone,
-        link: formData.link,
-        location: formData.location,
-        iframe: formData.iframe || '',
-        products: formData.products,
-        image: typeof formData.image === "string" ? formData.image : undefined, 
-      };
+      let message = error.response?.data?.error || 'Failed to update cafe';
 
-      headers = { 'Content-Type': 'application/json', Authorization: `Admin ${token}` };
-    }
-
-    await api.put(`/cafe/update-cafe/${editingCafe._id}`, payload, { headers });
-
-    addNotification('Cafe updated successfully');
-    setShowModal(false);
-    setEditingCafe(null);
-    setFormData({
-      name: '',
-      address: '',
-      phone: '',
-      iframe: '',
-      link: '',
-      location: '',
-      image: null,
-      products: [{ productName: '', price: '' }],
-    });
-
-    fetchCafes();
-  } catch (error) {
-  console.error('Error updating cafe:', error);
-
-  let message = error.response?.data?.error || 'Failed to update cafe';
-
-  if (typeof message === "object") {
-    message = message.en || 'Failed to update cafe';
-  }
-
-  addNotification(message, 'error');
-} finally {
-    setSubmitting(false);
-  }
-};
-
-
-
-const handleUpdateProduct = async (cafeId, productId, productData) => {
-  try {
-    console.log("Updating product with:", { cafeId, productId, productData });
-
-    const response = await api.put(
-      `/cafe/update-cafe-products/${cafeId}/${productId}`,
-      {
-        productName: productData.productName,
-        price: productData.price,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Admin ${token}`,
-        },
+      if (typeof message === "object") {
+        message = message.en || 'Failed to update cafe';
       }
-    );
 
-    addNotification('Product updated successfully');
-
-    setCafes(prevCafes =>
-      prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
-    );
-
-    if (selectedCafe && selectedCafe._id === cafeId) {
-      setSelectedCafe(response.data.cafe);
+      addNotification(message, 'error');
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    return response.data;
-  } catch (error) {
-    console.error('Error updating product:', error);
 
-    const message = error.response?.data?.message || 'Failed to update product';
-    addNotification(message, 'error');
 
-    return null;
-  }
-};
+  const handleUpdateProduct = async (cafeId, productId, productData) => {
+    try {
+      console.log("Updating product with:", { cafeId, productId, productData });
+
+      const response = await api.put(
+        `/cafe/update-cafe-products/${cafeId}/${productId}`,
+        {
+          productName: productData.productName,
+          price: productData.price,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Admin ${token}`,
+          },
+        }
+      );
+
+      addNotification('Product updated successfully');
+
+      setCafes(prevCafes =>
+        prevCafes.map(cafe => (cafe._id === cafeId ? response.data.cafe : cafe))
+      );
+
+      if (selectedCafe && selectedCafe._id === cafeId) {
+        setSelectedCafe(response.data.cafe);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+
+      const message = error.response?.data?.message || 'Failed to update product';
+      addNotification(message, 'error');
+
+      return null;
+    }
+  };
 
 
 
@@ -703,7 +719,7 @@ const handleUpdateProduct = async (cafeId, productId, productData) => {
       </main>
 
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 px-4">
           <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b">
               <h3 className="text-xl font-semibold text-gray-900">
@@ -841,6 +857,16 @@ const handleUpdateProduct = async (cafeId, productId, productData) => {
 
                 {formData.products.map((product, index) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 p-3 bg-gray-50 rounded-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                      <input
+                        type="file"
+                        name="image"
+                        onChange={(e) => handleProductChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border rounded-md focus:ring-indigo-500"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                       <input

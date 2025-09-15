@@ -141,13 +141,13 @@ const Navbar = () => {
                     </span>
                   </Link>
                 )}
-                {user?.role === "User" && (
+                {/* {user?.role === "User" && (
                   <Link
                     to="/wishlist"
                     className="relative text-gray-700 hover:text-[#CF848A] transition-all duration-300">
                     <FaHeart className="text-2xl" />
                   </Link>
-                )}
+                )} */}
                 <div className="relative">
                   <div ref={userButtonRef}>
                     <FaUserCircle

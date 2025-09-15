@@ -3,10 +3,10 @@ import { useToken } from "../../../Context/TokenContext/TokenContext";
 import axios from "axios";
 import { useCart } from "../../../hooks/UseCart";
 
-export default function ReviewOrder({ selectedCafe, selectedDrink, userData, deliveryOption, finalTotal, onBack, onConfirm }) {
+export default function ReviewOrder({ selectedCafe, selectedDrink, userData, deliveryOption, onBack, onConfirm }) {
     const { cart, clearAllCart, cartId } = useCart();
     const { token } = useToken();
-    const [selectedTime, setSelectedTime] = useState("");
+    const [selectedTimeSlote, setselectedTimeSlote] = useState("");
     const [selectedDate, setSelectedDate] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
@@ -18,30 +18,31 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
     const formattedNextWeek = nextWeek.toISOString().split('T')[0];
 
     const deliveryTimes = [
-        { id: "10-12", label: "10:00 AM - 12:00 PM", value: "10-12" },
-        { id: "12-2", label: "12:00 PM - 2:00 PM", value: "12-2" },
-        { id: "2-4", label: "2:00 PM - 4:00 PM", value: "2-4" },
-        { id: "4-6", label: "4:00 PM - 6:00 PM", value: "4-6" },
-        { id: "6-8", label: "6:00 PM - 8:00 PM", value: "6-8" }
+        { id: "10-12", label: "10:00 AM - 12:00 PM", value: "10:00 AM - 12:00 PM" },
+        { id: "12-2", label: "12:00 PM - 2:00 PM", value: "12:00 PM - 2:00 PM" },
+        { id: "2-4", label: "2:00 PM - 4:00 PM", value: "2:00 PM - 4:00 PM" },
+        { id: "4-6", label: "4:00 PM - 6:00 PM", value: "4:00 PM - 6:00 PM" },
+        { id: "6-8", label: "6:00 PM - 8:00 PM", value: "6:00 PM - 8:00 PM" }
     ];
 
-    const handleTimeChange = (event) => setSelectedTime(event.target.value);
+    const handleTimeChange = (event) => setselectedTimeSlote(event.target.value);
     const handleDateChange = (event) => setSelectedDate(event.target.value);
 
     const totalPrice = cart.reduce((total, item) => total + (Number(item.productId.price) * Number(item.quantity || 1)), 0);
     const baseTotal = totalPrice + Number(selectedDrink?.price || 0);
-//    const subtotal = selectedDrink?.price || 0;
-  const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
-  const total =  baseTotal + deliveryFee;
+    const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
+    const total = baseTotal + deliveryFee;
 
     const handleConfirm = async () => {
-        if (!selectedTime || !selectedDate) {
+        if (!selectedTimeSlote || !selectedDate) {
             alert("Please select both date and pickup time");
             return;
         }
 
         setLoading(true);
         setMessage(null);
+        const dateParts = selectedDate.split("-");
+        const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
 
         try {
             const orderPayload = {
@@ -55,10 +56,13 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                 cafe: selectedCafe?._id || null,
                 cafeProduct: selectedDrink ? {
                     name: selectedDrink.productName,
-                    price: selectedDrink.price
-                } : null
-            };
+                    price: selectedDrink.price,
+                    selectedDate: formattedDate,
+                    selectedTimeSlote: selectedTimeSlote || null
+                } : null,
 
+            };
+            console.log("Order Payload being sent to backend:", orderPayload);
             const response = await axios.post(
                 "https://flowers-vert-six.vercel.app/api/order",
                 orderPayload,
@@ -69,7 +73,7 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
 
             setMessage({ type: "success", text: response?.data?.message || "Order placed successfully!" });
             clearAllCart();
-            if (onConfirm) onConfirm(selectedDate, selectedTime);
+            if (onConfirm) onConfirm(selectedDate, selectedTimeSlote);
         } catch (err) {
             console.log("Token being sent:", token);
             console.error("Order creation error:", err);
@@ -180,7 +184,7 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                                         Select Time Slot
                                     </label>
                                     <select
-                                        value={selectedTime}
+                                        value={selectedTimeSlote}
                                         onChange={handleTimeChange}
                                         className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
@@ -194,22 +198,23 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                                 </div>
                             </div>
 
-                            {selectedDate && selectedTime && (
+                            {selectedDate && selectedTimeSlote && (
                                 <div className="bg-green-100 p-4 rounded-xl text-green-800 text-center">
                                     <div className="flex items-center justify-center">
                                         <span className="mr-2">📅</span>
                                         <p className="font-bold">
                                             {new Date(selectedDate).toLocaleDateString('en-US', {
                                                 weekday: 'long',
-                                                year: 'numeric',
+                                                day: 'numeric',
                                                 month: 'long',
-                                                day: 'numeric'
+                                                year: 'numeric',
+
                                             })}
                                         </p>
                                         <span className="mx-2">|</span>
                                         <span className="mr-2">⏰</span>
                                         <p className="font-bold">
-                                            {deliveryTimes.find(t => t.value === selectedTime)?.label}
+                                            {deliveryTimes.find(t => t.value === selectedTimeSlote)?.label}
                                         </p>
                                     </div>
                                 </div>
@@ -280,7 +285,7 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                                     )}
                                 </div>
 
-                                {selectedDate && selectedTime && (
+                                {selectedDate && selectedTimeSlote && (
                                     <div>
                                         <h4 className="text-lg font-semibold border-b-2 border-blue-600 pb-2 mb-4">
                                             Pickup Date & Time
@@ -301,7 +306,7 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                                                 <div className="flex items-center">
                                                     <span className="mr-2">⏰</span>
                                                     <p className="font-bold">
-                                                        {deliveryTimes.find(t => t.value === selectedTime)?.label}
+                                                        {deliveryTimes.find(t => t.value === selectedTimeSlote)?.label}
                                                     </p>
                                                 </div>
                                             </div>
@@ -341,8 +346,8 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                     </button>
                     <button
                         onClick={handleConfirm}
-                        disabled={!selectedTime || !selectedDate || loading}
-                        className={`px-8 py-3 rounded-lg transition-colors ${selectedTime && selectedDate && !loading
+                        disabled={!selectedTimeSlote || !selectedDate || loading}
+                        className={`px-8 py-3 rounded-lg transition-colors ${selectedTimeSlote && selectedDate && !loading
                             ? 'bg-blue-600 hover:bg-blue-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}

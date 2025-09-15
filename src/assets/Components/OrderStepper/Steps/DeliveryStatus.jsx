@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import loader from '../../Loader/Loader';
+import Loader from '../../Loader/Loader';
 
 export default function DeliveryStatus({ onNext }) {
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function DeliveryStatus({ onNext }) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md w-full mx-4">
         <div className="flex justify-center mb-6">
-          <loader/>
+          <Loader/>
         </div>
         
         <h2 className="text-2xl font-bold text-gray-800 mb-3">
