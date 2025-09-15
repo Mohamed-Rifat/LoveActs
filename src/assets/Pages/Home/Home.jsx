@@ -6,7 +6,9 @@ import { FiShoppingCart, FiCoffee, FiStar, FiSmartphone, FiRefreshCw } from "rea
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
 import toast from "react-hot-toast";
-
+import bruxies from "./../../../../public/bruxies.png"
+import STEEP from "./../../../../public/STEEP_Brand logo-pink.png"
+import ZenZoo from "./../../../../public/ZenZoo.jpg"
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState([]);
@@ -48,24 +50,24 @@ export default function Home() {
   const partners = [
     {
       name: "Partner 1",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+      logo: bruxies,
     },
     {
       name: "Partner 2",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+      logo: STEEP
     },
     {
       name: "Partner 3",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+      logo: ZenZoo
     },
-    {
-      name: "Partner 4",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
-    },
-    {
-      name: "Partner 5",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
-    }
+    // {
+    //   name: "Partner 4",
+    //   logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+    // },
+    // {
+    //   name: "Partner 5",
+    //   logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
+    // }
   ];
 
   useEffect(() => {
