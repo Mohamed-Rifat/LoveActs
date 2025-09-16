@@ -6,13 +6,13 @@ import { FiShoppingCart, FiCoffee, FiStar, FiSmartphone, FiRefreshCw } from "rea
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
 import toast from "react-hot-toast";
-import bruxies from "../../../assets/Image/bruxies.png"
-import STEEP from "../../../assets/Image/STEEP_Brand logo-pink.png"
-import ZenZoo from "../../../assets/Image/ZenZoo.jpg"
-import TLap from "../../../assets/Image/TLap.jpg"
-import Brewbuzz from "../../../assets/Image/Brewbuzz.png"
-import SeelaZ from "../../../assets/Image/SeelaZ logo -2.png"
-import IMG from "../../../assets/Image/IMG_7755.JPG"
+import bruxies from "./../../Image/bruxies.png"
+import STEEP from "./../../Image/STEEP_Brand logo-pink.png"
+import ZenZoo from "./../../Image/ZenZoo.jpg"
+import TLap from "./../../Image/TLap.jpg"
+import Brewbuzz from "./../../Image/Brewbuzz.png"
+import SeelaZ from "./../../Image/SeelaZ logo -2.png"
+import IMG from "./../../Image/IMG_7755.JPG"
 import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
