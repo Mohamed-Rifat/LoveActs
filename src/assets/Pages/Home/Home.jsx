@@ -6,14 +6,6 @@ import { FiShoppingCart, FiCoffee, FiStar, FiSmartphone, FiRefreshCw } from "rea
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
 import toast from "react-hot-toast";
-import bruxies from "./../../bruxies.png"
-import STEEP from "./../../STEEP_Brand logo-pink.png"
-import ZenZoo from "./../../ZenZoo.jpg"
-import TLap from "./../../TLap.jpg"
-import Brewbuzz from "./../../Brewbuzz.png"
-import SeelaZ from "./../../SeelaZ logo -2.png"
-import IMG from "./../../IMG_7755.JPG"
-import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -56,37 +48,36 @@ export default function Home() {
     }
   ];
 
-  const clients = [
-    {
-      name: "",
-      logo: bruxies,
-    },
-    {
-      name: "",
-      logo: STEEP
-    },
-    {
-      name: "",
-      logo: ZenZoo
-    },
-    {
-      name: "",
-      logo: TLap
-    },
-    {
-      name: "",
-      logo: Brewbuzz
-    },
-    {
-      name: "",
-      logo: SeelaZ
-    },
-    {
-      name: "",
-      logo: IMG
-    },
-
-  ];
+ const clients = [
+  {
+    name: "Bruxies",
+    logo: "/bruxies.png",
+  },
+  {
+    name: "STEEP",
+    logo: "/STEEP_Brand logo-pink.png",
+  },
+  {
+    name: "ZenZoo",
+    logo: "/ZenZoo.JPG",
+  },
+  {
+    name: "TLap",
+    logo: "/TLap.jpg",
+  },
+  {
+    name: "Brewbuzz",
+    logo: "/Brewbuzz.png",
+  },
+  {
+    name: "SeelaZ",
+    logo: "/SeelaZ logo -2.png",
+  },
+  {
+    name: "IMG",
+    logo: "/IMG_7755.JPG",
+  },
+];
 
   useEffect(() => {
     const fetchData = async () => {
