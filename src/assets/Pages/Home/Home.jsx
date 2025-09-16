@@ -9,6 +9,15 @@ import toast from "react-hot-toast";
 import bruxies from "./../../../../public/bruxies.png"
 import STEEP from "./../../../../public/STEEP_Brand logo-pink.png"
 import ZenZoo from "./../../../../public/ZenZoo.jpg"
+import TLap from "./../../../../public/TLap.jpg"
+import Brewbuzz from "./../../../../public/Brewbuzz.png"
+import SeelaZ from "./../../../../public/SeelaZ logo -2.png"
+import IMG from "./../../../../public/IMG_7755.JPG"
+import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
+import "swiper/css";
+
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState([]);
@@ -47,27 +56,36 @@ export default function Home() {
     }
   ];
 
-  const partners = [
+  const clients = [
     {
-      name: "Partner 1",
+      name: "",
       logo: bruxies,
     },
     {
-      name: "Partner 2",
+      name: "",
       logo: STEEP
     },
     {
-      name: "Partner 3",
+      name: "",
       logo: ZenZoo
     },
-    // {
-    //   name: "Partner 4",
-    //   logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
-    // },
-    // {
-    //   name: "Partner 5",
-    //   logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPF2Rzt67PYu_FCqNeHEpMPSVd-xTnr2x2yg&s"
-    // }
+    {
+      name: "",
+      logo: TLap
+    },
+    {
+      name: "",
+      logo: Brewbuzz
+    },
+    {
+      name: "",
+      logo: SeelaZ
+    },
+    {
+      name: "",
+      logo: IMG
+    },
+
   ];
 
   useEffect(() => {
@@ -501,7 +519,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 ">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <motion.h2
@@ -524,26 +542,41 @@ export default function Home() {
             </motion.p>
           </div>
 
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            {partners.map((partner, index) => (
-              <div
-                key={index}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center"
-              >
-                <img
-                  src={partner.logo}
-                  alt={partner.name}
-                  className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity"
-                />
-              </div>
-            ))}
-          </motion.div>
+          <div className="relative w-full py-10">
+            <div className="absolute inset-y-0 left-0 w-32  pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-32 pointer-events-none" />
+            <Swiper
+              modules={[Autoplay]}
+              autoplay={{ delay: 0, disableOnInteraction: false }}
+              speed={4000}
+              loop={true}
+              slidesPerView={2}
+              spaceBetween={40}
+              breakpoints={{
+                640: { slidesPerView: 3 },
+                768: { slidesPerView: 4 },
+                1024: { slidesPerView: 5 },
+              }}
+              className="overflow-hidden"
+            >
+              {clients.map((client, i) => (
+                <SwiperSlide
+                  key={i}
+                  className="flex items-center justify-center"
+                >
+                  <img
+                    src={client.logo}
+                    alt={client.name}
+                    className="h-14 md:h-20 transition duration-500 hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                    width="160"
+                    height="80"
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
         </div>
       </section>
 
