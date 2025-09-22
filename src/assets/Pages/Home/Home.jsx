@@ -20,6 +20,11 @@ export default function Home() {
   const { addToCart, pending, getCart } = useCart();
   const navigate = useNavigate();
   const API_BASE = "https://flowers-vert-six.vercel.app/api";
+  const positionMap = {
+    left: "justify-start text-left",
+    center: "justify-center text-center",
+    right: "justify-end text-right"
+  };
 
 
 
@@ -30,54 +35,72 @@ export default function Home() {
   const slides = [
     {
       id: 1,
-      title: "Luxury Rose Bouquets",
-      description: "Fresh red roses for special occasions",
-      buttonText: "Order Roses",
-      path: "/products",
-      image: "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      bgColor: "bg-gray-400/30 backdrop-blur-md"
+      image: "/Banner1.PNG",
+      heading: "Step 1:",
+      subheading: "Pick the Flower Bundle",
+      description: "Fresh minimal packs like no other!",
+      caption: "Love is in every sip.",
+      position: "right",
+      headingColor: "text-white",
+      subheadingColor: "text-[#EB95A2]",
+      bgColor: "from-transparent to-gray-900"
+
     },
     {
       id: 2,
-      title: "Unique Cafe Experience",
-      description: "Enjoy relaxing atmospheres with premium beverages",
-      buttonText: "Explore Cafes",
-      path: "/cafes",
-      image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      bgColor: "bg-gray-400/30 backdrop-blur-md"
+      image: "/Banner2.jpeg",
+      heading: "Step 2:",
+      subheading: "place your Coffee order",
+      description: "Got all your favourite coffee shops in one place!",
+      caption: "Delicious memories.",
+      position: "right",
+      headingColor: "text-white",
+      subheadingColor: "text-[#EB95A2]",
+      bgColor: "from-transparent to-gray-900"
+    },
+    {
+      id: 3,
+      image: "/Banner3.PNG",
+      heading: "Step 3:",
+      subheading: "Choose pickup or Delivery",
+      caption: "Every act of love matters.",
+      position: "left",
+      headingColor: "text-white",
+      subheadingColor: "text-[#EB95A2]",
+      bgColor: "from-gray-900 to-transparent"
     }
   ];
 
- const clients = [
-  {
-    name: "Bruxies",
-    logo: "/bruxies.png",
-  },
-  {
-    name: "STEEP",
-    logo: "/STEEP_Brand logo-pink.png",
-  },
-  {
-    name: "ZenZoo",
-    logo: "/ZenZoo.JPG",
-  },
-  {
-    name: "TLap",
-    logo: "/TLap.jpg",
-  },
-  {
-    name: "Brewbuzz",
-    logo: "/Brewbuzz.png",
-  },
-  {
-    name: "SeelaZ",
-    logo: "/SeelaZ logo -2.png",
-  },
-  {
-    name: "IMG",
-    logo: "/IMG_7755.JPG",
-  },
-];
+  const clients = [
+    {
+      name: "Bruxies",
+      logo: "/bruxies.png",
+    },
+    {
+      name: "STEEP",
+      logo: "/STEEP_Brand logo-pink.png",
+    },
+    {
+      name: "ZenZoo",
+      logo: "/ZenZoo.JPG",
+    },
+    {
+      name: "TLap",
+      logo: "/TLap.jpg",
+    },
+    {
+      name: "Brewbuzz",
+      logo: "/Brewbuzz.png",
+    },
+    {
+      name: "SeelaZ",
+      logo: "/SeelaZ logo -2.png",
+    },
+    {
+      name: "IMG",
+      logo: "/IMG_7755.JPG",
+    },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -181,7 +204,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className="relative h-96 md:h-screen max-h-[600px] overflow-hidden">
+      <div className="relative h-96 md:h-screen max-h-[600px] overflow-hidden container mx-auto px-4 rounded-sm mt-2">
         {slides.map((slide, index) => (
           <div
             key={slide.id}
@@ -190,73 +213,66 @@ export default function Home() {
             <div className="absolute inset-0">
               <img
                 src={slide.image}
-                alt={slide.title}
+                alt={slide.subheading}
                 className="w-full h-full object-cover"
               />
               <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgColor} opacity-90`}></div>
             </div>
 
-            <div className="relative h-full flex items-center justify-center text-center px-4">
-              <div className="max-w-4xl mx-auto text-white">
-                <motion.h1
-                  className="text-3xl md:text-5xl font-bold mb-4"
+            <div className={`relative h-full flex items-center ${positionMap[slide.position]} px-4 md:px-16`}>
+              <div className="max-w-2xl mx-0 lg:mx-16 text-white">
+                <motion.h2
+                  className={`text-4xl lg:text-8xl font-semibold mb-4 ${slide.headingColor}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  {slide.title}
+                  {slide.heading}
+                </motion.h2>
+                <motion.h1
+                  className={`text-4xl lg:text-7xl font-bold lg:mb-4 max-w-xs md:max-w-full ${slide.subheadingColor}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  {slide.subheading}
                 </motion.h1>
                 <motion.p
-                  className="text-xl mb-8 max-w-2xl mx-auto"
+                  className={`text-base lg:text-2xl mt-2 lg:me-2 lg:mb-4 max-w-md mx-auto 
+    ${slide.id === 2 ? "max-w-xs md:max-w-md" : ""}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
                   {slide.description}
                 </motion.p>
-                <motion.button
-                  onClick={() => navigate(slide.path)}
-                  className="bg-white text-amber-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                >
-                  {slide.buttonText}
-                </motion.button>
+
               </div>
             </div>
           </div>
         ))}
 
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-2">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full ${index === currentSlide ? 'bg-white' : 'bg-white/50'}`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center space-y-2">
+          <motion.p
+            className="text-md md:text-2xl italic text-white"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            Love is in every sip.
+          </motion.p>
 
-        <button
-          onClick={() => setCurrentSlide(prev => (prev === 0 ? slides.length - 1 : prev - 1))}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 transition"
-          aria-label="Previous slide"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <button
-          onClick={() => setCurrentSlide(prev => (prev === slides.length - 1 ? 0 : prev + 1))}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 transition"
-          aria-label="Next slide"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+          <div className="flex space-x-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-3 h-3 rounded-full ${index === currentSlide ? 'bg-white' : 'bg-white/50'}`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       <section className="py-16 bg-white">
