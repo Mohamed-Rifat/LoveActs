@@ -30,34 +30,34 @@ const routes = createBrowserRouter([
     path: "",
     element: <MainLayout />,
     children: [
-      { index: true, element: <ProtectedRoutes><Home /></ProtectedRoutes> },
+      { index: true, element: <Home /> },
       { path: "home", element: <Home /> },
       { path: "register", element: <Register /> },
       { path: "login", element: <Login /> },
       { path: "resetpassword", element: <ResetPassword /> },
       { path: "admindashboard", element: <ProtectedRoutes> <MainAdminDashboard /> </ProtectedRoutes> },
-      { path: "cafes", element:  <Cafes />  },
-      { path: "products", element:  <Products />  },
-      { path: "cart", element:  <Cart />  },
-      { path: "about", element:  <About />  },
-     { path:"/checkout" ,element: <CheckoutStepper />},
+      { path: "cafes", element: <Cafes /> },
+      { path: "products", element: <Products /> },
+      { path: "cart", element: <ProtectedRoutes> <Cart /> </ProtectedRoutes> },
+      { path: "about", element: <About /> },
+      { path: "/checkout", element: <ProtectedRoutes><CheckoutStepper /></ProtectedRoutes> },
       {
-          path: 'settings', element:
-            <ProtectedRoutes>
-              <Settings />
-            </ProtectedRoutes>
-          , children: [{
-            index: true, element: <PersonalInfo />
-          },
-          {
-            path: 'privacy', element: <Privacy />
-          },
-          {
-            path: 'orders', element:
-              <Orders />
-          }
-          ]
+        path: 'settings', element:
+          <ProtectedRoutes>
+            <Settings />
+          </ProtectedRoutes>
+        , children: [{
+          index: true, element: <PersonalInfo />
         },
+        {
+          path: 'privacy', element: <Privacy />
+        },
+        {
+          path: 'orders', element:
+            <Orders />
+        }
+        ]
+      },
 
       { path: "*", element: <NotFound /> }
     ]
@@ -68,17 +68,17 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
-      {/* <Offline>
+        {/* <Offline>
         <div className='offline flex items-center p-3 text-center'>
           Oops... You are offline. Check your connection <MdOutlineWifiOff className='ms-2' />
         </div>
       </Offline> */}
-      <TokenProvider>
-        <CartProvider >
-        <Toaster position="bottom-left" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff', }, }} />
-        <RouterProvider router={routes} />
-        </CartProvider>
-      </TokenProvider>
+        <TokenProvider>
+          <CartProvider >
+            <Toaster position="bottom-left" toastOptions={{ duration: 3000, style: { background: '#333', color: '#fff', }, }} />
+            <RouterProvider router={routes} />
+          </CartProvider>
+        </TokenProvider>
       </HelmetProvider>
     </QueryClientProvider>
   );
