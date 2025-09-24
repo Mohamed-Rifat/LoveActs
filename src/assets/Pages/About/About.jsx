@@ -1,8 +1,38 @@
 import React from 'react';
 import { Favorite, CardGiftcard, Stars } from '@mui/icons-material';
+import { Helmet } from "react-helmet-async";
 
 export default function About() {
   return (
+     <>
+      <Helmet>
+        <title>About Us | Love Acts</title>
+        <meta
+          name="description"
+          content="Learn about Love Acts - our story, passion, and the values behind every flower and coffee experience. Discover why people love Love Acts."
+        />
+        <meta
+          name="keywords"
+          content="About Love Acts, our story, flower shop Egypt, luxury flowers, café experiences, gifting Egypt"
+        />
+
+        <meta property="og:title" content="About Love Acts | Our Story & Passion" />
+        <meta
+          property="og:description"
+          content="Discover the Love Acts story - bringing together luxury flowers and café experiences to create meaningful moments of love."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Love Acts" />
+        <meta property="og:url" content="https://loveacts.vercel.app/about" />
+        <meta property="og:image" content="https://loveacts.vercel.app/Banner1.PNG" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About Love Acts | Our Story & Passion" />
+        <meta name="twitter:description" content="Discover the Love Acts story - bringing together luxury flowers and café experiences to create meaningful moments of love." />
+        <meta name="twitter:image" content="https://loveacts.vercel.app/Banner1.PNG" />
+
+        <meta name="robots" content="index, follow" />
+      </Helmet>
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         
@@ -34,11 +64,9 @@ export default function About() {
           </div>
         </div>
 
-        {/* Love Acts Core */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Love Acts Core</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Quality */}
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-pink-100 text-pink-600 mb-4">
                 <Stars className="h-6 w-6" />
@@ -49,7 +77,6 @@ export default function About() {
               </p>
             </div>
 
-            {/* Passion */}
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 text-red-600 mb-4">
                 <Favorite className="h-6 w-6" />
@@ -60,7 +87,6 @@ export default function About() {
               </p>
             </div>
 
-            {/* Creativity */}
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 text-yellow-600 mb-4">
                 <CardGiftcard className="h-6 w-6" />
@@ -73,11 +99,9 @@ export default function About() {
           </div>
         </div>
 
-        {/* Why You Love Love Acts */}
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Why You Love Love Acts</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Sentimental gifting options */}
             <div className="relative overflow-hidden rounded-xl shadow-lg">
               <img 
                 src="https://images.unsplash.com/photo-1563170351-be82bc888aa4?auto=format&fit=crop&w=1000&q=80" 
@@ -93,7 +117,6 @@ export default function About() {
               </div>
             </div>
 
-            {/* Corporate deals */}
             <div className="relative overflow-hidden rounded-xl shadow-lg">
               <img 
                 src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1000&q=80" 
@@ -109,7 +132,6 @@ export default function About() {
               </div>
             </div>
 
-            {/* Event supply */}
             <div className="relative overflow-hidden rounded-xl shadow-lg">
               <img 
                 src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1000&q=80" 
@@ -127,7 +149,6 @@ export default function About() {
           </div>
         </div>
 
-        {/* Call to Action */}
         <div className="bg-[#EB95A2] rounded-xl p-8 md:p-12 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Spread Some Love?</h2>
           <p className="text-white text-xl mb-6 max-w-3xl mx-auto">
@@ -144,5 +165,6 @@ export default function About() {
         </div>
       </div>
     </div>
+   </>
   );
 }

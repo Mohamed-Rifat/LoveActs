@@ -172,7 +172,28 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Home | Love Acts</title>
-        <meta name="description" content="Welcome to Love Acts - Luxury flowers and unique cafe experiences" />
+        <meta
+          name="description"
+          content="Love Acts is your destination for luxury flowers, romantic bouquets, and elegant floral arrangements in Egypt. Complete the experience with our curated café selections. Perfect for weddings, engagements, and gifts."
+        />
+        <meta
+          name="keywords"
+          content="Love Acts, luxury flowers, romantic bouquets, floral arrangements, send flowers Egypt, online flower shop, café experiences"
+        />
+        <meta property="og:title" content="Love Acts | Luxury Flowers & Unique Café Experiences" />
+        <meta
+          property="og:description"
+          content="Discover Love Acts - where luxury flowers meet unique café experiences. Shop premium bouquets and gifts for every occasion."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Love Acts" />
+        <meta property="og:url" content="https://loveacts.vercel.app/" />
+        <meta property="og:image" content="https://loveacts.vercel.app/Banner1.PNG" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Love Acts | Luxury Flowers & Unique Café Experiences" />
+        <meta name="twitter:description" content="Discover Love Acts - where luxury flowers meet unique café experiences. Shop premium bouquets and gifts for every occasion." />
+        <meta name="twitter:image" content="https://loveacts.vercel.app/Banner1.PNG" />
+        <meta name="robots" content="index, follow" />
       </Helmet>
 
       <AnimatePresence>
@@ -397,9 +418,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-
-
 
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">

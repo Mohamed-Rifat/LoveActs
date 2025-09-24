@@ -3,6 +3,7 @@ import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp,
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/UseCart";
+import { Helmet } from "react-helmet-async";
 
 const ProductSkeleton = () => (
   <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
@@ -154,8 +155,27 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-10">
+      <Helmet>
+        <title>Products | Love Acts</title>
+        <meta
+          name="description"
+          content="Shop Love Acts collection of luxury flowers, romantic bouquets, and elegant floral arrangements. Perfect for weddings, engagements, and special occasions. Same-day delivery available in Egypt."
+        />
+        <meta
+          name="keywords"
+          content="flowers, luxury flowers, romantic bouquets, floral arrangements, send flowers Egypt, online flower shop, wedding flowers, Love Acts"
+        />
+        <meta property="og:title" content="Luxury Flowers & Romantic Bouquets | Love Acts" />
+        <meta
+          property="og:description"
+          content="Discover Love Acts selection of premium flowers, bouquets, and floral gifts. Perfect for expressing love on every occasion."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Love Acts" />
+        <meta property="og:url" content="https://loveacts.vercel.app/products" />
+      </Helmet>
       <div className="container mx-auto px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -169,7 +189,7 @@ export default function Products() {
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -221,7 +241,7 @@ export default function Products() {
         </motion.div>
 
         {loading ? (
-          <motion.div 
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -237,7 +257,7 @@ export default function Products() {
             ))}
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -247,7 +267,7 @@ export default function Products() {
               const id = p._id || p.id;
               const isPending = pending[`add-${id}`];
               const isFavorite = favorites.has(id);
-              
+
               return (
                 <motion.div
                   key={id}
@@ -300,13 +320,13 @@ export default function Products() {
                       <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">{p.name?.split(" ").slice(0, 2).join(" ")}</h3>
                       <span className="text-lg font-bold text-indigo-600">{p.price} LE</span>
                     </div>
-                    
+
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2 ">
                       {p.description || "No description available"}
                     </p>
 
                     <div className="flex flex-col md:flex-row items-center justify-between">
-                      
+
 
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -397,7 +417,7 @@ export default function Products() {
                     <FiX size={24} />
                   </motion.button>
 
-                  <motion.h2 
+                  <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
@@ -406,7 +426,7 @@ export default function Products() {
                     {selectedProduct.name}
                   </motion.h2>
 
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
@@ -416,7 +436,7 @@ export default function Products() {
                   </motion.p>
 
                   <div className="mt-auto">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.25 }}
