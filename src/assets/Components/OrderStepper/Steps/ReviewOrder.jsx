@@ -54,15 +54,14 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
                 },
                 contactPhone: userData.phone || "Not specified",
                 cafe: selectedCafe?._id || null,
+                selectedDate: formattedDate,
+                selectedTimeSlote: selectedTimeSlote,
                 cafeProduct: selectedDrink ? {
                     name: selectedDrink.productName,
                     price: selectedDrink.price,
-                    selectedDate: formattedDate,
-                    selectedTimeSlote: selectedTimeSlote || null
                 } : null,
 
             };
-            console.log("Order Payload being sent to backend:", orderPayload);
             const response = await axios.post(
                 "https://flowers-vert-six.vercel.app/api/order",
                 orderPayload,
@@ -75,8 +74,6 @@ export default function ReviewOrder({ selectedCafe, selectedDrink, userData, del
             clearAllCart();
             if (onConfirm) onConfirm(selectedDate, selectedTimeSlote);
         } catch (err) {
-            console.log("Token being sent:", token);
-            console.error("Order creation error:", err);
             setMessage({
                 type: "error",
                 text: err.response?.data?.message || "Failed to place order. Please try again."
