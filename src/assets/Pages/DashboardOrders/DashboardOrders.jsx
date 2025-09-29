@@ -140,6 +140,27 @@ const products = [
           </Grid>
         </Grid>
 
+          {/* Delivery Info */}
+        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Delivery Info</Typography>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary">Delivery Date</Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {order.selectedDate
+                ? new Date(order.selectedDate.split("-").reverse().join("-")).toLocaleDateString("en-US", {
+                  weekday: "short", day: "numeric", month: "short", year: "numeric"
+                })
+                : "Not Selected"}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary">Delivery Time</Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {order.selectedTimeSlote || "Not Selected"}
+            </Typography>
+          </Grid>
+        </Grid>
+
         {/* Cafe Info */}
         {order.cafe && (
           <>
