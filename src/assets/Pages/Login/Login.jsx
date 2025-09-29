@@ -1,11 +1,11 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Helmet } from "react-helmet-async";
 import styled, { keyframes } from 'styled-components';
-import { FaCheck, FaExclamationTriangle } from 'react-icons/fa';
+import { FaExclamationTriangle } from 'react-icons/fa';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { TokenContext } from '../../Context/TokenContext/TokenContext';
@@ -231,9 +231,14 @@ export default function Login() {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setToken(response.data.token); 
       toast.success(" Welcome  🎉😊", { duration: 3000 });
-      navigate('/');
-    }
-  } catch (error) {
+      const userRole = response.data.user?.role;
+          if (userRole === "Admin") {
+            navigate('/admindashboard');
+          } else {
+            navigate('/'); 
+          }
+        }
+      }  catch (error) {
     console.error('Full error details:', error);
     
     if (error.response) {
@@ -283,7 +288,6 @@ export default function Login() {
           )}
 
           <form onSubmit={formik.handleSubmit} className="space-y-5">
-            {/* Email Field */}
             <div className="relative z-0 w-full group">
               <input
                 type="email"
@@ -313,7 +317,6 @@ export default function Login() {
               )}
             </div>
 
-            {/* Password Field */}
             <div className="relative z-0 w-full group">
               <div className="relative">
                 <input
@@ -354,7 +357,6 @@ export default function Login() {
               )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <input
