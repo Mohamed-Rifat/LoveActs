@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion } from "framer-motion";
 import axios from 'axios';
-import { FiShoppingCart, FiCoffee, FiStar, FiSmartphone, FiRefreshCw } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useCart } from '../../hooks/UseCart';
-import toast from "react-hot-toast";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
-import "swiper/css";
+import HeroSlider from '../../Components/Home/HeroSlider';
+import FeaturedProducts from '../../Components/Home/FeaturedProducts';
+import CafesSection from '../../Components/Home/CafesSection';
+import WhyChoose from '../../Components/Home/WhyChoose';
+import Partners from '../../Components/Home/Partners';
+import MobileAppSection from '../../Components/Home/MobileAppSection';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -20,18 +21,6 @@ export default function Home() {
   const { addToCart, pending, getCart } = useCart();
   const navigate = useNavigate();
   const API_BASE = "https://flowers-vert-six.vercel.app/api";
-  const positionMap = {
-    left: "justify-start text-left",
-    center: "justify-center text-center",
-    right: "justify-end text-right"
-  };
-
-
-
-  const handleAddToCart = async (productId, quantity) => {
-    await addToCart(productId, quantity);
-    await getCart();
-  };
   const slides = [
     {
       id: 1,
@@ -44,7 +33,6 @@ export default function Home() {
       headingColor: "text-white",
       subheadingColor: "text-[#EB95A2]",
       bgColor: "from-transparent to-gray-900"
-
     },
     {
       id: 2,
@@ -72,34 +60,13 @@ export default function Home() {
   ];
 
   const clients = [
-    {
-      name: "Bruxies",
-      logo: "/bruxies.png",
-    },
-    {
-      name: "STEEP",
-      logo: "/STEEP_Brand logo-pink.png",
-    },
-    {
-      name: "ZenZoo",
-      logo: "/ZenZoo.JPG",
-    },
-    {
-      name: "TLap",
-      logo: "/TLap.jpg",
-    },
-    {
-      name: "Brewbuzz",
-      logo: "/Brewbuzz.png",
-    },
-    {
-      name: "SeelaZ",
-      logo: "/SeelaZ logo -2.png",
-    },
-    {
-      name: "IMG",
-      logo: "/IMG_7755.JPG",
-    },
+    { name: "Bruxies", logo: "/bruxies.png" },
+    { name: "STEEP", logo: "/STEEP_Brand logo-pink.png" },
+    { name: "ZenZoo", logo: "/ZenZoo.JPG" },
+    { name: "TLap", logo: "/TLap.jpg" },
+    { name: "Brewbuzz", logo: "/Brewbuzz.png" },
+    { name: "SeelaZ", logo: "/SeelaZ logo -2.png" },
+    { name: "IMG", logo: "/IMG_7755.JPG" },
   ];
 
   useEffect(() => {
@@ -108,11 +75,11 @@ export default function Home() {
         setLoading(true);
 
         const productsRes = await axios.get(`${API_BASE}/product/user`);
-        setProducts(productsRes.data.slice(0, 6));
+        setProducts(Array.isArray(productsRes.data) ? productsRes.data.slice(0, 6) : (productsRes.data?.slice ? productsRes.data.slice(0,6) : []));
 
         const cafesRes = await axios.get(`${API_BASE}/cafe/display-all-cafes`);
         const cafesData = cafesRes.data?.cafeData || cafesRes.data || [];
-        setCafes(cafesData.slice(0, 6));
+        setCafes(Array.isArray(cafesData) ? cafesData.slice(0, 6) : []);
 
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -132,57 +99,31 @@ export default function Home() {
   }, [slides.length]);
 
   useEffect(() => {
-    if (showLoader) {
+    if (!isAnimationDone) {
       const timer = setTimeout(() => {
         setIsAnimationDone(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [showLoader]);
+  }, [isAnimationDone]);
 
-  const ProductSkeleton = () => (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-      <div className="relative h-52 w-full bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse">
-        <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white"></div>
-      </div>
-      <div className="p-5">
-        <div className="h-6 bg-gray-200 rounded mb-3"></div>
-        <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
-        <div className="flex justify-between items-center">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CafeSkeleton = () => (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
-      <div className="h-48 bg-gray-200"></div>
-      <div className="p-6">
-        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
-        <div className="h-4 bg-gray-200 rounded mb-2 w-1/2"></div>
-        <div className="h-10 bg-gray-200 rounded mt-4"></div>
-      </div>
-    </div>
-  );
+  const handleAddToCart = async (productId, quantity = 1) => {
+    await addToCart(productId, quantity);
+    await getCart();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>Home | Love Acts</title>
-        <meta
-          name="description"
-          content="Love Acts is your destination for luxury flowers, romantic bouquets, and elegant floral arrangements in Egypt. Complete the experience with our curated café selections. Perfect for weddings, engagements, and gifts."
+        <meta name="description"
+        content="Love Acts is your destination for luxury flowers, romantic bouquets, and elegant floral arrangements in Egypt. Complete the experience with our curated café selections. Perfect for weddings, engagements, and gifts."
         />
-        <meta
-          name="keywords"
+        <meta name="keywords"
           content="Love Acts, luxury flowers, romantic bouquets, floral arrangements, send flowers Egypt, online flower shop, café experiences"
         />
         <meta property="og:title" content="Love Acts | Luxury Flowers & Unique Café Experiences" />
-        <meta
-          property="og:description"
+        <meta property="og:description"
           content="Discover Love Acts - where luxury flowers meet unique café experiences. Shop premium bouquets and gifts for every occasion."
         />
         <meta property="og:type" content="website" />
@@ -216,445 +157,17 @@ export default function Home() {
                 rotate: [-20, 0, 5, 0],
               }}
               exit={{ opacity: 0, scale: 0.8 }}
-              transition={{
-                duration: 3,
-                ease: "easeInOut"
-              }}
+              transition={{ duration: 3, ease: "easeInOut" }}
             />
           </motion.div>
         )}
       </AnimatePresence>
-
-      <div className="relative h-96 md:h-screen max-h-[600px] overflow-hidden container mx-auto px-4 rounded-sm mt-2">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <div className="absolute inset-0">
-              <img
-                src={slide.image}
-                alt={slide.subheading}
-                className="w-full h-full object-cover"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgColor} opacity-90`}></div>
-            </div>
-
-            <div className={`relative h-full flex items-center ${positionMap[slide.position]} px-4 md:px-16`}>
-              <div className="max-w-2xl mx-0 lg:mx-16 text-white">
-                <motion.h2
-                  className={`text-4xl lg:text-8xl font-semibold mb-4 ${slide.headingColor}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {slide.heading}
-                </motion.h2>
-                <motion.h1
-                  className={`text-4xl lg:text-7xl font-bold lg:mb-4 max-w-xs md:max-w-full ${slide.subheadingColor}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                  {slide.subheading}
-                </motion.h1>
-                <motion.p
-                  className={`text-base lg:text-2xl mt-2 lg:me-2 lg:mb-4 max-w-md mx-auto 
-    ${slide.id === 2 ? "max-w-xs md:max-w-md" : ""}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  {slide.description}
-                </motion.p>
-
-              </div>
-            </div>
-          </div>
-        ))}
-
-        <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center space-y-2">
-          <motion.p
-            className="text-md md:text-2xl italic text-white"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            Love is in every sip.
-          </motion.p>
-
-          <div className="flex space-x-2">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full ${index === currentSlide ? 'bg-white' : 'bg-white/50'}`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-12">
-            <motion.h2
-              className="text-3xl font-bold text-gray-800"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Featured Products
-            </motion.h2>
-            <motion.button
-              className="text-amber-600 hover:text-amber-700 font-medium"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              onClick={() => navigate("/products")}
-            >
-              View All
-            </motion.button>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <ProductSkeleton key={i} />
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              className="grid grid-cols-2 lg:grid-cols-3 gap-6"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              {products.map((product) => {
-                const id = product._id || product.id;
-                return (
-                  <div
-                    key={id}
-                    className="
-                bg-transparent p-2 shadow-none border-none rounded-none text-center
-                lg:bg-gray-50 lg:rounded-lg lg:hover:shadow-md lg:transition lg:overflow-hidden
-              "
-                  >
-                    <div className="relative overflow-hidden w-28 h-28 mx-auto lg:w-full lg:h-64">
-                      <img
-                        src={
-                          product.image ||
-                          "https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?auto=format&fit=crop&w=800&q=80"
-                        }
-                        alt={product.name}
-                        className="
-                    w-full h-full object-cover rounded-full lg:rounded-none
-                    group-hover:scale-100 lg:group-hover:scale-105 lg:transition lg:duration-300
-                  "
-                      />
-                      {/* <button className="hidden lg:block absolute top-3 left-3 p-2 bg-white/80 rounded-full hover:bg-white transition">
-                  <FiHeart className="text-gray-600 hover:text-red-500" />
-                </button> */}
-                    </div>
-
-                    <div className="p-2 lg:p-6">
-                      <h3 className="text-sm lg:text-xl font-semibold text-gray-800 mb-1 lg:mb-2">
-                        {product.name}
-                      </h3>
-
-                      <span className="block text-xs lg:text-lg font-bold text-amber-600 mb-2 lg:mb-0">
-                        {product.price} EGP
-                      </span>
-
-                      <p className="hidden lg:block text-gray-600 mb-4 line-clamp-2">
-                        {product.description || "Premium product from Love Acts"}
-                      </p>
-
-                      <div className="flex justify-center lg:justify-between items-center">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={async () => {
-                            try {
-                              await handleAddToCart(id, 1);
-                              toast.success("Added to cart 🛒");
-                            } catch (err) {
-                              toast.error("Something went wrong while adding!");
-                            }
-                          }}
-                          disabled={pending[`add-${id}`]}
-                          className="bg-amber-600 text-white text-xs px-2 py-1 rounded hover:bg-amber-700 transition
-             lg:text-base lg:px-4 lg:py-2 flex items-center justify-center w-auto lg:w-full
-             disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {pending[`add-${id}`] ? (
-                            <>
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              >
-                                <FiRefreshCw className="h-4 w-4 mr-1" />
-                              </motion.div>
-                              Adding...
-                            </>
-                          ) : (
-                            <>
-                              <FiShoppingCart className="mr-1" />
-                              Add
-                            </>
-                          )}
-                        </motion.button>
-
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </motion.div>
-          )}
-        </div>
-      </section>
-
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-8">
-            <motion.h2
-              className="text-2xl md:text-3xl font-bold text-gray-800"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Our Cafes
-            </motion.h2>
-            <motion.button
-              className="text-amber-600 hover:text-amber-700 font-medium text-sm md:text-base"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              onClick={() => navigate("/cafes")}
-            >
-              View All
-            </motion.button>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <CafeSkeleton key={i} />
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                {cafes.map(cafe => {
-                  const id = cafe._id || cafe.id;
-                  return (
-
-                    <div key={id} className=" p-4 flex flex-col items-center text-center">
-                      <div className="relative mb-4">
-                        <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-2">
-                          <img
-                            src={cafe.image || "https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
-                            alt={cafe.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
-                          {cafe.name || "Love Acts Cafe"}
-                        </h3>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </section>
-
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <motion.h2
-            className="text-3xl font-bold text-center text-gray-800 mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            Why Choose Love Acts?
-          </motion.h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <motion.div
-              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiShoppingCart className="text-amber-600 text-2xl" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Easy & Secure Shopping</h3>
-              <p className="text-gray-600">Seamless shopping experience with secure payment and fast delivery</p>
-            </motion.div>
-
-            <motion.div
-              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCoffee className="text-green-600 text-2xl" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Unique Cafe Experience</h3>
-              <p className="text-gray-600">Enjoy comfortable atmospheres and specialty drinks at our cafes</p>
-            </motion.div>
-
-            <motion.div
-              className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiStar className="text-blue-600 text-2xl" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">High Quality</h3>
-              <p className="text-gray-600">Premium quality products carefully selected to ensure your satisfaction</p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 ">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <motion.h2
-              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              Our Featured Partners
-            </motion.h2>
-            <motion.p
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              We collaborate with the best brands and suppliers to ensure quality service
-            </motion.p>
-          </div>
-
-          <div className="relative w-full py-10">
-            <div className="absolute inset-y-0 left-0 w-32  pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-32 pointer-events-none" />
-            <Swiper
-              modules={[Autoplay]}
-              autoplay={{ delay: 0, disableOnInteraction: false }}
-              speed={4000}
-              loop={true}
-              slidesPerView={2}
-              spaceBetween={40}
-              breakpoints={{
-                640: { slidesPerView: 3 },
-                768: { slidesPerView: 4 },
-                1024: { slidesPerView: 5 },
-              }}
-              className="overflow-hidden"
-            >
-              {clients.map((client, i) => (
-                <SwiperSlide
-                  key={i}
-                  className="flex items-center justify-center"
-                >
-                  <img
-                    src={client.logo}
-                    alt={client.name}
-                    className="h-14 md:h-20 transition duration-500 hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                    width="160"
-                    height="80"
-                  />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gray-100 ">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col lg:flex-row items-center">
-            <div className="lg:w-1/2 mb-10 lg:mb-0 lg:pr-10">
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-full w-16 h-16 flex items-center justify-center mb-6">
-                <FiSmartphone className="w-8 h-8" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Get Our Mobile App
-              </h2>
-              <p className="text-xl mb-8 ">
-                Order flowers, reserve cafe tables, and explore exclusive offers with our easy-to-use app
-              </p>
-
-              <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                <span className=" font-semibold">Coming Soon</span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <a
-                  href="#"
-                  className="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-full font-semibold flex items-center justify-center transition-all duration-300 cursor-not-allowed opacity-80"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <span>App Store</span>
-                </a>
-                <a
-                  href="#"
-                  className="bg-white/20  hover:bg-white/30 px-6 py-3 rounded-full font-semibold flex items-center justify-center transition-all duration-300 cursor-not-allowed opacity-80"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <span>Google Play</span>
-                </a>
-              </div>
-            </div>
-            <div className="lg:w-1/2 flex justify-center">
-              <div className="relative max-w-md">
-                <div className="absolute -inset-4"></div>
-                <div className="relative overflow-hidden">
-                  <img
-                    src="/Logo.PNG"
-                    alt="Love Acts Mobile App"
-                    className="w-full h-auto"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSlider slides={slides} currentSlide={currentSlide} setCurrentSlide={setCurrentSlide} />
+      <FeaturedProducts products={products} loading={loading} handleAddToCart={handleAddToCart} pending={pending} navigate={navigate} />
+      <CafesSection cafes={cafes} loading={loading} navigate={navigate} />
+      <WhyChoose />
+      <Partners clients={clients} />
+      <MobileAppSection />
     </div>
   );
 }

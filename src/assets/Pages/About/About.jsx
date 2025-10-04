@@ -1,6 +1,7 @@
 import React from 'react';
 import { Favorite, CardGiftcard, Stars } from '@mui/icons-material';
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 
 export default function About() {
   return (
@@ -155,12 +156,12 @@ export default function About() {
             Whether you're celebrating a special occasion or just want to brighten someone's day, we're here to help you find the perfect floral expression.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button className="px-6 py-3 bg-white text-pink-600 font-medium rounded-lg hover:bg-gray-100 transition">
-              Browse Our Collections
-            </button>
-            <button className="px-6 py-3 border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition">
-              Contact Us
-            </button>
+            <Link
+                to="/products"
+                className="px-6 py-3 bg-white text-pink-600 font-medium rounded-lg hover:bg-gray-100 transition"
+              >
+                Browse Our Collections
+              </Link>
           </div>
         </div>
       </div>
