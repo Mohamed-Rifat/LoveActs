@@ -25,8 +25,14 @@ const FeaturedProducts = ({ products = [], loading, handleAddToCart, pending = {
 
   const checkAuthAndAdd = async (id) => {
     const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    const role = user?.role;
 
     if (token) {
+      if (role === "Admin") {
+        toast.error("You are an admin, you cannot add products!");
+        return;
+      }
       try {
         await handleAddToCart(id, 1);
         toast.success("Added to cart 🛒");
