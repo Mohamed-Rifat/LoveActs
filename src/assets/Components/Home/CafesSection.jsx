@@ -89,7 +89,6 @@ const CafeModal = ({ cafe, onClose }) => {
                 </div>
               </div>
 
-
               <div>
                 <div className="flex items-center mb-4">
                   <svg className="w-5 h-5 mr-2 text-[#EB95A2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,45 +97,42 @@ const CafeModal = ({ cafe, onClose }) => {
                   <h3 className="text-xl font-semibold text-gray-800">Products</h3>
                 </div>
 
-               {cafe.products && cafe.products.length > 0 ? (
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-    {cafe.products.map((item, i) => {
-      console.log("Product Data:", item); // 👈 هنا هتشوف في الـ console شكل الداتا
-      return (
-        <motion.div
-          key={i}
-          className="flex flex-col items-center text-center bg-gray-50 rounded-2xl p-6 shadow-sm border border-gray-100 hover:bg-white hover:shadow-md transition-all duration-200"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-        >
-          {/* صورة المنتج */}
-          <div className="w-28 h-28 rounded-full overflow-hidden border-2 mb-4">
-            <img
-              src={item.image || "/Logo.PNG"} // 👈 لو اسم البروب غير image مش هتظهر
-              alt={item.productName}
-              className="w-full h-full object-cover"
-            />
-          </div>
+                {cafe.products && cafe.products.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    {cafe.products.map((item, i) => {
+                      console.log("Product Data:", item);
+                      return (
+                        <motion.div
+                          key={i}
+                          className="flex flex-col items-center text-center p-6 transition-all duration-200 h-full"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          <div className="w-28 h-28 rounded-full overflow-hidden border-2 mb-4">
+                            <img
+                              src={item.image || "/Logo.PNG"}
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
 
-          {/* اسم المنتج */}
-          <span className="text-gray-800 font-medium text-lg mb-2">
-            {item.productName}
-          </span>
+                          <span className="text-gray-800 font-medium text-lg mb-2 min-h-[48px] flex items-center justify-center text-center line-clamp-2">
+                            {item.productName}
+                          </span>
 
-          {/* السعر */}
-          <span className="text-[#EB95A2] font-semibold px-3 py-1 rounded-full">
-            {item.price} LE
-          </span>
-        </motion.div>
-      );
-    })}
-  </div>
-) : (
-  <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-    <p className="text-gray-500">No products available at the moment</p>
-  </div>
-)}
+                          <span className="text-[#EB95A2] font-semibold px-3 py-1 rounded-full">
+                            {item.price} LE
+                          </span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-gray-500">No products available at the moment</p>
+                  </div>
+                )}
 
               </div>
             </div>
