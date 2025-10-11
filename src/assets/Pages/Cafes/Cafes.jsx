@@ -105,26 +105,41 @@ export default function Cafes() {
       </Helmet>
 
       {loading ? (
-        <div className="min-h-screen bg-gray-50 py-12">
+        <div className="min-h-screen bg-gray-50 py-8">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <div className="h-10 bg-gray-200 rounded-lg w-64 mx-auto mb-4 animate-pulse"></div>
               <div className="h-5 bg-gray-200 rounded w-96 mx-auto animate-pulse"></div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="mb-10 p-6">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-2">
+                  <div className="h-10 w-24 bg-gray-200 rounded-xl animate-pulse"></div>
+                  <div className="h-10 w-32 bg-gray-200 rounded-xl animate-pulse"></div>
+                </div>
+                <div className="relative w-full md:w-1/3">
+                  <div className="h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6 flex justify-between items-center">
+              <div className="h-5 w-48 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse"
+                  className="flex flex-col items-center p-6 rounded-3xl animate-pulse bg-white shadow-sm"
                 >
-                  <div className="h-48 bg-gray-200"></div>
-                  <div className="p-6">
-                    <div className="h-6 bg-gray-200 rounded mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded mb-2 w-1/2"></div>
-                    <div className="h-10 bg-gray-200 rounded mt-4"></div>
+                  <div className="relative">
+                    <div className="w-40 h-40 rounded-full bg-gray-200 mb-4"></div>
+                    <div className="absolute top-0 right-0 bg-gray-300 w-8 h-8 rounded-full"></div>
                   </div>
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-10 bg-gray-200 rounded-full w-40"></div>
                 </div>
               ))}
             </div>
