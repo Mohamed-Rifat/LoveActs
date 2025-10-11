@@ -37,7 +37,6 @@ export default function Cafes() {
         const { data } = await axios.get(
           "https://flowers-vert-six.vercel.app/api/cafe/display-all-cafes"
         );
-        console.log("Cafes Data:", data);
         const cafesData = data?.cafeData || data || [];
         setCafes(cafesData);
         setFilteredCafes(cafesData);

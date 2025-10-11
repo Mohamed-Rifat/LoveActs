@@ -261,7 +261,7 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"
             </div>
             <p className="mt-4 text-gray-600 font-medium">Loading your orders...</p>
 
-            <style jsx>{`
+            <style>{`
               .loader {
                 width: fit-content;
                 height: fit-content;
