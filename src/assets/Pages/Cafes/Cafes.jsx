@@ -130,7 +130,7 @@ export default function Cafes() {
             </div>
           </div>
         </div>
-      )  : (
+      ) : (
         <div className="min-h-screen bg-gray-50 py-8">
           <div className="container mx-auto px-4">
             <motion.div
@@ -153,8 +153,8 @@ export default function Cafes() {
                   <button
                     onClick={() => setActiveFilter("all")}
                     className={`px-4 py-2 rounded-xl transition ${activeFilter === "all"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
                     All Cafes
@@ -162,8 +162,8 @@ export default function Cafes() {
                   <button
                     onClick={() => setActiveFilter("withProducts")}
                     className={`px-4 py-2 rounded-xl transition ${activeFilter === "withProducts"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
                     With Products
@@ -199,51 +199,72 @@ export default function Cafes() {
                 <p className="text-gray-500"> Check back later for new cafe openings.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
                 {filteredCafes.map((cafe) => (
                   <motion.div
                     key={cafe._id || cafe.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white overflow-hidden transition-all duration-300 border border-gray-100"
+                    className="flex flex-col items-center p-6 transition-all duration-300"
                   >
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={cafe.image || "/Logo.PNG"}
-                        alt={cafe.name}
-                        className="w-full h-full "
-                      />
-                      {cafe.products && cafe.products.length > 0 && (
-                        <div className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                          {cafe.products.length} products
+                    <div className="relative group">
+                      <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-100 shadow-md transition-all duration-300 group-hover:border-indigo-200 group-hover:shadow-xl">
+                        <img
+                          src={cafe.image || "/Logo.PNG"}
+                          alt={cafe.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          onError={(e) => {
+                            e.target.src = "/Logo.PNG";
+                          }}
+                        />
+                        {!cafe.image && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                          </div>
+                        )}
+                      </div>
+
+                      {cafe.products && cafe.products.length > 0 ? (
+                        <motion.div
+                          className="absolute top-0 right-0 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-lg cursor-pointer hover:scale-110 transition-all duration-300"
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.9 }}
+                          title={`${cafe.products.length} Product${cafe.products.length > 1 ? 's' : ''}`}
+                        >
+                          <span className="flex items-center justify-center">
+                            {cafe.products.length}
+                          </span>
+                          <div className="absolute inset-0 rounded-full bg-[#CF848A] opacity-20 animate-ping"></div>
+                        </motion.div>
+                      ) : (
+                        <div className="absolute top-0 right-0 bg-gray-400 text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-md opacity-70">
+                          <span>0</span>
                         </div>
                       )}
                     </div>
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <h2 className="text-xl font-semibold text-gray-900 truncate">
-                          {cafe.name || "Unnamed Cafe"}
-                        </h2>
-                      </div>
-                      <button
-                        onClick={() => handleViewProducts(cafe)}
-                        disabled={!cafe.products || cafe.products.length === 0}
-                        className={`w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium transition-all duration-300
-    ${cafe.products && cafe.products.length > 0
-                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:scale-105"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                          }`}
-                      >
-                        {cafe.products && cafe.products.length > 0 ? (
-                          <>
-                            View Products
-                            <FiChevronRight className="transition-transform group-hover:translate-x-1" />
-                          </>
-                        ) : (
-                          "No Products Available"
-                        )}
-                      </button>
-                    </div>
+
+                    <h2 className="mt-4 text-lg font-semibold text-gray-900 text-center truncate w-full">
+                      {cafe.name || "Unnamed Cafe"}
+                    </h2>
+
+                    <button
+                      onClick={() => handleViewProducts(cafe)}
+                      disabled={!cafe.products || cafe.products.length === 0}
+                      className={`mt-4 w-44 flex items-center justify-center gap-2 px-5 py-3 rounded-full font-medium transition-all duration-300 group
+                       ${cafe.products && cafe.products.length > 0
+                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:scale-105"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        }`}
+                    >
+                      {cafe.products && cafe.products.length > 0 ? (
+                        <>
+                          View Products
+                          <FiChevronRight className="transition-transform group-hover:translate-x-1" />
+                        </>
+                      ) : (
+                        "No Products"
+                      )}
+                    </button>
                   </motion.div>
                 ))}
               </div>
