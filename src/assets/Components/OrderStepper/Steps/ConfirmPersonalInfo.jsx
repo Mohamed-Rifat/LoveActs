@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCheck, FiLock } from "react-icons/fi";
 
-export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
+export default function ConfirmPersonalInfo({ onConfirm, onBack, userInitialData }) {
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -42,8 +42,8 @@ export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
         </p>
       </div>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <div className="bg-gray-50 rounded-sm p-4 sm:p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex items-center gap-2">
               <FiUser className="text-[#CF848A] text-lg" />
@@ -105,7 +105,7 @@ export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-sm p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-center gap-2">
             <FiMapPin className="text-[#CF848A]" />
             Shipping Address
@@ -159,39 +159,50 @@ export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
                 placeholder="Enter country"
               />
             </div>
+            {!isFormValid && (
+              <p className="text-xs text-gray-500 text-center md:text-left max-w-xs">
+                Please fill in all required fields marked with *
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-2 w-full">
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 w-full md:w-auto max-w-md">
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-blue-600 text-sm font-bold">!</span>
+      <div className="flex flex-col max-w-5xl md:flex-row items-center md:items-start justify-between gap-6 mt-1 w-full">
+        <div className="w-full md:w-auto">
+          <div className="p-4 bg-blue-50 rounded-sm border border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-blue-600 text-sm font-bold">!</span>
+              </div>
+              <p className="text-blue-700 text-xs text-left leading-relaxed">
+                Your information is secure and will only be used for order processing and delivery purposes.
+              </p>
             </div>
-            <p className="text-blue-700 text-xs text-left leading-relaxed">
-              Your information is secure and will only be used for order processing and delivery purposes.
-            </p>
           </div>
         </div>
 
-        {!isFormValid && (
-          <p className="text-xs text-gray-500 text-center md:text-left max-w-xs">
-            Please fill in all required fields marked with *
-          </p>
-        )}
-        <button
-          onClick={handleConfirmClick}
-          disabled={!isFormValid}
-          className={`px-8 py-4 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2 justify-center w-full md:w-auto
-      ${isFormValid
-              ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white hover:from-[#A85C68] hover:to-[#CF848A] transform hover:scale-105 focus:ring-[#CF848A] shadow-lg"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-sm"
-            }`}
-        >
-          <FiCheck className="text-lg" />
-          Confirm Information
-        </button>
+        <div className="flex items-center justify-center md:justify-end gap-3 w-full md:w-auto flex-wrap">
+          <button
+            onClick={onBack}
+            className="px-8 py-4 rounded-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2 justify-center bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-300 shadow-sm w-full md:w-auto"
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleConfirmClick}
+            disabled={!isFormValid}
+            className={`px-8 py-4 font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2 justify-center w-full md:w-auto
+        ${isFormValid
+                ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white hover:from-[#A85C68] hover:to-[#CF848A] transform  focus:ring-[#CF848A] shadow-lg"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-sm"
+              }`}
+          >
+            <FiCheck className="text-lg" />
+            Confirm Information
+          </button>
+        </div>
       </div>
 
     </div>
