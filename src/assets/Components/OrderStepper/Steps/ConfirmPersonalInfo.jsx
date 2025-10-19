@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FiUser, FiMail, FiPhone, FiMapPin, FiCheck, FiLock } from "react-icons/fi";
 
 export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
   const [userData, setUserData] = useState({
@@ -11,7 +12,8 @@ export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
   });
 
   useEffect(() => {
-    if (userInitialData) setUserData((prev) => ({ ...prev, ...userInitialData }));
+    if (userInitialData)
+      setUserData((prev) => ({ ...prev, ...userInitialData }));
   }, [userInitialData]);
 
   const handleChange = (e) => {
@@ -23,133 +25,175 @@ export default function ConfirmPersonalInfo({ onConfirm, userInitialData }) {
     onConfirm(userData);
   };
 
-  // check if all required fields are filled
   const isFormValid =
-    userData.name.trim() &&
-    userData.phone.trim() &&
-    userData.street.trim() &&
-    userData.city.trim() &&
-    userData.country.trim();
+    userData.street.trim() && userData.city.trim() && userData.country.trim();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-5 text-center">
-      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-gray-800">
-        Confirm Your Personal Information 🛡️
-      </h2>
-      
-      <p className="text-gray-600 mb-8 max-w-md">
-        Please make sure your information is correct before proceeding to review your order
-      </p>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#CF848A] to-[#A85C68] rounded-full flex items-center justify-center mx-auto mb-4">
+          <FiUser className="text-white text-2xl" />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-800">
+          Confirm Your Personal Information
+        </h2>
+        <p className="text-gray-600 max-w-md text-sm md:text-base">
+          Please review and confirm your details before proceeding with your order
+        </p>
+      </div>
 
-      <div className="flex flex-col gap-4 w-full max-w-md mb-8">
-        {/* Full Name */}
-        <div className="w-full">
-          <label htmlFor="name" className="block text-left mb-2 text-gray-700">
-            Full Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="name"
-            name="name"
-            value={userData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your full name"
-          />
-        </div>
-        
-        {/* Email */}
-        <div className="w-full">
-          <label htmlFor="email" className="block text-left mb-2 text-gray-700">
-            Email Address
-          </label>
-          <input
-            id="email"
-            name="email"
-            value={userData.email}
-            disabled
-            className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
-          />
-        </div>
-        
-        {/* Phone */}
-        <div className="w-full">
-          <label htmlFor="phone" className="block text-left mb-2 text-gray-700">
-            Phone Number <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="phone"
-            name="phone"
-            value={userData.phone}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your phone number"
-          />
-        </div>
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FiUser className="text-[#CF848A] text-lg" />
+              Personal Info
+            </h3>
+            <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+              <FiLock className="text-xs" />
+              <span>Read-only</span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                Full Name
+              </label>
+              <div className="relative">
+                <input
+                  id="name"
+                  name="name"
+                  value={userData.name}
+                  disabled
+                  className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                />
+                <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
 
-        {/* Street */}
-        <div className="w-full">
-          <label htmlFor="street" className="block text-left mb-2 text-gray-700">
-            Street <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="street"
-            name="street"
-            value={userData.street}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter street address"
-          />
-        </div>
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  id="email"
+                  name="email"
+                  value={userData.email}
+                  disabled
+                  className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                />
+                <FiMail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
 
-        {/* City */}
-        <div className="w-full">
-          <label htmlFor="city" className="block text-left mb-2 text-gray-700">
-            City <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="city"
-            name="city"
-            value={userData.city}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter city"
-          />
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                Phone Number
+              </label>
+              <div className="relative">
+                <input
+                  id="phone"
+                  name="phone"
+                  value={userData.phone}
+                  disabled
+                  className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                />
+                <FiPhone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Country */}
-        <div className="w-full">
-          <label htmlFor="country" className="block text-left mb-2 text-gray-700">
-            Country <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="country"
-            name="country"
-            value={userData.country}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter country"
-          />
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-center gap-2">
+            <FiMapPin className="text-[#CF848A]" />
+            Shipping Address
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                Street Address <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="street"
+                  name="street"
+                  value={userData.street}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CF848A] focus:border-transparent transition-all duration-200"
+                  placeholder="Enter street address"
+                />
+                <FiMapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                City <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="city"
+                name="city"
+                value={userData.city}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CF848A] focus:border-transparent transition-all duration-200"
+                placeholder="Enter city"
+              />
+            </div>
+
+            <div>
+              <label className="block text-left mb-2 text-gray-700 text-sm font-medium">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="country"
+                name="country"
+                value={userData.country}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CF848A] focus:border-transparent transition-all duration-200"
+                placeholder="Enter country"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <button 
+      <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-2 w-full">
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 w-full md:w-auto max-w-md">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-blue-600 text-sm font-bold">!</span>
+            </div>
+            <p className="text-blue-700 text-xs text-left leading-relaxed">
+              Your information is secure and will only be used for order processing and delivery purposes.
+            </p>
+          </div>
+        </div>
+
+        {!isFormValid && (
+          <p className="text-xs text-gray-500 text-center md:text-left max-w-xs">
+            Please fill in all required fields marked with *
+          </p>
+        )}
+        <button
           onClick={handleConfirmClick}
           disabled={!isFormValid}
-          className={`px-6 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors
-            ${isFormValid 
-              ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500" 
-              : "bg-gray-400 text-gray-200 cursor-not-allowed"
+          className={`px-8 py-4 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 flex items-center gap-2 justify-center w-full md:w-auto
+      ${isFormValid
+              ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white hover:from-[#A85C68] hover:to-[#CF848A] transform hover:scale-105 focus:ring-[#CF848A] shadow-lg"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-sm"
             }`}
         >
+          <FiCheck className="text-lg" />
           Confirm Information
         </button>
       </div>
+
     </div>
   );
 }
