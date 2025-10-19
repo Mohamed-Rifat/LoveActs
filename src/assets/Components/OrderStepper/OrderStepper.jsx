@@ -71,11 +71,11 @@ export default function OrderStepper({ onClose }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <Container maxWidth="lg">
-        <Paper elevation={3} sx={{ borderRadius: 4, overflow: "hidden" }}>
-          <Box className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white flex justify-between items-center">
+        <Paper elevation={3} sx={{ borderRadius: 0, overflow: "hidden" }}>
+          <Box className="bg-gradient-to-br from-[#CF848A] to-[#A85C68] p-6 text-white flex justify-between items-center">
             <Box className="flex items-center">
               <FiCoffee className="text-2xl mr-2" />
-              <Typography variant="h6" fontWeight={600}>Drink Order System</Typography>
+              <Typography variant="h6" fontWeight={600}> Order System</Typography>
             </Box>
           </Box>
 
@@ -88,7 +88,7 @@ export default function OrderStepper({ onClose }) {
                       <Box sx={{
                         width: 32, height: 32, borderRadius: "50%",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        backgroundColor: activeStep === index ? "primary.main" : activeStep > index ? "#4caf50" : "#e0e0e0",
+                        backgroundColor: activeStep === index ? "#CF848A" : activeStep > index ? "#4caf50" : "#e0e0e0",
                         color: "white"
                       }}>
                         {activeStep > index ? <FiCheckCircle /> : index + 1}
