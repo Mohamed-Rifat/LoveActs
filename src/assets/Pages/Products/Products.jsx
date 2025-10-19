@@ -181,7 +181,7 @@ export default function Products() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
             Discover Our Products
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
@@ -274,7 +274,7 @@ export default function Products() {
                   layout
                   variants={itemVariants}
                   whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="group bg-white relative"
+                  className="group bg-white relative rounded-lg shadow-sm border border-gray-100 overflow-hidden min-h-[420px] flex flex-col"
                 >
                   {/* <motion.button
                     whileTap={{ scale: 0.9 }}
@@ -295,7 +295,7 @@ export default function Products() {
                   )}
 
                   <div className="relative overflow-hidden">
-                    <div className="h-52 w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <div className="h-[260px] w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                       <motion.img
                         src={p.image}
                         alt={p.name}
@@ -315,13 +315,13 @@ export default function Products() {
                     </motion.button>
                   </div>
 
-                  <div className="p-5">
+                  <div className="p-4 flex flex-col justify-between flex-grow">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">{p.name?.split(" ").slice(0, 2).join(" ")}</h3>
                       <span className="text-lg font-bold text-[#CF848A]">{p.price} LE</span>
                     </div>
 
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2 ">
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2 min-h-[40px]">
                       {p.description || "No description available"}
                     </p>
 

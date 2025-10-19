@@ -16,9 +16,19 @@ export default function Cafes() {
   const { addToCart } = useContext(CartContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState("name");
+  const [drinkFilter, setDrinkFilter] = useState("all");
 
   const itemsPerPage = 8;
-  const sortedProducts = [...(selectedCafe?.products || [])].sort((a, b) => {
+
+  const filteredProducts =
+    selectedCafe?.products?.filter((product) => {
+      const name = product.productName?.toLowerCase() || "";
+      if (drinkFilter === "hot") return name.includes("hot");
+      if (drinkFilter === "cold") return name.includes("cold");
+      return true;
+    }) || [];
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortOption === "priceAsc") return a.price - b.price;
     if (sortOption === "priceDesc") return b.price - a.price;
     return a.productName.localeCompare(b.productName);
@@ -38,7 +48,10 @@ export default function Cafes() {
           "https://flowers-vert-six.vercel.app/api/cafe/display-all-cafes"
         );
         const cafesData = data?.cafeData || data || [];
-        setCafes(cafesData);
+        const sortedByDate = cafesData.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setCafes(sortedByDate);
         setFilteredCafes(cafesData);
         setError(null);
       } catch (err) {
@@ -69,6 +82,7 @@ export default function Cafes() {
 
   const handleViewProducts = (cafe) => {
     setSelectedCafe(cafe);
+    setDrinkFilter("all");
   };
 
   const handleCloseProducts = () => {
@@ -315,10 +329,36 @@ export default function Cafes() {
                     <div className="flex-1 overflow-y-auto p-6">
                       {selectedCafe.products && selectedCafe.products.length > 0 ? (
                         <>
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
-                            <h3 className="text-lg font-semibold text-gray-800">
-                              Drinks
-                            </h3>
+                          <div className="flex flex-wrap justify-between items-center mb-6 gap-3">   
+                             <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => setDrinkFilter("all")}
+                                className={`px-3 py-1.5 rounded-lg text-sm ${drinkFilter === "all"
+                                  ? "bg-[#CF848A] text-white"
+                                  : "bg-gray-100 text-gray-700"
+                                  }`}
+                              >
+                                All
+                              </button>
+                              <button
+                                onClick={() => setDrinkFilter("hot")}
+                                className={`px-3 py-1.5 rounded-lg text-sm ${drinkFilter === "hot"
+                                  ? "bg-[#CF848A] text-white"
+                                  : "bg-gray-100 text-gray-700"
+                                  }`}
+                              >
+                                Hot
+                              </button>
+                              <button
+                                onClick={() => setDrinkFilter("cold")}
+                                className={`px-3 py-1.5 rounded-lg text-sm ${drinkFilter === "cold"
+                                  ? "bg-[#CF848A] text-white"
+                                  : "bg-gray-100 text-gray-700"
+                                  }`}
+                              >
+                                Cold
+                              </button>
+                            </div>
 
                             <div className="relative inline-block w-48">
                               <select
