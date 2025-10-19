@@ -181,7 +181,7 @@ export default function Products() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
             Discover Our Products
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
@@ -318,7 +318,7 @@ export default function Products() {
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">{p.name?.split(" ").slice(0, 2).join(" ")}</h3>
-                      <span className="text-lg font-bold text-indigo-600">{p.price} LE</span>
+                      <span className="text-lg font-bold text-[#CF848A]">{p.price} LE</span>
                     </div>
 
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2 ">
@@ -333,7 +333,7 @@ export default function Products() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleAddToCart(id, 1)}
                         disabled={p.isDeleted || isPending}
-                        className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isPending ? (
                           <motion.div
@@ -372,7 +372,7 @@ export default function Products() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => { setSearchQuery(""); setSortOption("default"); }}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium"
+              className="px-6 py-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white rounded-xl hover:bg-[#CF848A] transition-colors font-medium"
             >
               Reset Filters
             </motion.button>
@@ -442,7 +442,7 @@ export default function Products() {
                       transition={{ delay: 0.25 }}
                       className="flex items-center justify-between mb-6"
                     >
-                      <span className="text-3xl font-bold text-indigo-600">{selectedProduct.price} LE</span>
+                      <span className="text-3xl font-bold text-[#CF848A]">{selectedProduct.price} LE</span>
 
                       <div className="flex items-center gap-3">
                         <span className="text-gray-700 font-medium">Quantity:</span>
@@ -451,14 +451,14 @@ export default function Products() {
                             whileHover={{ backgroundColor: "#f3f4f6" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                            className="px-3 py-2 text-gray-500 transition-colors"
+                            className="px-3 py-2 text-[#A85C68] transition-colors"
                           >-</motion.button>
-                          <span className="px-4 py-2 bg-gray-50 font-medium">{quantity}</span>
+                          <span className="px-4 py-2 bg-gray-50 text-[#CF848A] font-medium">{quantity}</span>
                           <motion.button
                             whileHover={{ backgroundColor: "#f3f4f6" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setQuantity(prev => prev + 1)}
-                            className="px-3 py-2 text-gray-500 transition-colors"
+                            className="px-3 py-2 text-[#A85C68] transition-colors"
                           >+</motion.button>
                         </div>
                       </div>
@@ -472,7 +472,7 @@ export default function Products() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleAddToCart(selectedProduct._id || selectedProduct.id, quantity)}
                       disabled={selectedProduct.isDeleted || pending[`add-${selectedProduct._id || selectedProduct.id}`]}
-                      className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-lg"
+                      className="w-full flex items-center justify-center gap-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white px-6 py-4 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-lg"
                     >
                       {pending[`add-${selectedProduct._id || selectedProduct.id}`] ? (
                         <>

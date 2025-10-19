@@ -152,7 +152,7 @@ export default function Cafes() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-12"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
                 Our Cafés
               </h1>
               <p className="text-gray-600 max-w-2xl mx-auto text-lg ">
@@ -167,7 +167,7 @@ export default function Cafes() {
                   <button
                     onClick={() => setActiveFilter("all")}
                     className={`px-4 py-2 rounded-xl transition ${activeFilter === "all"
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
@@ -176,7 +176,7 @@ export default function Cafes() {
                   <button
                     onClick={() => setActiveFilter("withProducts")}
                     className={`px-4 py-2 rounded-xl transition ${activeFilter === "withProducts"
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                   >
@@ -190,7 +190,7 @@ export default function Cafes() {
                     placeholder="Search cafes by name, location..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CF848A] focus:border-transparent transition"
                   />
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function Cafes() {
                     className="flex flex-col items-center p-6 transition-all duration-300"
                   >
                     <div className="relative group">
-                      <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-100 shadow-md transition-all duration-300 group-hover:border-indigo-200 group-hover:shadow-xl">
+                      <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-100 shadow-md transition-all duration-300 group-hover:border-[#CF848A] group-hover:shadow-xl">
                         <img
                           src={cafe.image || "/Logo.PNG"}
                           alt={cafe.name}
@@ -233,7 +233,7 @@ export default function Cafes() {
                         />
                         {!cafe.image && (
                           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CF848A]"></div>
                           </div>
                         )}
                       </div>
@@ -265,8 +265,8 @@ export default function Cafes() {
                       onClick={() => handleViewProducts(cafe)}
                       disabled={!cafe.products || cafe.products.length === 0}
                       className={`mt-4 w-44 flex items-center justify-center gap-2 px-5 py-3 rounded-full font-medium transition-all duration-300 group
-                       ${cafe.products && cafe.products.length > 0
-                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:scale-105"
+          ${cafe.products && cafe.products.length > 0
+                          ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white shadow-md hover:shadow-lg hover:scale-105"
                           : "bg-gray-200 text-gray-500 cursor-not-allowed"
                         }`}
                     >
@@ -325,7 +325,7 @@ export default function Cafes() {
                                 onChange={(e) => setSortOption(e.target.value)}
                                 className="appearance-none w-full bg-white border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 text-sm font-medium 
                text-gray-700 shadow-sm cursor-pointer
-               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+               focus:outline-none focus:ring-2 focus:ring-[#CF848A] focus:border-[#CF848A]
                hover:border-gray-300 transition-all duration-200"
                               >
                                 <option value="name">Sort by Name</option>
@@ -334,7 +334,7 @@ export default function Cafes() {
                               </select>
 
                               <svg
-                                className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none transition-colors group-hover:text-indigo-500"
+                                className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none transition-colors group-hover:text-[#CF848A]"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -368,7 +368,7 @@ export default function Cafes() {
                                   {product.productName}
                                 </h3>
                                 {product.price && (
-                                  <p className="text-indigo-600 font-bold mt-1 text-sm sm:text-base">
+                                  <p className="text-[#CF848A] font-bold mt-1 text-sm sm:text-base">
                                     {product.price} LE
                                   </p>
                                 )}
