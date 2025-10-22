@@ -4,6 +4,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/UseCart";
 import { Helmet } from "react-helmet-async";
+import { toast } from "react-hot-toast";
 
 const ProductSkeleton = () => (
   <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
@@ -37,6 +38,9 @@ export default function Products() {
   const [sortOpen, setSortOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const sortRef = useRef(null);
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const role = user?.role;
 
   const API_BASE = "https://flowers-vert-six.vercel.app/api";
 
@@ -104,8 +108,22 @@ export default function Products() {
   const handleCloseModal = () => setSelectedProduct(null);
 
   const handleAddToCart = async (productId, quantity) => {
-    await addToCart(productId, quantity);
-    await getCart();
+    if (!token) {
+      setSelectedProduct(productId);
+      setShowModal(true);
+      return;
+    }
+     if (role === "Admin") {
+      toast.error("You are an admin, you cannot add products!");
+      return;
+    }
+    try {
+      await addToCart(productId, quantity);
+      await getCart();
+      toast.success("Added to cart 🛒");
+    } catch (err) {
+      toast.error("Something went wrong while adding!");
+    }
   };
 
   // const toggleFavorite = (productId) => {
