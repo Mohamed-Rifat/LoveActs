@@ -16,12 +16,11 @@ export default function Cart() {
   const getProductData = (item) => (item.productId && typeof item.productId === 'object' ? item.productId : item);
   const formatPrice = (price) => parseFloat(price).toFixed(2);
   const [showModal, setShowModal] = useState(false);
-  const [deliveryOption, setDeliveryOption] = useState(null); // "pickup" | "delivery"
+  const [deliveryOption, setDeliveryOption] = useState(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   const deliveryFee = 50;
 
-  // 🟢 Subtotal
   const subtotal = useMemo(() => {
     return (items || []).reduce((total, item) => {
       const product = getProductData(item);
@@ -30,10 +29,8 @@ export default function Cart() {
     }, 0);
   }, [items]);
 
-  // 🟢 Total (هو نفسه Subtotal عشان مفيش Tax)
   const total = useMemo(() => subtotal, [subtotal]);
 
-  // 🟢 Final Total (لو في توصيل)
   const finalTotal = useMemo(() => {
     return deliveryOption === "delivery" ? total + deliveryFee : total;
   }, [deliveryOption, total]);
@@ -64,39 +61,6 @@ export default function Cart() {
     setNumOfCartItems(0);
     await clearAllCart();
   }
-
-  const updateQuantity = (cartItemId, newQuantity) => {
-    if (newQuantity < 1) return;
-    const currentQuantity = quantities[cartItemId];
-    if (newQuantity < currentQuantity) {
-      removeFromCart(cartItemId, 1);
-    } else {
-      addToCart(cartItemId, 1);
-    }
-  };
-
-  const handleRemoveItem = async (productId) => {
-    const cartItemId = getProductId(items.find(item => getProductId(item) === productId));
-    const quantityToRemove = quantities[productId] || 1;
-    console.log("cartItemId:", cartItemId, "productId:", productId);
-    try {
-      await axios.patch(
-        "https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/",
-        { productId: productId },
-        { headers: { Authorization: `User ${token}` } }
-      );
-
-      setCart(prev => prev.filter(item => getProductId(item) !== productId));
-      setNumOfCartItems(prev => prev - quantityToRemove);
-      setQuantities(prev => {
-        const updated = { ...prev };
-        delete updated[productId];
-        return updated;
-      });
-    } catch (error) {
-      console.error("Failed to remove item:", error);
-    }
-  };
 
   if (loading) return <Loader />;
 
@@ -198,149 +162,125 @@ export default function Cart() {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
-                      className={`border-b border-gray-100 last:border-b-0 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+                      className={`border-b border-gray-100 last:border-b-0 ${isPending ? "opacity-50" : "opacity-100"}`}
                     >
-                      <div className="p-6 flex flex-col sm:flex-row gap-6">
-                        <div className="flex-shrink-0">
-                          <motion.img
+                      <div className="p-4 sm:p-5 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between gap-4">
+                          <motion.div
                             whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                            src={product.imageCover || product.image || "/Logo.PNG"}
-                            alt={product.title || product.name}
-                            className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-lg shadow-md bg-white p-2"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/logo.png";
-                            }}
-                          />
-                        </div>
+                            transition={{ duration: 0.25 }}
+                            className="flex-shrink-0"
+                          >
+                            <img
+                              src={product.imageCover || product.image || "/Logo.PNG"}
+                              alt={product.title || product.name}
+                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border border-gray-200 bg-gray-50 shadow-sm"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/logo.png";
+                              }}
+                            />
+                          </motion.div>
 
-                        <div className="flex-grow">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            {product.title || product.name}
-                          </h3>
-                          {product.category?.name && (
-                            <p className="text-xs text-gray-500 mb-2">{product.category.name}</p>
-                          )}
-                          <p className="text-xl font-bold text-green-600 mb-4">{formatPrice(product.price)} LE</p>
+                          <div className="flex flex-col flex-grow justify-between w-full">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                {product.title || product.name}
+                              </h3>
 
-                          <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                              <motion.button
-                                whileHover={{ backgroundColor: "#f0f0f0" }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => updateQuantity(productId, item.quantity - 1)}
-                                disabled={item.quantity <= 1 || isPending}
-                                className="p-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                              >
-                                <FiMinus className="text-gray-700" />
-                              </motion.button>
-                              <span className="px-4 py-2 bg-white text-gray-900 font-medium min-w-[3rem] text-center">
-                                {isPending ? "..." : item.quantity}
-                              </span>
-                              <motion.button
-                                whileHover={{ backgroundColor: "#f0f0f0" }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => updateQuantity(productId, item.quantity + 1)}
-                                disabled={isPending}
-                                className="p-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                              >
-                                <FiPlus className="text-gray-700" />
-                              </motion.button>
+                              {product.category?.name && (
+                                <p className="text-sm text-gray-500">{product.category.name}</p>
+                              )}
+
+                              <p className="text-sm sm:text-base font-medium text-gray-800 mt-1">
+                                {formatPrice(product.price)} LE
+                              </p>
                             </div>
 
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleRemoveItem(productId)}
-                              disabled={isPending}
-                              className="flex items-center gap-2 text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <FiTrash2 />
-                              Remove
-                            </motion.button>
+                            <div className="flex justify-end mt-2">
+                              <p className="text-lg sm:text-xl font-bold text-[#CF848A]">
+                                {formatPrice(
+                                  (typeof product.price === "string"
+                                    ? parseFloat(product.price)
+                                    : product.price) * item.quantity
+                                )}{" "}
+                                LE
+                              </p>
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="flex flex-col items-end justify-between">
-                          <p className="text-lg font-bold text-gray-900">
-                            {formatPrice((typeof product.price === 'string' ? parseFloat(product.price) : product.price) * item.quantity)} LE
-                          </p>
                         </div>
                       </div>
                     </motion.div>
+
                   );
                 })}
               </AnimatePresence>
             </motion.div>
 
             <AnimatePresence>
-  {showModal && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-    >
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.8, opacity: 0 }}
-        className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full text-center"
-      >
-        <h2 className="text-xl font-bold mb-4">Choose Delivery Option</h2>
+              {showModal && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                >
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full text-center"
+                  >
+                    <h2 className="text-xl font-bold mb-4">Choose Delivery Option</h2>
 
-        <div className="flex flex-col gap-3 mb-6">
-          <button
-            onClick={() => setDeliveryOption("pickup")}
-            className={`py-3 rounded-lg border ${
-              deliveryOption === "pickup"
-                ? "bg-green-600 text-white"
-                : "bg-gray-50 hover:bg-gray-100"
-            }`}
-          >
-            Pickup from Store
-          </button>
-          <button
-            onClick={() => setDeliveryOption("delivery")}
-            className={`py-3 rounded-lg border ${
-              deliveryOption === "delivery"
-                ? "bg-green-600 text-white"
-                : "bg-gray-50 hover:bg-gray-100"
-            }`}
-          >
-            Home Delivery
-          </button>
-        </div>
+                    <div className="flex flex-col gap-3 mb-6">
+                      <button
+                        onClick={() => setDeliveryOption("pickup")}
+                        className={`py-3 rounded-lg border ${deliveryOption === "pickup"
+                          ? "bg-[#CF848A] text-white"
+                          : "bg-gray-50 hover:bg-gray-100"
+                          }`}
+                      >
+                        Pickup from Store
+                      </button>
+                      <button
+                        onClick={() => setDeliveryOption("delivery")}
+                        className={`py-3 rounded-lg border ${deliveryOption === "delivery"
+                          ? "bg-[#CF848A] text-white"
+                          : "bg-gray-50 hover:bg-gray-100"
+                          }`}
+                      >
+                        Home Delivery
+                      </button>
+                    </div>
 
-        {deliveryOption === "delivery" && (
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800 mb-4">
-            📦 Delivery service has an extra fee of <b>50 EGP</b>.  
-            <br /> Currently available only in <b>New Cairo</b>, coming soon across all Egypt 🇪🇬
-          </div>
-        )}
+                    {deliveryOption === "delivery" && (
+                      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800 mb-4">
+                        📦 Delivery service has an extra fee of <b>50 EGP</b>.
+                        <br /> Currently available only in <b>New Cairo</b>, coming soon across all Egypt.
+                      </div>
+                    )}
 
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setShowModal(false)}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            disabled={!deliveryOption}
-            onClick={handleConfirmOption}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-          >
-            Confirm
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowModal(false)}
+                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        disabled={!deliveryOption}
+                        onClick={handleConfirmOption}
+                        className="px-4 py-2 bg-[#CF848A] text-white rounded-lg hover:bg-[#c57077] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -377,7 +317,7 @@ export default function Cart() {
 
               <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-xl font-bold text-green-600">{formatPrice(total)} LE</span>
+                <span className="text-xl font-bold text-[#CF848A]">{formatPrice(total)} LE</span>
               </div>
 
               <motion.button
