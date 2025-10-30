@@ -81,8 +81,10 @@ export default function Cafes() {
   }, [cafes, searchQuery, activeFilter]);
 
   const handleViewProducts = (cafe) => {
-    setSelectedCafe(cafe);
-    setDrinkFilter("all");
+    if (cafe.products && cafe.products.length > 0) {
+      setSelectedCafe(cafe);
+      setDrinkFilter("all");
+    }
   };
 
   const handleCloseProducts = () => {
@@ -228,73 +230,95 @@ export default function Cafes() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
-                {filteredCafes.map((cafe) => (
-                  <motion.div
-                    key={cafe._id || cafe.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center p-6 transition-all duration-300"
-                  >
-                    <div className="relative group">
-                      <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-100 shadow-md transition-all duration-300 group-hover:border-[#CF848A] group-hover:shadow-xl">
-                        <img
-                          src={cafe.image || "/Logo.PNG"}
-                          alt={cafe.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          onError={(e) => {
-                            e.target.src = "/Logo.PNG";
-                          }}
-                        />
-                        {!cafe.image && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CF848A]"></div>
+                {filteredCafes.map((cafe) => {
+                  const hasProducts = cafe.products && cafe.products.length > 0;
+                  return (
+                    <motion.div
+                      key={cafe._id || cafe.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex flex-col items-center p-6 transition-all duration-300 relative ${!hasProducts ? 'opacity-70' : ''
+                        }`}
+                    >
+                      {!hasProducts && (
+                        <div className="absolute inset-0 bg-white bg-opacity-80 rounded-3xl z-10 flex items-center justify-center">
+                          <div className="text-center transform -rotate-45">
+                            <div className="px-6 py-3 text-[#CF848A] font-bold text-lg border-4 border-[#CF848A] rounded-2xl shadow-md animate-glow">
+                              Coming Soon
+                            </div>
+                            <div className="mt-2 text-gray-600 text-sm font-semibold animate-fade">
+                              Stay tuned!
+                            </div>
+                          </div>
+                        </div>
+
+                      )}
+
+                      <div className="relative group">
+                        <div className={`w-40 h-40 rounded-full overflow-hidden border-4 shadow-md transition-all duration-300 group-hover:shadow-xl ${hasProducts
+                          ? 'border-gray-100 group-hover:border-[#CF848A]'
+                          : 'border-gray-200'
+                          }`}>
+                          <img
+                            src={cafe.image || "/Logo.PNG"}
+                            alt={cafe.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            onError={(e) => {
+                              e.target.src = "/Logo.PNG";
+                            }}
+                          />
+                          {!cafe.image && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CF848A]"></div>
+                            </div>
+                          )}
+                        </div>
+
+                        {hasProducts ? (
+                          <motion.div
+                            className="absolute top-0 right-0 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-lg cursor-pointer hover:scale-110 transition-all duration-300"
+                            whileHover={{ scale: 1.2 }}
+                            whileTap={{ scale: 0.9 }}
+                            title={`${cafe.products.length} Product${cafe.products.length > 1 ? 's' : ''}`}
+                          >
+                            <span className="flex items-center justify-center">
+                              {cafe.products.length}
+                            </span>
+                            <div className="absolute inset-0 rounded-full bg-[#CF848A] opacity-20 animate-ping"></div>
+                          </motion.div>
+                        ) : (
+                          <div className="absolute top-0 right-0 bg-gray-400 text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-md opacity-70">
+                            <span>0</span>
                           </div>
                         )}
                       </div>
 
-                      {cafe.products && cafe.products.length > 0 ? (
-                        <motion.div
-                          className="absolute top-0 right-0 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-lg cursor-pointer hover:scale-110 transition-all duration-300"
-                          whileHover={{ scale: 1.2 }}
-                          whileTap={{ scale: 0.9 }}
-                          title={`${cafe.products.length} Product${cafe.products.length > 1 ? 's' : ''}`}
-                        >
-                          <span className="flex items-center justify-center">
-                            {cafe.products.length}
-                          </span>
-                          <div className="absolute inset-0 rounded-full bg-[#CF848A] opacity-20 animate-ping"></div>
-                        </motion.div>
-                      ) : (
-                        <div className="absolute top-0 right-0 bg-gray-400 text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-md opacity-70">
-                          <span>0</span>
-                        </div>
-                      )}
-                    </div>
+                      <h2 className={`mt-4 text-lg font-semibold text-center truncate w-full ${!hasProducts ? 'text-gray-500' : 'text-gray-900'
+                        }`}>
+                        {cafe.name || "Unnamed Cafe"}
+                      </h2>
 
-                    <h2 className="mt-4 text-lg font-semibold text-gray-900 text-center truncate w-full">
-                      {cafe.name || "Unnamed Cafe"}
-                    </h2>
-
-                    <button
-                      onClick={() => handleViewProducts(cafe)}
-                      disabled={!cafe.products || cafe.products.length === 0}
-                      className={`mt-4 w-44 flex items-center justify-center gap-2 px-5 py-3 rounded-full font-medium transition-all duration-300 group
-          ${cafe.products && cafe.products.length > 0
-                          ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white shadow-md hover:shadow-lg hover:scale-105"
-                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        }`}
-                    >
-                      {cafe.products && cafe.products.length > 0 ? (
-                        <>
-                          View Products
-                          <FiChevronRight className="transition-transform group-hover:translate-x-1" />
-                        </>
-                      ) : (
-                        "No Products"
-                      )}
-                    </button>
-                  </motion.div>
-                ))}
+                      <button
+                        onClick={() => handleViewProducts(cafe)}
+                        disabled={!hasProducts}
+                        className={`mt-4 w-44 flex items-center justify-center gap-2 px-5 py-3 rounded-full font-medium transition-all duration-300 group
+                        ${hasProducts
+                            ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white shadow-md hover:shadow-lg hover:scale-105"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          }`}
+                      >
+                        {hasProducts ? (
+                          <>
+                            View Products
+                            <FiChevronRight className="transition-transform group-hover:translate-x-1" />
+                          </>
+                        ) : (
+                          "Coming Soon"
+                        )}
+                      </button>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
 
@@ -329,8 +353,8 @@ export default function Cafes() {
                     <div className="flex-1 overflow-y-auto p-6">
                       {selectedCafe.products && selectedCafe.products.length > 0 ? (
                         <>
-                          <div className="flex flex-wrap justify-between items-center mb-6 gap-3">   
-                             <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 onClick={() => setDrinkFilter("all")}
                                 className={`px-3 py-1.5 rounded-lg text-sm ${drinkFilter === "all"
