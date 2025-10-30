@@ -125,32 +125,50 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink }) {
                 className="flex flex-col items-center"
               >
                 <div
-                  className="relative w-24 h-24 rounded-full shadow-md hover:shadow-lg transition-shadow cursor-pointer mb-3 border-2 border-white hover:border-[#CF848A] overflow-visible"
-                  onClick={() => handleSelectCafe(cafe)}
+                  className={`relative w-24 h-24 rounded-full shadow-md hover:shadow-lg transition-shadow cursor-pointer mb-3 border-2 border-white hover:border-[#CF848A] overflow-visible`}
+                  onClick={() => cafe.products?.length > 0 && handleSelectCafe(cafe)}
                 >
                   <div className="w-full h-full rounded-full overflow-hidden">
                     <img
                       src={cafe.image || "/Logo.PNG"}
                       alt={cafe.name}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${!cafe.products?.length ? "opacity-60" : ""}`}
                     />
                   </div>
+
                   {cafe.products && cafe.products.length > 0 && (
                     <div className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-[#CF848A] text-white text-[0.75rem] font-semibold 
-                    w-7 h-7 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+          w-7 h-7 rounded-full flex items-center justify-center shadow-md border-2 border-white">
                       {cafe.products.length}
                     </div>
                   )}
+
+                  {(!cafe.products || cafe.products.length === 0) && (
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] rounded-full flex items-center justify-center">
+                      <div className="text-center animate-pulse">
+                        <div className="text-[#CF848A] font-bold text-[0.7rem] uppercase tracking-wide">
+                          Coming Soon
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <h3 className="text-center font-medium text-sm max-w-full truncate px-1">
                   {cafe.name}
                 </h3>
+
                 <button
-                  onClick={() => handleSelectCafe(cafe)}
-                  className="mt-2 flex items-center justify-center gap-1 bg-[#CF848A] hover:bg-[#A85C68] text-white py-1 px-3 rounded-full transition-colors text-xs"
+                  onClick={() => cafe.products?.length > 0 && handleSelectCafe(cafe)}
+                  disabled={!cafe.products?.length}
+                  className={`mt-2 flex items-center justify-center gap-1 py-1 px-3 rounded-full transition-colors text-xs
+          ${cafe.products?.length
+                      ? "bg-[#CF848A] hover:bg-[#A85C68] text-white"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
                 >
                   <FiCoffee className="text-xs" />
-                  View
+                  {cafe.products?.length ? "View" : "Coming Soon"}
                 </button>
               </motion.div>
             ))
