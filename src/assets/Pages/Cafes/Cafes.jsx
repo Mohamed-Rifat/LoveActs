@@ -151,7 +151,7 @@ export default function Cafes() {
                 >
                   <div className="relative">
                     <div className="w-40 h-40 rounded-full bg-gray-200 mb-4"></div>
-                    <div className="absolute top-0 right-0 bg-gray-300 w-8 h-8 rounded-full"></div>
+                    {/* <div className="absolute top-0 right-0 bg-gray-300 w-8 h-8 rounded-full"></div> */}
                   </div>
                   <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-10 bg-gray-200 rounded-full w-40"></div>
@@ -241,14 +241,14 @@ export default function Cafes() {
                         }`}
                     >
                       {!hasProducts && (
-                        <div className="absolute inset-0 bg-white bg-opacity-80 rounded-3xl z-10 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-opacity-80 rounded-3xl z-10 flex items-center justify-center">
                           <div className="text-center transform -rotate-45">
-                            <div className="px-6 py-3 text-[#CF848A] font-bold text-lg border-4 border-[#CF848A] rounded-2xl shadow-md animate-glow">
+                            {/* <div className="px-6 py-3 text-[#CF848A] font-bold text-lg border-4 border-[#CF848A] rounded-2xl shadow-md animate-glow">
                               Coming Soon
                             </div>
                             <div className="mt-2 text-gray-600 text-sm font-semibold animate-fade">
                               Stay tuned!
-                            </div>
+                            </div> */}
                           </div>
                         </div>
 
@@ -274,7 +274,7 @@ export default function Cafes() {
                           )}
                         </div>
 
-                        {hasProducts ? (
+                        {/* {hasProducts ? (
                           <motion.div
                             className="absolute top-0 right-0 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-lg cursor-pointer hover:scale-110 transition-all duration-300"
                             whileHover={{ scale: 1.2 }}
@@ -290,7 +290,7 @@ export default function Cafes() {
                           <div className="absolute top-0 right-0 bg-gray-400 text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-md opacity-70">
                             <span>0</span>
                           </div>
-                        )}
+                        )} */}
                       </div>
 
                       <h2 className={`mt-4 text-lg font-semibold text-center truncate w-full ${!hasProducts ? 'text-gray-500' : 'text-gray-900'
