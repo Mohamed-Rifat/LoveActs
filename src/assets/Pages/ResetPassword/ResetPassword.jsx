@@ -4,6 +4,7 @@ import * as Yup from 'yup';
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle, ArrowRight, Shield, Key, Check } from 'lucide-react';
 import 'animate.css';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 // Simple OTP Input Component since we can't import external libraries
 const OtpInput = ({ value, onChange, numInputs = 6 }) => {
@@ -478,7 +479,7 @@ export default function ModernResetPasswordFlow() {
 
                         {/* Back to login link */}
                         <div className="text-center mt-6">
-                            <button
+                            <Link to="/login"
                                 type="button"
                                 className="text-sm transition-colors duration-300"
                                 style={{ color: '#F8BBD9' }}
@@ -486,7 +487,7 @@ export default function ModernResetPasswordFlow() {
                                 onMouseLeave={(e) => e.target.style.color = '#F8BBD9'}
                             >
                                 Remember your password? Sign in
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
