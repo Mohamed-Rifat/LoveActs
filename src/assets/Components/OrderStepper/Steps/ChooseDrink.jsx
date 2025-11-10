@@ -136,18 +136,18 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink }) {
                     />
                   </div>
 
-                  {cafe.products && cafe.products.length > 0 && (
+                  {/* {cafe.products && cafe.products.length > 0 && (
                     <div className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-[#CF848A] text-white text-[0.75rem] font-semibold 
           w-7 h-7 rounded-full flex items-center justify-center shadow-md border-2 border-white">
                       {cafe.products.length}
                     </div>
-                  )}
+                  )} */}
 
                   {(!cafe.products || cafe.products.length === 0) && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] rounded-full flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] rounded-full flex items-center justify-center ">
                       <div className="text-center animate-pulse">
                         <div className="text-[#CF848A] font-bold text-[0.7rem] uppercase tracking-wide">
-                          Coming Soon
+                        
                         </div>
                       </div>
                     </div>
