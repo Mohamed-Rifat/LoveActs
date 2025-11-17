@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     Menu as MenuIcon,
@@ -35,7 +36,8 @@ import { useToken } from '../../Context/TokenContext/TokenContext';
 const API_BASE_URL = 'https://flowers-vert-six.vercel.app/api';
 
 const AdminDashboard = () => {
-    const { token, user, logout } = useToken();
+    const { token, user, removeToken } = useToken();
+    const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [stats, setStats] = useState({
@@ -335,8 +337,9 @@ const AdminDashboard = () => {
     };
 
     const handleLogout = () => {
-        logout();
-        window.location.href = '/login';
+        removeToken();
+        // toast.success("Goodbye! Admin 👋", { duration: 4000 });
+        navigate('/login');
     };
 
     const renderContent = () => {
