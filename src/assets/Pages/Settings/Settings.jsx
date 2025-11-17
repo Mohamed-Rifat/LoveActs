@@ -2,11 +2,12 @@ import { CiDeliveryTruck } from 'react-icons/ci'
 import { FaRegUser } from 'react-icons/fa'
 import { MdOutlinePrivacyTip } from 'react-icons/md'
 import { NavLink, Outlet } from 'react-router-dom'
+import { useToken } from './../../Context/TokenContext/TokenContext';
 
 export default function Settings() {
+  const { token, user } = useToken();
   const linkClasses = ({ isActive }) =>
-    `flex gap-2 items-center border-b rounded transition-all duration-200 p-2 ${
-      isActive ? 'bg-[#FDE9EE]' : 'bg-transparent hover:bg-gray-100'
+    `flex gap-2 items-center border-b rounded transition-all duration-200 p-2 ${isActive ? 'bg-[#FDE9EE]' : 'bg-transparent hover:bg-gray-100'
     } cursor-pointer`
 
   return (
@@ -18,14 +19,18 @@ export default function Settings() {
               <FaRegUser />
               <p>Personal information</p>
             </NavLink>
+           {user?.role === "User" && (
             <NavLink to={'privacy'} className={linkClasses}>
               <MdOutlinePrivacyTip />
               <p>Privacy</p>
             </NavLink>
+            )}
+          {user?.role === "User" && (
             <NavLink to={'orders'} className={linkClasses}>
               <CiDeliveryTruck />
               <p>Orders</p>
             </NavLink>
+            )}
           </ul>
         </div>
 
