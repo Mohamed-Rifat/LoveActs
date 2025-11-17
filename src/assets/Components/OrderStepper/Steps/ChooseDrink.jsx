@@ -38,7 +38,7 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink }) {
 
     const name = drink.productName?.toLowerCase() || "";
     if (drinkFilter === "hot") return name.includes("hot")
-    if (drinkFilter === "cold") return name.includes("cold");
+    if (drinkFilter === "iced") return name.includes("iced");
 
     return true;
   });
@@ -212,7 +212,7 @@ export default function ChooseCafe({ onSelectCafe, onSelectDrink }) {
               </p>
 
               <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-                {["all", "hot", "cold"].map((filter) => (
+                {["all", "hot", "iced"].map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setDrinkFilter(filter)}
