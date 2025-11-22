@@ -195,6 +195,13 @@ export default function Cart() {
                               <p className="text-sm sm:text-base font-medium text-gray-800 mt-1">
                                 {formatPrice(product.price)} LE
                               </p>
+
+                              <div className="mt-2 text-sm text-gray-700">
+                                <p>
+                                  Quantity: <span className="font-semibold">{item.quantity}</span>
+                                </p>
+                              </div>
+
                             </div>
 
                             <div className="flex justify-end mt-2">
