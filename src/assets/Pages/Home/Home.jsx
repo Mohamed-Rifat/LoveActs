@@ -7,7 +7,6 @@ import { useCart } from '../../hooks/UseCart';
 import HeroSlider from '../../Components/Home/HeroSlider';
 import FeaturedProducts from '../../Components/Home/FeaturedProducts';
 import CafesSection from '../../Components/Home/CafesSection';
-import WhyChoose from '../../Components/Home/WhyChoose';
 import Partners from '../../Components/Home/Partners';
 import MobileAppSection from '../../Components/Home/MobileAppSection';
 
@@ -165,7 +164,6 @@ export default function Home() {
       <HeroSlider slides={slides} currentSlide={currentSlide} setCurrentSlide={setCurrentSlide} />
       <FeaturedProducts products={products} loading={loading} handleAddToCart={handleAddToCart} pending={pending} navigate={navigate} />
       <CafesSection cafes={cafes} loading={loading} navigate={navigate} />
-      <WhyChoose />
       <Partners clients={clients} />
       <MobileAppSection />
     </div>
