@@ -8,6 +8,7 @@ import styled, { keyframes } from 'styled-components';
 import { FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import 'animate.css';
+import { useToken } from '../../Context/TokenContext/TokenContext';
 
 const slideInLeft = keyframes`
   from { transform: translateX(-20px); opacity: 0; }
@@ -176,11 +177,11 @@ export default function Register() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showRePassword, setShowRePassword] = useState(false);
-
     const [isLoading, setIsLoading] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
     const navigate = useNavigate();
+    const { setToken, setUser } = useToken();
 
     const validationSchema = Yup.object({
         name: Yup.string()
@@ -224,7 +225,6 @@ export default function Register() {
                 email: values.email,
                 password: values.password,
                 phone: values.phone,
-               
             };
             try {
                 const response = await axios.post(
@@ -234,7 +234,13 @@ export default function Register() {
 
                 if (response.status === 201) {
                     setSubmitSuccess(true);
-                    setTimeout(() => navigate('/login'), 2000);
+                    setToken(response.data.token);
+                    setUser({
+                        name: values.name,
+                        email: values.email,
+                        phone: values.phone
+                    });
+                    setTimeout(() => navigate('/'), 1500);
                 }
             } catch (error) {
                 if (error.response) {
@@ -252,7 +258,7 @@ export default function Register() {
         <>
             <Helmet>
                 <title>Register | Love Acts</title>
-                 <meta name="description" content="Create your Love Acts account" />
+                <meta name="description" content="Create your Love Acts account" />
             </Helmet>
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-100 to-pink-100 p-4">
                 <FormContainer className="w-full max-w-md p-8 animate__animated animate__bounceInRight">
@@ -381,33 +387,33 @@ export default function Register() {
                         </div>
 
                         <div className="relative z-0 w-full group">
-                             <div className="relative">
-                            <input
-                                type={showRePassword ? "text" : "password"}
-                                id="rePassword"
-                                name="rePassword"
-                                autoComplete="new-password"
-                                className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.rePassword && formik.errors.rePassword ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
-                                placeholder=" "
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.rePassword}
-                            />
-                            <label
-                                htmlFor="rePassword"
-                                className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 left-0 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-                            >
-                                Confirm Password
-                            </label>
-                            <button
-                                type="button"
-                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-indigo-600"
-                                onClick={() => setShowRePassword(!showRePassword)}
-                                tabIndex={-1}
-                                aria-label={showRePassword ? "Hide password" : "Show password"}
-                            >
-                                {showRePassword ? <FaEyeSlash /> : <FaEye />}
-                            </button>
+                            <div className="relative">
+                                <input
+                                    type={showRePassword ? "text" : "password"}
+                                    id="rePassword"
+                                    name="rePassword"
+                                    autoComplete="new-password"
+                                    className={`block py-2.5 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 ${formik.touched.rePassword && formik.errors.rePassword ? 'border-red-300' : 'border-gray-300'} appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer`}
+                                    placeholder=" "
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    value={formik.values.rePassword}
+                                />
+                                <label
+                                    htmlFor="rePassword"
+                                    className="peer-focus:font-medium absolute text-sm text-gray-500 duration-300 transform -translate-y-6 scale-75 top-3 left-0 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                                >
+                                    Confirm Password
+                                </label>
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-indigo-600"
+                                    onClick={() => setShowRePassword(!showRePassword)}
+                                    tabIndex={-1}
+                                    aria-label={showRePassword ? "Hide password" : "Show password"}
+                                >
+                                    {showRePassword ? <FaEyeSlash /> : <FaEye />}
+                                </button>
                             </div>
                             {formik.touched.rePassword && formik.errors.rePassword && (
                                 <div className="text-red-500 text-sm mt-1 flex items-center animate-fade-in">
