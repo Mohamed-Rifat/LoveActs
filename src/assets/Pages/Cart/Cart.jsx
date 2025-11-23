@@ -146,7 +146,7 @@ export default function Cart() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-xl shadow-md overflow-hidden"
+              className="bg-white shadow-md overflow-hidden"
             >
               <AnimatePresence>
                 {(items || []).map((item, index) => {
@@ -164,7 +164,7 @@ export default function Cart() {
                       transition={{ duration: 0.3 }}
                       className={`border-b border-gray-100 last:border-b-0 ${isPending ? "opacity-50" : "opacity-100"}`}
                     >
-                      <div className="p-4 sm:p-5 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="p-4 sm:p-5 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-center justify-between gap-4">
                           <motion.div
                             whileHover={{ scale: 1.05 }}
@@ -236,14 +236,14 @@ export default function Cart() {
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
-                    className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full text-center"
+                    className="bg-white shadow-lg p-6 max-w-md w-full text-center"
                   >
                     <h2 className="text-xl font-bold mb-4">Choose Delivery Option</h2>
 
                     <div className="flex flex-col gap-3 mb-6">
                       <button
                         onClick={() => setDeliveryOption("pickup")}
-                        className={`py-3 rounded-lg border ${deliveryOption === "pickup"
+                        className={`py-3 border ${deliveryOption === "pickup"
                           ? "bg-[#CF848A] text-white"
                           : "bg-gray-50 hover:bg-gray-100"
                           }`}
@@ -252,7 +252,7 @@ export default function Cart() {
                       </button>
                       <button
                         onClick={() => setDeliveryOption("delivery")}
-                        className={`py-3 rounded-lg border ${deliveryOption === "delivery"
+                        className={`py-3 border ${deliveryOption === "delivery"
                           ? "bg-[#CF848A] text-white"
                           : "bg-gray-50 hover:bg-gray-100"
                           }`}
@@ -262,7 +262,7 @@ export default function Cart() {
                     </div>
 
                     {deliveryOption === "delivery" && (
-                      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800 mb-4">
+                      <div className="bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800 mb-4">
                         📦 Delivery service has an extra fee of <b>50 EGP</b>.
                         <br /> Currently available only in <b>New Cairo</b>, coming soon across all Egypt.
                       </div>
@@ -271,14 +271,14 @@ export default function Cart() {
                     <div className="flex justify-end gap-3">
                       <button
                         onClick={() => setShowModal(false)}
-                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300"
                       >
                         Cancel
                       </button>
                       <button
                         disabled={!deliveryOption}
                         onClick={handleConfirmOption}
-                        className="px-4 py-2 bg-[#CF848A] text-white rounded-lg hover:bg-[#c57077] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-[#CF848A] text-white hover:bg-[#c57077] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Confirm
                       </button>
@@ -287,7 +287,7 @@ export default function Cart() {
                 </motion.div>
               )}
             </AnimatePresence>
-            
+
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -310,13 +310,13 @@ export default function Cart() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="lg:w-1/3"
           >
-            <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
+            <div className="bg-white shadow-md p-6 sticky top-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">Order Summary</h2>
               <motion.button
                 whileHover={{ scale: 1.02, backgroundColor: "#dc2626" }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleClearCart()}
-                className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg mt-4"
+                className="w-full flex items-center justify-center gap-2 bg-red-600 text-white font-medium py-3 px-4 transition-colors duration-200 shadow-md hover:shadow-lg mt-4"
               >
                 <FiTrash2 />
                 Clear Cart
@@ -331,7 +331,7 @@ export default function Cart() {
                 whileHover={{ scale: 1.02, backgroundColor: "#059669" }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleProceedClick}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-medium py-3 px-4 transition-colors duration-200 shadow-md hover:shadow-lg"
               >
                 <FiCreditCard />
                 Proceed to Checkout
