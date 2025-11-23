@@ -231,7 +231,17 @@ export default function Cafes() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
                 {filteredCafes.map((cafe) => {
-                  const hasProducts = cafe.products && cafe.products.length > 0;
+
+
+                  // مؤقت وهيتشال لما يتم التعاقد 
+                  const forcedComingSoon = ["vasko", "dukes"].includes(
+                    cafe.name?.toLowerCase()
+                  );
+
+                  const hasProducts = cafe.products && cafe.products.length > 0 && !forcedComingSoon;
+
+                  // هفعل تاني السطر لما الغي المؤقت
+                  // const hasProducts = cafe.products && cafe.products.length > 0;
                   return (
                     <motion.div
                       key={cafe._id || cafe.id}
