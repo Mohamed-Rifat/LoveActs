@@ -4,6 +4,7 @@ import { CartContext } from "../../Context/CartContext";
 import { FiX, FiCoffee, FiStar, FiSearch, FiChevronRight } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
 
 export default function Cafes() {
   const [cafes, setCafes] = useState([]);
@@ -11,14 +12,16 @@ export default function Cafes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCafe, setSelectedCafe] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const { addToCart } = useContext(CartContext);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState("name");
   const [drinkFilter, setDrinkFilter] = useState("all");
+  const navigate = useNavigate();
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 12;
 
   const filteredProducts =
     selectedCafe?.products?.filter((product) => {
@@ -84,16 +87,24 @@ export default function Cafes() {
     if (cafe.products && cafe.products.length > 0) {
       setSelectedCafe(cafe);
       setDrinkFilter("all");
+      setCurrentPage(1);
     }
   };
 
   const handleCloseProducts = () => {
     setSelectedCafe(null);
+    setSelectedProduct(null);
   };
 
   const handleAddToCart = (product, cafeName) => {
     const productWithCafe = { ...product, cafeName };
     addToCart(productWithCafe);
+  };
+
+  const handleBrowseFlowers = () => {
+    setSelectedProduct(null);
+    setSelectedCafe(null);
+    navigate('/products');
   };
 
   return (
@@ -151,7 +162,6 @@ export default function Cafes() {
                 >
                   <div className="relative">
                     <div className="w-40 h-40 rounded-full bg-gray-200 mb-4"></div>
-                    {/* <div className="absolute top-0 right-0 bg-gray-300 w-8 h-8 rounded-full"></div> */}
                   </div>
                   <div className="h-5 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-10 bg-gray-200 rounded-full w-40"></div>
@@ -232,7 +242,7 @@ export default function Cafes() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
                 {filteredCafes.map((cafe) => {
 
-
+                  
                   // مؤقت وهيتشال لما يتم التعاقد 
                   const forcedComingSoon = ["vasko", "dukes"].includes(
                     cafe.name?.toLowerCase()
@@ -240,8 +250,6 @@ export default function Cafes() {
 
                   const hasProducts = cafe.products && cafe.products.length > 0 && !forcedComingSoon;
 
-                  // هفعل تاني السطر لما الغي المؤقت
-                  // const hasProducts = cafe.products && cafe.products.length > 0;
                   return (
                     <motion.div
                       key={cafe._id || cafe.id}
@@ -253,15 +261,8 @@ export default function Cafes() {
                       {!hasProducts && (
                         <div className="absolute inset-0 bg-opacity-80 rounded-3xl z-10 flex items-center justify-center">
                           <div className="text-center transform -rotate-45">
-                            {/* <div className="px-6 py-3 text-[#CF848A] font-bold text-lg border-4 border-[#CF848A] rounded-2xl shadow-md animate-glow">
-                              Coming Soon
-                            </div>
-                            <div className="mt-2 text-gray-600 text-sm font-semibold animate-fade">
-                              Stay tuned!
-                            </div> */}
                           </div>
                         </div>
-
                       )}
 
                       <div className="relative group">
@@ -283,24 +284,6 @@ export default function Cafes() {
                             </div>
                           )}
                         </div>
-
-                        {/* {hasProducts ? (
-                          <motion.div
-                            className="absolute top-0 right-0 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-lg cursor-pointer hover:scale-110 transition-all duration-300"
-                            whileHover={{ scale: 1.2 }}
-                            whileTap={{ scale: 0.9 }}
-                            title={`${cafe.products.length} Product${cafe.products.length > 1 ? 's' : ''}`}
-                          >
-                            <span className="flex items-center justify-center">
-                              {cafe.products.length}
-                            </span>
-                            <div className="absolute inset-0 rounded-full bg-[#CF848A] opacity-20 animate-ping"></div>
-                          </motion.div>
-                        ) : (
-                          <div className="absolute top-0 right-0 bg-gray-400 text-white text-xs w-8 h-8 flex items-center justify-center rounded-full font-semibold shadow-md opacity-70">
-                            <span>0</span>
-                          </div>
-                        )} */}
                       </div>
 
                       <h2 className={`mt-4 text-lg font-semibold text-center truncate w-full ${!hasProducts ? 'text-gray-500' : 'text-gray-900'
@@ -396,6 +379,7 @@ export default function Cafes() {
 
                             <div className="relative inline-block w-48">
                               <select
+                                value={sortOption}
                                 onChange={(e) => setSortOption(e.target.value)}
                                 className="appearance-none w-full bg-white border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 text-sm font-medium 
                text-gray-700 shadow-sm cursor-pointer
@@ -431,7 +415,8 @@ export default function Cafes() {
                                 animate={{ opacity: 1, y: 0 }}
                                 whileHover={{ scale: 1.05 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white p-4 flex flex-col items-center text-center rounded-xl shadow-sm"
+                                className="bg-white p-4 flex flex-col items-center text-center rounded-xl shadow-sm cursor-pointer"
+                                onClick={() => setSelectedProduct(product)}
                               >
                                 <img
                                   src={product.image || "/Logo.PNG"}
@@ -485,6 +470,94 @@ export default function Cafes() {
                           </p>
                         </div>
                       )}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {selectedProduct && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="bg-white shadow-xl max-w-md w-full mx-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        {selectedProduct.productName}
+                      </h2>
+                      <button
+                        onClick={() => setSelectedProduct(null)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      >
+                        <FiX size={24} />
+                      </button>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex justify-center mb-6">
+                        <img
+                          src={selectedProduct.image || "/Logo.PNG"}
+                          alt={selectedProduct.productName}
+                          className="w-48 h-48 object-cover rounded-2xl shadow-md"
+                        />
+                      </div>
+
+                      <div className="space-y-4 mb-6">
+                        <div className="text-center">
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                            {selectedProduct.productName}
+                          </h3>
+                          {selectedProduct.price && (
+                            <p className="text-3xl font-bold text-[#CF848A]">
+                              {selectedProduct.price} LE
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="bg-amber-50 border border-amber-200 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="bg-amber-100 p-2 rounded-full">
+                              <FiStar className="text-amber-600" size={18} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-amber-800 mb-1">
+                                Important Note
+                              </h4>
+                              <p className="text-amber-700 text-sm">
+                                To order this drink, you need to purchase a flower product first.
+                                Complete your gift with a beautiful bouquet and enjoy your drink!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setSelectedProduct(null)}
+                          className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                        >
+                          Close
+                        </button>
+                        <button
+                          onClick={handleBrowseFlowers}
+                          className="flex-1 py-3 px-4 bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                          Browse Flowers
+                          <FiChevronRight size={18} />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 </motion.div>
