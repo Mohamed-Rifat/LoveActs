@@ -31,6 +31,7 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,11 +110,11 @@ export default function Products() {
 
   const handleAddToCart = async (productId, quantity) => {
     if (!token) {
-      setSelectedProduct(productId);
+      setSelectedProduct(products.find(p => p._id === productId || p.id === productId));
       setShowModal(true);
       return;
     }
-     if (role === "Admin") {
+    if (role === "Admin") {
       toast.error("You are an admin, you cannot add products!");
       return;
     }
