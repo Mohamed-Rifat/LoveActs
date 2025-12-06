@@ -79,10 +79,10 @@ export default function Cart() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="relative mb-6"
           >
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <FiShoppingCart className="text-4xl text-green-600" />
+            <div className="w-24 h-24 bg-[#FDE9EE] rounded-full flex items-center justify-center mx-auto">
+              <FiShoppingCart className="text-4xl text-[#CF848A]" />
             </div>
-            <div className="absolute -top-2 -right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+            <div className="absolute -top-2 -right-2 w-10 h-10 bg-[#FDE9EE] text-[#CF848A] rounded-full flex items-center justify-center font-bold">
               0
             </div>
           </motion.div>
@@ -109,7 +109,7 @@ export default function Cart() {
           >
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+              className="inline-flex items-center gap-2 bg-[#FDE9EE] text-[#CF848A] font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
             >
               <FiArrowLeft className="transform rotate-180" />
               Continue Shopping
