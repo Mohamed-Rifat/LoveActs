@@ -338,7 +338,6 @@ const AdminDashboard = () => {
 
     const handleLogout = () => {
         removeToken();
-        // toast.success("Goodbye! Admin 👋", { duration: 4000 });
         navigate('/login');
     };
 
@@ -474,7 +473,7 @@ const AdminDashboard = () => {
                                             Monthly Growth
                                         </h3>
                                         <div className="h-80">
-                                            <ResponsiveContainer width="100%" height="100%">
+                                            <ResponsiveContainer width="100%" height={300}>
                                                 <BarChart data={chartData}>
                                                     <CartesianGrid strokeDasharray="3 3" />
                                                     <XAxis dataKey="name" />
@@ -491,28 +490,37 @@ const AdminDashboard = () => {
 
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Order Status Distribution</h3>
-                                        <div className="h-80">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={orderStatusData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        labelLine={false}
-                                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                        outerRadius={80}
-                                                        fill="#8884d8"
-                                                        dataKey="value"
-                                                    >
-                                                        {orderStatusData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
-                                        </div>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={orderStatusData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={60}
+                                                    outerRadius={90}
+                                                    paddingAngle={2}
+                                                    dataKey="value"
+                                                    label={(entry) => `${entry.name}: ${entry.value}`}
+                                                >
+                                                    {orderStatusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    formatter={(value) => [`${value} orders`, 'Count']}
+                                                    contentStyle={{
+                                                        backgroundColor: 'white',
+                                                        border: '1px solid #e5e7eb',
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
+                                                <Legend
+                                                    layout="vertical"
+                                                    verticalAlign="middle"
+                                                    align="right"
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
 
@@ -520,7 +528,7 @@ const AdminDashboard = () => {
                                     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
                                         <h3 className="text-xl font-semibold mb-4 text-gray-800">Weekly Trends</h3>
                                         <div className="h-80">
-                                            <ResponsiveContainer width="100%" height="100%">
+                                            <ResponsiveContainer width="100%" height={300}>
                                                 <LineChart data={trendData}>
                                                     <CartesianGrid strokeDasharray="3 3" />
                                                     <XAxis dataKey="day" />
