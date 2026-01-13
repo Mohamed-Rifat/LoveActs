@@ -224,8 +224,6 @@ export default function Login() {
       }
     );
 
-    // console.log('Login response:', response.data);
-
     if (response.data?.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -360,11 +358,6 @@ export default function Login() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
               </div>
-              <div className="text-sm">
-                <Link to="/resetpassword" className="font-medium text-indigo-600 hover:text-indigo-500">
-                  Forgot password?
-                </Link>
-              </div>
             </div>
 
             <SubmitButton
@@ -389,13 +382,6 @@ export default function Login() {
                 </>
               )}
             </SubmitButton>
-
-            <div className="text-center text-sm text-gray-600 animate-fade-in">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-indigo-600 font-medium hover:underline">
-                Sign up
-              </Link>
-            </div>
           </form>
         </FormContainer>
       </div>

@@ -1,81 +1,141 @@
 import React, { useState, useEffect } from "react";
-import { Stepper, Step, StepLabel, Box, Paper, Container, Typography, IconButton } from "@mui/material";
-import { FiCoffee, FiX, FiCheckCircle } from "react-icons/fi";
-import { useLocation } from "react-router-dom";
-import ChooseDrink from "./Steps/ChooseDrink";
+import {
+  Stepper,
+  Step,
+  StepLabel,
+  Box,
+  Paper,
+  Container,
+  Typography
+} from "@mui/material";
+import { FiCoffee, FiCheckCircle } from "react-icons/fi";
+import { useLocation, useNavigate } from "react-router-dom";
 import ConfirmPersonalInfo from "./Steps/ConfirmPersonalInfo";
 import ReviewOrder from "./Steps/ReviewOrder";
 import DeliveryStatus from "./Steps/DeliveryStatus";
-import FinalMessage from "./Steps/FinalMessage";
 
 const steps = [
-  "Select Cafe & Drink",
   "Confirm Personal Info",
   "Review & Confirm Order",
-  "Order in Progress",
-  "Thank You Message"
+  "Order in Progress"
 ];
 
-export default function OrderStepper({ onClose }) {
+export default function OrderStepper() {
   const [activeStep, setActiveStep] = useState(0);
-  const [selectedCafe, setSelectedCafe] = useState(null);
-  const [selectedDrink, setSelectedDrink] = useState(null);
-  const [userData, setUserData] = useState({ name: "", email: "", phone: "" });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [userData, setUserData] = useState({});
+  const [orderData, setOrderData] = useState({
+    deliveryOption: "",
+    finalTotal: 0,
+    drinkSelections: []
+  });
+  const [cartData, setCartData] = useState([]);
   const location = useLocation();
-  const { deliveryOption, finalTotal } = location.state || {};
+  const navigate = useNavigate();
+
 
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) setUserData(JSON.parse(user));
-  }, []);
+    setIsLoading(true);
 
-  const handleNext = () => setActiveStep((prev) => prev + 1);
-  const handleBack = () => setActiveStep((prev) => prev - 1);
-  const handleReset = () => {
-    setActiveStep(0);
-    setSelectedCafe(null);
-    setSelectedDrink(null);
-    setUserData({ name: "", email: "", phone: "" });
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) setUserData(JSON.parse(savedUser));
+
+      if (location.state) {
+        const {
+          deliveryOption = "",
+          finalTotal = 0,
+          drinkSelections = [],
+          cartData = []
+        } = location.state;
+
+        setOrderData({ deliveryOption, finalTotal, drinkSelections });
+        setCartData(cartData);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setIsLoading(false);
+  }, [location.state]);
+
+
+  useEffect(() => {
+    if (!isLoading && (!orderData.deliveryOption || orderData.finalTotal <= 0)) {
+      navigate("/cart", { replace: true });
+    }
+  }, [isLoading, orderData, navigate]);
+
+  const handleNext = () => {
+    if (activeStep < steps.length - 1) {
+      setActiveStep(prev => prev + 1);
+    }
   };
 
-  const handlePersonalInfoConfirm = (data) => {
-    localStorage.setItem("user", JSON.stringify(data));
-    setUserData(data);
-    handleNext();
+  const handleBack = () => {
+    if (activeStep === 0) {
+      navigate("/cart");
+    } else {
+      setActiveStep(prev => prev - 1);
+    }
   };
 
   const renderStepContent = (step) => {
+    if (isLoading) {
+      return <Typography>Loading...</Typography>;
+    }
     switch (step) {
       case 0:
         return (
-          <ChooseDrink
-            selectedCafe={selectedCafe}
-            selectedDrink={selectedDrink}
-            onSelectCafe={setSelectedCafe}
-            onSelectDrink={(drink) => { setSelectedDrink(drink); handleNext(); }}
+          <ConfirmPersonalInfo
+            userInitialData={userData}
+            onConfirm={(data) => {
+              setUserData(data);
+              handleNext();
+            }}
+            onBack={handleBack}
           />
         );
+
       case 1:
-        return <ConfirmPersonalInfo userInitialData={userData} onConfirm={handlePersonalInfoConfirm} onBack={handleBack} />;
+        return (
+          <ReviewOrder
+            userData={userData}
+            deliveryOption={orderData.deliveryOption}
+            finalTotal={orderData.finalTotal}
+            drinkSelections={orderData.drinkSelections}
+            cartData={orderData.cartItems} 
+            expandedItems={orderData.expandedItems} 
+            groupedItems={orderData.groupedItems} 
+            subtotal={orderData.subtotal}
+            onBack={handleBack}
+            onConfirm={handleNext}
+          />
+        );
       case 2:
-        return <ReviewOrder selectedCafe={selectedCafe} selectedDrink={selectedDrink} userData={userData} deliveryOption={deliveryOption} finalTotal={finalTotal} onBack={handleBack} onConfirm={handleNext} />;
-      case 3:
-        return <DeliveryStatus onNext={handleNext} />;
-      case 4:
-        return <FinalMessage onFinish={onClose || handleReset} />;
+        return <DeliveryStatus />;
+
       default:
-        return <Box>Unknown step</Box>;
+        return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       <Container maxWidth="lg">
-        <Paper elevation={3} sx={{ borderRadius: 0, overflow: "hidden" }}>
-          <Box className="bg-gradient-to-br from-[#CF848A] to-[#A85C68] p-6 text-white flex justify-between items-center">
-            <Box className="flex items-center">
-              <FiCoffee className="text-2xl mr-2" />
-              <Typography variant="h6" fontWeight={600}> Order System</Typography>
+        <Paper elevation={2}>
+          <Box className="bg-gradient-to-r from-[#CF848A] to-[#A85C68] p-6 text-white">
+            <Box className="flex items-center justify-between">
+              <Box className="flex items-center">
+                <FiCoffee className="text-2xl mr-3" />
+                <Typography variant="h6" fontWeight={600}>
+                  Complete Your Order
+                </Typography>
+              </Box>
+              <Typography variant="body2">
+                Step {activeStep + 1} of {steps.length}
+              </Typography>
             </Box>
           </Box>
 
@@ -85,12 +145,21 @@ export default function OrderStepper({ onClose }) {
                 <Step key={label}>
                   <StepLabel
                     StepIconComponent={() => (
-                      <Box sx={{
-                        width: 32, height: 32, borderRadius: "50%",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        backgroundColor: activeStep === index ? "#CF848A" : activeStep > index ? "#4caf50" : "#e0e0e0",
-                        color: "white"
-                      }}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: "50%",
+                          backgroundColor:
+                            activeStep > index ? "#10b981" :
+                              activeStep === index ? "#CF848A" :
+                                "#e5e7eb",
+                          color: "white"
+                        }}
+                      >
                         {activeStep > index ? <FiCheckCircle /> : index + 1}
                       </Box>
                     )}

@@ -28,7 +28,6 @@ export default function Orders() {
         });
 
         const backendOrders = response.data.orders || [];
-        console.log("📦 Orders from backend:", backendOrders);
         setOrders(backendOrders);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
@@ -106,7 +105,6 @@ export default function Orders() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-[#FDE9EE] to-rose-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-3 bg-gradient-to-r from-rose-400 to-pink-500 rounded-xl shadow-lg">

@@ -1,26 +1,34 @@
 import { useEffect, useState, useRef } from "react";
-import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp, FiStar, FiChevronRight, FiHeart } from "react-icons/fi";
+import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/UseCart";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-hot-toast";
 
-const ProductSkeleton = () => (
-  <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-    <div className="relative h-52 w-full bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse">
-      <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white"></div>
-    </div>
-    <div className="p-5">
-      <div className="h-6 bg-gray-200 rounded mb-3"></div>
-      <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
-      <div className="flex justify-between items-center">
-        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-        <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
+const ProductSkeleton = () => {
+  return (
+    <div className="group bg-white relative rounded-lg shadow-sm border border-gray-100 overflow-hidden min-h-[420px] flex flex-col animate-pulse">
+      <div className="relative overflow-hidden">
+        <div className="h-[260px] w-full bg-gray-200" />
+      </div>
+      <div className="p-4 flex flex-col justify-between flex-grow">
+        <div className="flex justify-between items-start mb-2">
+          <div className="h-5 w-32 bg-gray-200 rounded" />
+          <div className="h-5 w-16 bg-gray-200 rounded" />
+        </div>
+        <div className="space-y-2 mb-4">
+          <div className="h-4 w-full bg-gray-200 rounded" />
+          <div className="h-4 w-3/4 bg-gray-200 rounded" />
+        </div>
+        <div className="mt-auto">
+          <div className="h-10 w-full bg-gray-200 rounded-lg" />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 const Shimmer = () => (
   <div className="absolute inset-0 transform -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
@@ -38,6 +46,8 @@ export default function Products() {
   const [sortOption, setSortOption] = useState("default");
   const [sortOpen, setSortOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [pendingGuestProduct, setPendingGuestProduct] = useState(null);
   const sortRef = useRef(null);
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
@@ -108,36 +118,60 @@ export default function Products() {
 
   const handleCloseModal = () => setSelectedProduct(null);
 
-  const handleAddToCart = async (productId, quantity) => {
-    if (!token) {
-      setSelectedProduct(products.find(p => p._id === productId || p.id === productId));
-      setShowModal(true);
-      return;
-    }
-    if (role === "Admin") {
-      toast.error("You are an admin, you cannot add products!");
-      return;
-    }
+  const handleGuestAdd = async () => {
+    if (!pendingGuestProduct) return;
+
+    setIsCreatingSession(true);
     try {
-      await addToCart(productId, quantity);
+      const response = await axios.get("https://flowers-vert-six.vercel.app/get-seesion-id");
+      const sessionId = response.data.sessionId;
+      localStorage.setItem("sessionId", sessionId);
+
+      await addToCart(pendingGuestProduct.productId, pendingGuestProduct.quantity);
       await getCart();
-      toast.success("Added to cart 🛒");
+
+      setShowModal(false);
+      setPendingGuestProduct(null);
+      setSelectedProduct(null);
     } catch (err) {
-      toast.error("Something went wrong while adding!");
+      console.error(err);
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
-  // const toggleFavorite = (productId) => {
-  //   setFavorites(prev => {
-  //     const newFavorites = new Set(prev);
-  //     if (newFavorites.has(productId)) {
-  //       newFavorites.delete(productId);
-  //     } else {
-  //       newFavorites.add(productId);
-  //     }
-  //     return newFavorites;
-  //   });
-  // };
+  const handleAddToCart = async (productId, qty = 1) => {
+    const hasSession = localStorage.getItem("sessionId");
+
+    if (token) {
+      if (role === "Admin") {
+        toast.error("You are an admin, you cannot add products!");
+        return;
+      }
+      try {
+        await addToCart(productId, qty);
+        await getCart();
+      } catch (err) {
+        toast.error("Something went wrong while adding!");
+      }
+    }
+    else if (hasSession) {
+      try {
+        await addToCart(productId, qty);
+        await getCart();
+      } catch (err) {
+        toast.error("Something went wrong while adding!");
+      }
+    }
+    else {
+      const product = products.find(p => p._id === productId || p.id === productId);
+      if (product) {
+        setPendingGuestProduct({ productId, quantity: qty });
+        setSelectedProduct(product);
+        setShowModal(true);
+      }
+    }
+  };
 
   const sortOptions = [
     { label: "Default", value: "default" },
@@ -193,6 +227,129 @@ export default function Products() {
         <meta property="og:site_name" content="Love Acts" />
         <meta property="og:url" content="https://loveacts.vercel.app/products" />
       </Helmet>
+
+      {showModal && selectedProduct && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isCreatingSession) {
+              setShowModal(false);
+              setSelectedProduct(null);
+            }
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white p-6 max-w-sm w-full shadow-2xl text-center relative"
+          >
+            <button
+              onClick={() => !isCreatingSession && (setShowModal(false), setSelectedProduct(null))}
+              disabled={isCreatingSession}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              aria-label="Close modal"
+            >
+              <svg xmlns="http://www.w3.org2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 
+                    1 0 111.414 1.414L11.414 10l4.293 
+                    4.293a1 1 0 01-1.414 1.414L10 
+                    11.414l-4.293 4.293a1 1 0 
+                    01-1.414-1.414L8.586 10 
+                    4.293 5.707a1 1 0 
+                    010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+
+            <div className="mx-auto flex items-center justify-center mb-4">
+              <img className="h-28 w-auto" src="./Logo.PNG" alt="Love Acts Logo" />
+            </div>
+
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">
+              {isCreatingSession ? "Creating Guest Session..." : "Continue Shopping"}
+            </h3>
+
+            <p className="text-gray-600 mb-6 text-base leading-relaxed">
+              {isCreatingSession
+                ? "Please wait while we set up your guest session..."
+                : "To save your cart and checkout, please sign in. You can also continue as a guest."}
+            </p>
+
+            {!isCreatingSession ? (
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('pendingProduct', JSON.stringify({
+                      productId: selectedProduct._id,
+                      name: selectedProduct.name,
+                      price: selectedProduct.price,
+                      image: selectedProduct.image
+                    }));
+                    setShowModal(false);
+                    window.location.href = "/login";
+                  }}
+                  className="border-2 border-gray-200 text-gray-700 py-3 px-4 hover:bg-slate-300 transition-all duration-300 font-medium flex items-center justify-center gap-2"
+                >
+                  Sign In
+                </button>
+
+                <button
+                  onClick={handleGuestAdd}
+                  disabled={isCreatingSession}
+                  className="border-2 border-[#CF848A] text-[#CF848A] py-3 px-4 hover:bg-[#fef5f7] transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingSession ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <FiRefreshCw className="h-5 w-5" />
+                      </motion.div>
+                      Setting up Guest Session...
+                    </>
+                  ) : (
+                    <>
+                      <FiShoppingCart className="h-5 w-5" />
+                      Continue as Guest
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setSelectedProduct(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 py-2 text-sm transition-colors duration-300 mt-2"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            ) : (
+              <div className="py-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#CF848A] mx-auto mb-4"></div>
+                <p className="text-sm text-gray-500">Setting up your temporary cart...</p>
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500">
+                {isCreatingSession
+                  ? "Your guest session will allow you to shop now and save items temporarily."
+                  : "As a guest, your cart will be saved temporarily. We recommend creating an account to save your cart permanently."}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -295,17 +452,6 @@ export default function Products() {
                   whileHover={{ y: -5, transition: { duration: 0.2 } }}
                   className="group bg-white relative rounded-lg shadow-sm border border-gray-100 overflow-hidden min-h-[420px] flex flex-col"
                 >
-                  {/* <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => toggleFavorite(id)}
-                    className={`absolute top-3 left-3 z-10 p-2 rounded-full backdrop-blur-sm ${
-                      isFavorite 
-                        ? "bg-red-500/20 text-red-500" 
-                        : "bg-white/80 text-gray-500 hover:bg-white"
-                    } transition-colors`}
-                  >
-                    <FiHeart className={isFavorite ? "fill-current" : ""} />
-                  </motion.button> */}
 
                   {p.isDeleted && (
                     <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold z-10">
@@ -345,8 +491,6 @@ export default function Products() {
                     </p>
 
                     <div className="flex flex-col md:flex-row items-center justify-between">
-
-
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -399,7 +543,7 @@ export default function Products() {
         )}
 
         <AnimatePresence>
-          {selectedProduct && (
+          {selectedProduct && !showModal && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

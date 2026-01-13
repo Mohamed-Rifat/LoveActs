@@ -1,355 +1,468 @@
-import React, { useState } from "react";
-import { useToken } from "../../../Context/TokenContext/TokenContext";
+import React, { useState, useMemo, useEffect } from "react";
 import axios from "axios";
-import { useCart } from "../../../hooks/UseCart";
-import { FiCheckCircle, FiAlertCircle, FiLoader } from "react-icons/fi";
+import { FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import { motion } from "framer-motion";
+import PersonalInfoSection from "./ReviewOrder/PersonalInfoSection";
+import ScheduleSection from "./ReviewOrder/ScheduleSection";
+import OrderItemsSection from "./ReviewOrder/OrderItemsSection";
+import OrderSummarySection from "./ReviewOrder/OrderSummarySection";
+import MobileSummary from "./ReviewOrder/MobileSummary";
 
-export default function ReviewOrder({
-    selectedCafe,
-    selectedDrink,
-    userData,
-    deliveryOption,
+const ReviewOrderMain = ({
+    userData: propUserData,
+    deliveryOption: propDeliveryOption,
     onBack,
     onConfirm
-}) {
-    const { cart, clearAllCart, cartId } = useCart();
-    const { token } = useToken();
-    const [selectedTimeSlote, setselectedTimeSlote] = useState("");
-    const [selectedDate, setSelectedDate] = useState("");
+}) => {
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
     const [loading, setLoading] = useState(false);
+    const [fetchingCart, setFetchingCart] = useState(false);
     const [message, setMessage] = useState(null);
+    const [showFixedSummary, setShowFixedSummary] = useState(false);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const [cart, setCart] = useState([]);
+    const [cartId, setCartId] = useState("");
+    const [cartTotal, setCartTotal] = useState(0);
+    const [deliveryOption, setDeliveryOption] = useState("delivery");
+    const [drinkSelections, setDrinkSelections] = useState({});
+    const [userData, setUserData] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        street: "",
+        city: "",
+        country: "",
+    });
 
-    const today = new Date();
-    const formattedToday = today.toISOString().split("T")[0];
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 365);
-    const formattedNextWeek = nextWeek.toISOString().split("T")[0];
-
-    const deliveryTimes = [
-        { id: "10-12", label: "10:00 AM - 12:00 PM", value: "10:00 AM - 12:00 PM" },
-        { id: "12-2", label: "12:00 PM - 2:00 PM", value: "12:00 PM - 2:00 PM" },
-        { id: "2-4", label: "2:00 PM - 4:00 PM", value: "2:00 PM - 4:00 PM" },
-        { id: "4-6", label: "4:00 PM - 6:00 PM", value: "4:00 PM - 6:00 PM" },
-        { id: "6-8", label: "6:00 PM - 8:00 PM", value: "6:00 PM - 8:00 PM" },
-    ];
-
-    const handleTimeChange = (e) => setselectedTimeSlote(e.target.value);
-    const handleDateChange = (e) => setSelectedDate(e.target.value);
-
-    const totalPrice = cart.reduce(
-        (total, item) => total + Number(item.productId.price) * Number(item.quantity || 1),
-        0
-    );
-    const baseTotal = totalPrice + Number(selectedDrink?.price || 0);
-    const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
-    const total = baseTotal + deliveryFee;
-
-    const handleConfirm = async () => {
-        if (!selectedTimeSlote || !selectedDate) {
-            setMessage({ type: "error", text: "Please select both date and pickup time" });
+    const fetchCartFromAPI = async () => {
+        const sessionId = localStorage.getItem("sessionId");
+        if (!sessionId) {
             return;
         }
 
-        setLoading(true);
-        setMessage(null);
-        const dateParts = selectedDate.split("-");
-        const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-
+        setFetchingCart(true);
         try {
-            const orderPayload = {
-                cartId,
-                address: {
-                    street: userData?.street || "Not specified",
-                    city: userData?.city || "Not specified",
-                    country: userData?.country || "Not specified",
-                },
-                contactPhone: userData.phone || "Not specified",
-                cafe: selectedCafe?._id || null,
-                selectedDate: formattedDate,
-                selectedTimeSlote: selectedTimeSlote,
-                cafeProduct: selectedDrink
-                    ? {
-                        name: selectedDrink.productName,
-                        price: selectedDrink.price,
-                    }
-                    : null,
-            };
-
-            const response = await axios.post(
-                "https://flowers-vert-six.vercel.app/api/order",
-                orderPayload,
+            const response = await axios.get(
+                "https://flowers-vert-six.vercel.app/api/cart/get-user-cart",
                 {
-                    headers: { Authorization: `User ${token}` },
+                    headers: {
+                        "sessionId": sessionId,
+                    },
                 }
             );
+            const cartData = response.data?.cart;
+            if (cartData && cartData.products && cartData.products.length > 0) {
+                const products = cartData.products;
 
-            setMessage({
-                type: "success",
-                text: response?.data?.message || "Order placed successfully!",
-            });
-            clearAllCart();
-            if (onConfirm) onConfirm(selectedDate, selectedTimeSlote);
+                const total = products.reduce((sum, item) => {
+                    const price = item.productId?.price || 0;
+                    const quantity = item.quantity || 1;
+                    return sum + (price * quantity);
+                }, 0);
+
+                setCart(products);
+                setCartTotal(total);
+                setCartId(cartData._id || cartData.id);
+
+                localStorage.setItem("cartId", cartData._id || cartData.id);
+
+            } else {
+                setCart([]);
+                setCartTotal(0);
+            }
         } catch (err) {
+            console.error("❌ Error fetching cart:", err.response?.data || err.message);
             setMessage({
                 type: "error",
-                text:
-                    err.response?.data?.message ||
-                    "Failed to place order. Please try again.",
+                text: "Failed to load cart items. Please try again."
             });
+            setCart([]);
+            setCartTotal(0);
         } finally {
-            setLoading(false);
+            setFetchingCart(false);
         }
     };
 
+    const loadDrinkSelectionsFromStorage = () => {
+        try {
+            const storedSelections = localStorage.getItem("cartDrinkSelections");
+            if (storedSelections) {
+                const parsedSelections = JSON.parse(storedSelections);
+                setDrinkSelections(parsedSelections);
+                return parsedSelections;
+            }
+            return {};
+        } catch (error) {
+            console.error("❌ Error loading drink selections:", error);
+            return {};
+        }
+    };
+
+    useEffect(() => {
+
+        loadDrinkSelectionsFromStorage();
+
+        if (propUserData && Object.keys(propUserData).length > 0) {
+
+            const processedUserData = {
+                name: propUserData.name || propUserData.fullName || "",
+                email: propUserData.email || "",
+                phone: propUserData.phone || propUserData.phoneNumber || "",
+                street: propUserData.street || propUserData.address?.street || "",
+                city: propUserData.city || propUserData.address?.city || "",
+                country: propUserData.country || propUserData.address?.country || "Egypt",
+            };
+
+            setUserData(processedUserData);
+            localStorage.setItem("user", JSON.stringify(processedUserData));
+        }
+
+        if (propDeliveryOption) {
+            setDeliveryOption(propDeliveryOption);
+            localStorage.setItem("cartDeliveryOption", propDeliveryOption);
+        }
+        fetchCartFromAPI();
+
+    }, [propUserData, propDeliveryOption]);
+
+    const findDrinkForItem = useMemo(() => {
+        return ({ productId, unitIndex, cartItemId }) => {
+            const key = `${productId}-${unitIndex}-${cartItemId}`;
+
+            if (drinkSelections[key]) {
+                return drinkSelections[key];
+            }
+
+            for (const [drinkKey, drinkData] of Object.entries(drinkSelections)) {
+                const parts = drinkKey.split('-');
+                if (parts.length === 3) {
+                    const [drinkProductId, drinkUnitIndex, drinkCartItemId] = parts;
+                    if (
+                        drinkProductId === productId &&
+                        parseInt(drinkUnitIndex) === unitIndex &&
+                        drinkCartItemId === cartItemId
+                    ) {
+                        return drinkData;
+                    }
+                }
+            }
+            return null;
+        };
+    }, [drinkSelections]);
+
+    const expandedCartItems = useMemo(() => {
+        if (!cart || cart.length === 0) {
+            return [];
+        }
+        const expanded = [];
+
+        cart.forEach((cartItem) => {
+            const { productId, quantity, _id: cartItemId } = cartItem;
+
+            if (!productId || !productId._id) {
+                console.error("❌ Item without valid product ID:", cartItem);
+                return;
+            }
+
+            const productIdValue = productId._id;
+            const itemQuantity = quantity || 1;
+            for (let i = 0; i < itemQuantity; i++) {
+                const drinkData = findDrinkForItem({
+                    productId: productIdValue,
+                    unitIndex: i,
+                    cartItemId
+                });
+
+                expanded.push({
+                    uniqueId: `${productIdValue}-${i}-${cartItemId}`,
+                    stableKey: `${productIdValue}-${i}-${cartItemId}`,
+                    cartItemId,
+                    unitIndex: i,
+                    originalProductId: productIdValue,
+                    productData: {
+                        _id: productIdValue,
+                        name: productId.name || "Unknown Product",
+                        price: productId.price || 0,
+                        image: productId.image || "/Logo.PNG",
+                    },
+                    selectedDrink: drinkData
+                });
+            }
+        });
+        return expanded;
+    }, [cart, drinkSelections, findDrinkForItem]);
+
+    const groupedCartItems = useMemo(() => {
+        const groups = {};
+
+        expandedCartItems.forEach(item => {
+            const productId = item.productData._id;
+            if (!groups[productId]) {
+                groups[productId] = {
+                    productData: item.productData,
+                    quantity: 0,
+                    items: []
+                };
+            }
+
+            groups[productId].items.push(item);
+            groups[productId].quantity = groups[productId].items.length;
+        });
+
+        return groups;
+    }, [expandedCartItems]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrollPosition(window.scrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const drinksTotal = useMemo(() => {
+        if (!drinkSelections || Object.keys(drinkSelections).length === 0) return 0;
+
+        return Object.values(drinkSelections).reduce((total, drinkData) => {
+            return total + Number(drinkData.drink?.price || 0);
+        }, 0);
+    }, [drinkSelections]);
+
+    const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
+    const calculatedTotal = cartTotal + drinksTotal + deliveryFee;
+    const itemsWithDrinks = useMemo(() =>
+        expandedCartItems.filter(item => item.selectedDrink).length,
+        [expandedCartItems]
+    );
+
+    const isValidOrder = useMemo(() => {
+        if (!selectedDate || !selectedTimeSlot) return false;
+
+        const hasPersonalInfo = userData.name && userData.phone && userData.email;
+        if (!hasPersonalInfo) return false;
+
+        if (deliveryOption === "delivery") {
+            const hasAddress = userData.street && userData.city && userData.country;
+            if (!hasAddress) return false;
+        }
+
+        if (!cart || cart.length === 0) return false;
+        if (!localStorage.getItem("sessionId")) return false;
+
+        return true;
+    }, [selectedDate, selectedTimeSlot, userData, deliveryOption, cart]);
+
+   const handleSubmitOrder = async () => {
+    if (!isValidOrder) {
+        setMessage({
+            type: "error",
+            text: "Please complete all required information first"
+        });
+        return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+        const formattedDate = selectedDate ? selectedDate.format('DD/MM/YYYY') : null;
+        const sessionId = localStorage.getItem("sessionId");
+        const cafeProductArray = Object.values(drinkSelections).map(selection => ({
+            name: selection.drink?.productName || "Unknown Drink",
+            price: selection.drink?.price || 0,
+            quantity: 1
+        }));
+
+        const orderPayload = {
+            address: {
+                street: userData.street.trim(),
+                city: userData.city.trim(),
+                country: userData.country.trim(),
+            },
+            name: userData.name.trim(),
+            phone: userData.phone.trim(),
+            cartId: cartId || localStorage.getItem("cartId") || "", 
+            cafe: cafeProductArray.length > 0 ? "689b9a7a7c1bab94ba870113" : null,
+            cafeProduct: cafeProductArray,
+            selectedDate: formattedDate,
+            selectedTimeSlote: selectedTimeSlot,
+            contactPhone: `+2${userData.phone.trim()}`,
+        };
+
+        Object.keys(orderPayload).forEach(key => {
+            if (orderPayload[key] === null || orderPayload[key] === undefined) {
+                delete orderPayload[key];
+            }
+        });
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (sessionId) {
+            headers["sessionId"] = sessionId;
+        }
+
+        const response = await axios.post(
+            "https://flowers-vert-six.vercel.app/api/order",
+            orderPayload,
+            { headers }
+        );
+
+        setMessage({
+            type: "success",
+            text: "🎉 Order placed successfully!"
+        });
+
+        localStorage.removeItem("cartDrinkSelections");
+        localStorage.removeItem("cartDeliveryOption");
+        localStorage.removeItem("user");
+        localStorage.removeItem("cartId");
+        setCart([]);
+        setCartTotal(0);
+        setDrinkSelections({});
+
+        setTimeout(() => {
+            if (onConfirm) {
+                onConfirm({
+                    orderId: response.data.order?._id || response.data._id || `ORD-${Date.now().toString().slice(-6)}`,
+                    selectedDate: formattedDate,
+                    selectedTimeSlot: selectedTimeSlot,
+                    totalAmount: calculatedTotal
+                });
+            }
+        }, 1500);
+
+    } catch (err) {
+        console.error("❌ Full Order Error:", err);
+        console.error("❌ Error Response:", err.response?.data);
+        console.error("❌ Validation Details:", JSON.stringify(err.response?.data?.details, null, 2));
+        
+        let errorMessage = "Failed to place order. Please try again.";
+        
+        if (err.response?.data?.details) {
+            errorMessage = "Validation Errors:\n";
+            err.response.data.details.forEach((detail, index) => {
+                console.error(`Error ${index + 1}:`, detail);
+                errorMessage += `\n${index + 1}. ${detail.message || JSON.stringify(detail)}`;
+            });
+        } else if (err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+        }
+        
+        setMessage({
+            type: "error",
+            text: errorMessage
+        });
+    } finally {
+        setLoading(false);
+    }
+};
+    const toggleFixedSummary = () => setShowFixedSummary(!showFixedSummary);
+
+    const handleRefreshCart = () => {
+        fetchCartFromAPI();
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 py-10 px-4">
-            <div className="max-w-5xl mx-auto">
-                <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Your Order</h1>
-                    <p className="text-gray-600 text-lg">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="min-h-screen bg-gray-50 py-6 px-4 pb-32 lg:pb-6"
+        >
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                        Review Your Order
+                    </h1>
+                    <p className="text-gray-600 text-base sm:text-lg">
                         Please confirm your details before proceeding
                     </p>
                 </div>
 
                 {message && (
-                    <div
-                        className={`flex items-center justify-center gap-2 mb-8 px-4 py-3 rounded-lg border text-sm font-medium ${message.type === "success"
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-red-50 text-red-700 border-red-200"
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex items-center justify-center gap-3 mb-6 p-4 rounded-lg border ${message.type === "success"
+                            ? "bg-green-50 text-green-800 border-green-200"
+                            : "bg-red-50 text-red-800 border-red-200"
                             }`}
                     >
-                        {message.type === "success" ? <FiCheckCircle /> : <FiAlertCircle />}
-                        {message.text}
-                    </div>
+                        {message.type === "success" ? (
+                            <FiCheckCircle className="text-green-600 text-xl" />
+                        ) : (
+                            <FiAlertCircle className="text-red-600 text-2xl" />
+                        )}
+                        <span className="text-center font-medium">{message.text}</span>
+                    </motion.div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <section className="bg-white rounded-sm p-6 border border-gray-200 shadow-sm">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                Personal Information
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {[
-                                    { label: "Full Name", value: userData?.name },
-                                    { label: "Email", value: userData?.email },
-                                    { label: "Phone", value: userData?.phone },
-                                    {
-                                        label: "Address",
-                                        value:
-                                            userData?.street &&
-                                            `${userData.street}, ${userData.city}, ${userData.country}`,
-                                    },
-                                ].map((field, i) => (
-                                    <div key={i}>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            {field.label}
-                                        </label>
-                                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-gray-900 cursor-not-allowed">
-                                            {field.value || "Not specified"}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
+                        <PersonalInfoSection
+                            userData={userData}
+                            deliveryOption={deliveryOption}
+                        />
 
-                        <section className="bg-white rounded-sm p-6 border border-gray-200 shadow-sm">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                Pickup Schedule
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Select Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={handleDateChange}
-                                        min={formattedToday}
-                                        max={formattedNextWeek}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#CF848A] focus:border-transparent"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Select Time
-                                    </label>
-                                    <select
-                                        value={selectedTimeSlote}
-                                        onChange={handleTimeChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#CF848A] focus:border-transparent"
-                                    >
-                                        <option value="">Choose a time</option>
-                                        {deliveryTimes.map((time) => (
-                                            <option key={time.id} value={time.value}>
-                                                {time.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                        <ScheduleSection
+                            deliveryOption={deliveryOption}
+                            selectedDate={selectedDate}
+                            setSelectedDate={setSelectedDate}
+                            selectedTimeSlot={selectedTimeSlot}
+                            setSelectedTimeSlot={setSelectedTimeSlot}
+                        />
 
-                            {selectedDate && selectedTimeSlote && (
-                                <div className="mt-6 p-4 bg-[#FFF3F3]  border border-[#F3D6D6] text-center text-[#A85C68] font-medium">
-                                    <p>
-                                        Pickup on{" "}
-                                        {new Date(selectedDate).toLocaleDateString("en-US", {
-                                            weekday: "long",
-                                            month: "long",
-                                            day: "numeric",
-                                        })}{" "}
-                                        at {selectedTimeSlote}
-                                    </p>
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="bg-white rounded-sm p-6 border border-gray-200 shadow-sm">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                Order Items
-                            </h2>
-
-                            <div className="mb-6">
-                                <h3 className="font-medium text-gray-700 mb-3">Products</h3>
-                                {cart?.length ? (
-                                    <div className="space-y-3">
-                                        {cart.map((item, i) => (
-                                            <div
-                                                key={i}
-                                                className="flex justify-between items-center p-4 bg-gray-50 rounded-lg shadow-sm"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <img
-                                                        src={item.productId?.image}
-                                                        alt={item.name}
-                                                        className="w-16 h-16 object-cover rounded-full"
-                                                    />
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">{item.productId?.name}</p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Qty: {item.quantity} × {item.productId?.price} EGP
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <p className="font-semibold text-gray-900">
-                                                    {Number(item.productId?.price) * Number(item.quantity || 1)} EGP
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                ) : (
-                                    <p className="text-center text-gray-500 py-6">
-                                        No products in cart
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <h3 className="font-medium text-gray-700 mb-3">Selected Drink</h3>
-                                {selectedCafe && selectedDrink ? (
-                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-4">
-                                            <img
-                                                src={selectedDrink.image || "/Logo.PNG"}
-                                                alt={selectedDrink.productName}
-                                                className="w-16 h-16 object-cover rounded-lg"
-                                            />
-                                            <div>
-                                                <p className="font-medium text-gray-900">
-                                                    {selectedDrink.productName}
-                                                </p>
-                                                <p className="text-sm text-gray-600">from {selectedCafe.name}</p>
-                                            </div>
-                                        </div>
-
-                                        <p className="font-semibold text-gray-900">
-                                            {selectedDrink.price} EGP
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-gray-500 py-6">No drink selected</p>
-                                )}
-                            </div>
-
-                        </section>
+                        <OrderItemsSection
+                            groupedItems={groupedCartItems}
+                            drinkSelections={drinkSelections}
+                            expandedItems={expandedCartItems}
+                            loading={fetchingCart}
+                            cartItems={cart}
+                        />
                     </div>
 
-                    <aside className="lg:col-span-1">
-                        <div className="bg-white rounded-sm p-6 border border-gray-200 shadow-sm sticky top-8">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                Order Summary
-                            </h2>
-
-                            <div className="space-y-4">
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Products Total</span>
-                                    <span>{totalPrice} EGP</span>
-                                </div>
-                                {selectedDrink && (
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Drink</span>
-                                        <span>{selectedDrink.price} EGP</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Delivery Fee</span>
-                                    <span>{deliveryFee} EGP</span>
-                                </div>
-                                <div className="border-t border-gray-200 pt-4">
-                                    <div className="flex justify-between text-lg font-semibold text-gray-900">
-                                        <span>Total</span>
-                                        <span>{total} EGP</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 space-y-3">
-
-                                <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-300 text-sm text-yellow-800 flex items-center gap-3">
-                                    <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <span className="text-yellow-600 font-bold">!</span>
-                                    </div>
-                                    <p className="text-left flex-1">
-                                        You can modify your order before confirming.
-                                    </p>
-                                </div>
-
-                                <button
-                                    onClick={handleConfirm}
-                                    disabled={!selectedTimeSlote || !selectedDate || loading}
-                                    className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${selectedTimeSlote && selectedDate && !loading
-                                        ? "bg-gradient-to-br from-[#CF848A] to-[#A85C68] text-white hover:from-[#A85C68] hover:to-[#CF848A] shadow-md"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        }`}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <FiLoader className="animate-spin text-lg" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FiCheckCircle className="text-lg" /> Confirm Order
-                                        </>
-                                    )}
-                                </button>
-
-                                <button
-                                    onClick={onBack}
-                                    disabled={loading}
-                                    className="w-full py-3 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-                                >
-                                    Back
-                                </button>
-                            </div>
-
-                        </div>
-                    </aside>
+                    <div className="hidden lg:block lg:col-span-1">
+                        <OrderSummarySection
+                            totalPrice={cartTotal}
+                            drinksTotal={drinksTotal}
+                            deliveryOption={deliveryOption}
+                            deliveryFee={deliveryFee}
+                            calculatedTotal={calculatedTotal}
+                            itemsWithDrinks={itemsWithDrinks}
+                            selectedDate={selectedDate}
+                            selectedTimeSlot={selectedTimeSlot}
+                            isValidOrder={isValidOrder}
+                            loading={loading}
+                            fetchingCart={fetchingCart}
+                            onBack={onBack}
+                            onSubmitOrder={handleSubmitOrder}
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <MobileSummary
+                showFixedSummary={showFixedSummary}
+                toggleFixedSummary={toggleFixedSummary}
+                cart={cart}
+                totalPrice={cartTotal}
+                drinksTotal={drinksTotal}
+                deliveryOption={deliveryOption}
+                deliveryFee={deliveryFee}
+                calculatedTotal={calculatedTotal}
+                itemsWithDrinks={itemsWithDrinks}
+                isValidOrder={isValidOrder}
+                loading={loading}
+                fetchingCart={fetchingCart}
+                onBack={onBack}
+                onSubmitOrder={handleSubmitOrder}
+            />
+        </motion.div>
     );
-}
+};
+
+export default ReviewOrderMain;

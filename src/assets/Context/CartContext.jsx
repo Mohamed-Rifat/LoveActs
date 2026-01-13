@@ -1,26 +1,38 @@
 import axios from "axios";
 import { createContext, useState, useEffect } from "react";
 import { useToken } from "../Context/TokenContext/TokenContext";
+import { toast } from "react-hot-toast";
 
 export const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
-  const { token, user } = useToken();
+  const { token } = useToken();
+
   const [cart, setCart] = useState([]);
   const [cartId, setCartId] = useState(null);
   const [numOfCartItems, setNumOfCartItems] = useState(0);
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState({});
 
-  async function getCart() {
-    if (!token) return;
-    if (user?.role !== "User") return;
+  const API = "https://flowers-vert-six.vercel.app/api/cart";
+
+
+  const getHeaders = () => {
+    if (token) return { Authorization: `Bearer ${token}` };
+
+    const sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) throw new Error("Missing sessionId");
+
+    return { sessionid: sessionId };
+  };
+
+  const getCart = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        "https://flowers-vert-six.vercel.app/api/cart/get-user-cart",
-        { headers: { Authorization: `User ${token}` } }
-      );
+      const res = await axios.get(`${API}/get-user-cart`, {
+        headers: getHeaders(),
+      });
+
       setCart(res.data.cart?.products || []);
       setCartId(res.data.cart?._id || null);
       setNumOfCartItems(res.data.cart?.products?.length || 0);
@@ -30,66 +42,117 @@ export const CartProvider = ({ children }) => {
         setCartId(null);
         setNumOfCartItems(0);
       } else {
-        console.error("Error fetching cart:", err);
+        console.error(err);
       }
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function addToCart(productId, quantity = 1) {
-    if (!token) return;
-    setPending(prev => ({ ...prev, [`add-${productId}`]: true }));
+
+  const createGuestSession = async () => {
     try {
+      const response = await axios.get("https://flowers-vert-six.vercel.app/get-seesion-id");
+      const sessionId = response.data.sessionId;
+      localStorage.setItem("sessionId", sessionId);
+      console.log("New guest session created:", sessionId);
+      return sessionId;
+    } catch (error) {
+      console.error("Failed to create guest session:", error);
+      toast.error("Could not create guest session");
+      throw error;
+    }
+  };
+
+  const addToCart = async (productId, quantity = 1) => {
+    setPending((p) => ({ ...p, [`add-${productId}`]: true }));
+
+    try {
+      let headers;
+      try {
+        headers = getHeaders();
+      } catch (error) {
+        if (error.message === "Missing sessionId" && !token) {
+          throw new Error("NEED_SESSION");
+        } else {
+          throw error;
+        }
+      }
+
       await axios.post(
-        "https://flowers-vert-six.vercel.app/api/cart/add-to-cart",
+        `${API}/add-to-cart`,
         { productId, quantity },
-        { headers: { Authorization: `User ${token}` } }
+        { headers }
       );
       await getCart();
+      toast.success("Added to cart");
     } catch (err) {
-      console.error("Error adding to cart:", err);
+      console.error(err);
+
+      if (err.message === "NEED_SESSION") {
+        throw new Error("NEED_SESSION");
+      } else {
+        toast.error("Failed to add to cart");
+      }
     } finally {
-      setPending(prev => ({ ...prev, [`add-${productId}`]: false }));
+      setPending((p) => ({ ...p, [`add-${productId}`]: false }));
     }
-  }
+  };
 
-  async function removeFromCart(cartItemId, quantity = 1) {
-    if (!token || !cartId) return null;
-
+  const updateCartItem = async (productId, quantity = 1) => {
     try {
-      const res = await axios.patch(
-        `https://flowers-vert-six.vercel.app/api/cart/remove-product-from-cart/${cartId}`,
-        { productId: cartItemId, quantity },
-        { headers: { Authorization: `User ${token}` } }
+      await axios.patch(
+        `${API}/remove-product-from-cart/${cartId}`,
+        { productId, quantity },
+        { headers: getHeaders() }
       );
+
       await getCart();
-      return res.data;
     } catch (err) {
-      console.error("Error removing/updating product from cart:", err);
-      return null;
+      console.error(err);
     }
-  }
+  };
 
-
-  async function clearAllCart() {
-    if (!token) return null;
+  const clearCart = async () => {
     try {
-      const res = await axios.delete(
-        "https://flowers-vert-six.vercel.app/api/cart/clear-cart",
-        { headers: { Authorization: `User ${token}` } }
-      );
-      await getCart();
-      return res.data;
-    } catch (err) {
-      console.error("Error clearing all cart:", err);
-      return null;
-    }
-  }
+      await axios.delete(`${API}/clear-cart`, {
+        headers: getHeaders(),
+      });
 
-  useEffect(() => {
-    getCart();
-  }, [token]);
+      await getCart();
+      toast.success("Cart cleared");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const clearGuestCart = async () => {
+    try {
+      try {
+        await axios.delete(`${API}/clear-cart`, {
+          headers: getHeaders(),
+        });
+      } catch (err) {
+        console.log("Could not clear existing cart:", err.message);
+      }
+
+      localStorage.removeItem("sessionId");
+
+      const response = await axios.get("https://flowers-vert-six.vercel.app/get-seesion-id");
+      const newSessionId = response.data.sessionId;
+      localStorage.setItem("sessionId", newSessionId);
+
+      setCart([]);
+      setCartId(null);
+      setNumOfCartItems(0);
+
+      toast.success("Cart cleared Successfully");
+      return newSessionId;
+    } catch (error) {
+      console.error("Failed to clear guest cart:", error);
+      toast.error("Failed to clear cart");
+      throw error;
+    }
+  };
 
   return (
     <CartContext.Provider
@@ -100,10 +163,9 @@ export const CartProvider = ({ children }) => {
         loading,
         pending,
         addToCart,
-        removeFromCart,
-        clearAllCart,
-        setCart,
-        setNumOfCartItems,
+        updateCartItem,
+        clearCart,
+        clearGuestCart,
         getCart,
       }}
     >
@@ -111,4 +173,3 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
-
