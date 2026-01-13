@@ -1,12 +1,47 @@
-# React + Vite
+# LoveActs
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+LoveActs is an interactive web platform that combines flower delivery with café services, providing a seamless user experience. Users can browse and purchase products, manage orders, and enjoy an engaging dashboard interface.
 
-Currently, two official plugins are available:
+**Website:** [https://loveacts.vercel.app/](https://loveacts.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## 📦 Version
+**Current Version:** 2.1.0
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠️ Tech Stack
+- **Frontend:** React.js, Vite, Tailwind CSS, Framer Motion  
+- **UI Components:** MUI (Material UI), Flowbite, styled-components, Lucide React  
+- **Forms & Validation:** Formik, Yup, @hookform/resolvers  
+- **State & Data Fetching:** @tanstack/react-query  
+- **Routing:** react-router-dom  
+- **Notifications:** react-toastify, react-hot-toast  
+- **Utilities:** axios, dayjs  
+- **Charts:** recharts  
+- **Export & Print:** html2canvas, html-to-image, jspdf, react-to-print  
+
+---
+
+## 🚀 Features
+- Dashboard for managing orders  
+- Export orders as PDF and Image  
+- Print order invoices  
+- API integration refactor for smoother system operation  
+- Animated and responsive UI  
+
+---
+## 📞 Contact & Links
+
+Feel free to reach out:
+
+- **Developer:** Mohamed Reefat  
+- **Phone:** +20 114 803 6811  
+- **WhatsApp:** [Chat on WhatsApp](https://wa.me/201222800121)  
+- **Email:** [mohamed.rifat100@gmail.com](mailto:mohamed.rifat100@gmail.com)  
+- **GitHub:** [https://github.com/Mohamed-Rifat](https://github.com/Mohamed-Rifat)  
+- **LinkedIn:** [https://www.linkedin.com/in/Mohamed-refaat](https://www.linkedin.com/in/Mohamed-refaat)  
+- **Portfolio:** [https://mohamed-refaat.vercel.app/](https://mohamed-refaat.vercel.app/)  
+
+> You can contact me for collaborations, questions, or feature requests.
