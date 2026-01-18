@@ -81,15 +81,34 @@ const updateOrderStatus = async ({ token, orderId, status }) => {
       `${BASE_URL}/api/order/admin/${orderId}/status`,
       { status },
       {
-        headers: { Authorization: `Admin ${token}`, "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Admin ${token}`,
+          "Content-Type": "application/json",
+        },
         validateStatus: () => true,
       }
     );
 
-    if (response.status !== 200) {
-      throw new Error(`API Error: ${response.status} - ${JSON.stringify(response.data)}`);
+    if (response.status === 200) {
+      return {
+        state: "success",
+        data: response.data,
+      };
     }
-    return response.data;
+
+    if (response.status === 500) {
+      return {
+        state: "pending",
+        data: response.data,
+      };
+    }
+
+    throw new Error(
+      response.data?.error?.ar ||
+      response.data?.error?.en ||
+      "Failed to update order status"
+    );
+
   } catch (err) {
     throw err;
   }
