@@ -81,6 +81,10 @@ const MainAdminDashboard = () => {
             setLoading(false);
         }
     };
+    
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
 
     const processData = (cafesData, productsData, ordersData) => {
         const oneWeekAgo = new Date();
