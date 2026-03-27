@@ -169,47 +169,34 @@ const OrderDetailsDialog = ({ order, open, onClose }) => {
     }
 
     const message =
-      `💐 *Love Acts* 💐
-━━━━━━━━━━━━━━━━━━
-✨ *Your Order Details* ✨
-━━━━━━━━━━━━━━━━━━
+      `*Love Acts | Order Confirmation*
 
-🧾 *Order Name:* ${customerName}'s Order  
-🆔 *Order ID:* ${orderId}  
-👤 *Customer:* ${customerName}  
-📞 *Phone:* ${order.contactPhone || 'N/A'}  
-📌 *Status:* ${order.status?.toUpperCase()}  
+              Hello ${order.name},
 
-📅 *Order Date:* ${new Date(order.createdAt).toLocaleDateString()}  
-🚚 *Delivery Date:* ${formattedDate}  
-⏰ *Delivery Time:* ${order.selectedTimeSlote || 'Not specified'}
+      Your order has been received successfully.
 
-━━━━━━━━━━━━━━━━━━
-🛍️ *ORDER ITEMS*
-━━━━━━━━━━━━━━━━━━
+      *Order Info:*
+       - Order ID: ${orderId}
+       - Status: *${order.status?.toUpperCase()}*
+       - Phone: ${order.contactPhone || 'N/A'}
 
-${productsText}
-━━━━━━━━━━━━━━━━━━
-💰 *ORDER SUMMARY*
-━━━━━━━━━━━━━━━━━━
+      *Delivery Details:*
+       - Date: ${formattedDate}
+       - Time: ${order.selectedTimeSlote || 'Not specified'}
 
-🌸 Base Products: ${baseProductTotal} LE  
-${order.cafeProduct?.length ? `☕ Cafe Drinks: ${cafeProductsTotal} LE\n` : ''}
+      *Items:*
+               ${productsText}
 
-━━━━━━━━━━━━━━━━━━
-✨ *TOTAL AMOUNT: ${totalAmount} LE* ✨
-━━━━━━━━━━━━━━━━━━
+      *Payment Summary:*
+       - Flowers: ${baseProductTotal} LE
+       ${order.cafeProduct?.length ? `- Drinks: ${cafeProductsTotal} LE\n` : ''}
 
-❤️ *Thank you for choosing Love Acts!* ❤️  
-Your trust means everything to us 🌹  
+      *Total Amount: ${totalAmount} LE*
 
-✨ We carefully prepare every order with love to make your moments unforgettable.  
-✨ We’d be happy to serve you again very soon!
+                       Thank you for choosing Love Acts.
+        We prepare every order with care to make your moments special.
 
-📞 *Support Team:*  
-If you need any help, feel free to contact us anytime — we’re always here for you 🤍
-
-🌷 *Love Acts – Because every flower tells a story* 🌷`;
+      Support: Contact us anytime.`;
 
 
     const encodedMessage = encodeURIComponent(message);
@@ -443,39 +430,6 @@ If you need any help, feel free to contact us anytime — we’re always here fo
     toast.success("Print dialog opened successfully!");
   };
 
-  const saveAsImage = async () => {
-    if (!invoiceRef.current) return;
-
-    toast.loading("Generating image...");
-
-    try {
-      const dataUrl = await toPng(invoiceRef.current, {
-        quality: 1.0,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        style: {
-          borderRadius: '10px',
-          padding: '20px',
-          background: '#ffffff'
-        }
-      });
-
-      const link = document.createElement('a');
-      link.download = `order-${order._id?.slice(-8).toUpperCase()}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.dismiss();
-      toast.success("Image saved successfully!");
-    } catch (error) {
-      console.error('Error saving image:', error);
-      toast.dismiss();
-      toast.error("Failed to save image");
-    }
-  };
-
   const saveAsPDF = () => {
     toast.loading("Generating PDF...");
 
@@ -485,71 +439,195 @@ If you need any help, feel free to contact us anytime — we’re always here fo
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Order Invoice</title>
+        <title>Order Invoice - ${order._id?.slice(-8).toUpperCase()}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 40px; }
-          .invoice { max-width: 800px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .header h1 { color: #1976d2; }
-          .info { display: flex; justify-content: space-between; margin: 20px 0; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-          th { background: #1976d2; color: white; }
-          .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }
-          .footer { margin-top: 40px; text-align: center; color: #666; }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background: #fff;
+          }
+          .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #1976d2;
+            border-radius: 10px;
+            padding: 25px;
+            background: #fff;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 20px;
+          }
+          .header h1 {
+            color: #1976d2;
+            margin: 0;
+            font-size: 32px;
+          }
+          .header h2 {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 18px;
+          }
+          .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+          }
+          .info-box {
+            flex: 1;
+          }
+          .info-box h3 {
+            color: #1976d2;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+          }
+          .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+          }
+          .table-container {
+            margin: 30px 0;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+          }
+          th {
+            background: #1976d2;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+          }
+          td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+          }
+          tr:nth-child(even) {
+            background: #f8f9fa;
+          }
+          .total-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+          }
+          .grand-total {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #1976d2;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+          }
+          @media print {
+            body { padding: 0; }
+            .invoice-container { border: none; padding: 0; }
+          }
         </style>
       </head>
       <body>
-        <div class="invoice">
+        <div class="invoice-container">
           <div class="header">
-            <h1>INVOICE</h1>
-            <h3>Order #${order._id?.slice(-8).toUpperCase()}</h3>
+            <h1>Love Acts</h1>
+            <h2>Order #${order._id?.slice(-8).toUpperCase()}</h2>
+            <p>Date: ${new Date(order.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</p>
           </div>
           
-          <div class="info">
-            <div>
-              <h4>Customer:</h4>
-              <p>${order.name || "Unknown"}</p>
-              <p>${order.contactPhone || "N/A"}</p>
+          <div class="info-section">
+            <div class="info-box">
+              <h3>Customer Information</h3>
+              <p><strong>Name:</strong> ${order.name || "Unknown"}</p>
+              <p><strong>Email:</strong> ${order.userId?.email || "Unknown"}</p>
+              <p><strong>Phone:</strong> ${order.contactPhone || "Not provided"}</p>
             </div>
-            <div>
-              <h4>Order Date:</h4>
-              <p>${new Date(order.createdAt).toLocaleDateString()}</p>
+            <div class="info-box">
+              <h3>Delivery Information</h3>
+              <p><strong>Date:</strong> ${formatDate(order.selectedDate)}</p>
+              <p><strong>Time:</strong> ${order.selectedTimeSlote || "Not specified"}</p>
+              <p><strong>Status:</strong> ${order.status?.toUpperCase()}</p>
             </div>
           </div>
           
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.productId ? `
-              <tr>
-                <td>${order.name} (Flower)</td>
-                <td>1</td>
-                <td>${order.productId.price} LE</td>
-                <td>${order.productId.price} LE</td>
-              </tr>
-              ` : ''}
-              
-              ${Array.isArray(order.cafeProduct) ? order.cafeProduct.map(product => `
-              <tr>
-                <td>${product.name} (Drink)</td>
-                <td>${product.quantity || 1}</td>
-                <td>${product.price} LE</td>
-                <td>${(product.price || 0) * (product.quantity || 1)} LE</td>
-              </tr>
-              `).join('') : ''}
-            </tbody>
-          </table>
+          <div class="table-container">
+            <h3>Order Items</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Type</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order.productId ? `
+                <tr>
+                  <td>${order.productId.name}</td>
+                  <td>Flower Product</td>
+                  <td>1</td>
+                  <td>${order.productId.price} LE</td>
+                  <td>${order.productId.price} LE</td>
+                </tr>
+                ` : ''}
+                
+                ${Array.isArray(order.cafeProduct) ? order.cafeProduct.map(product => `
+                <tr>
+                  <td>${product.name}</td>
+                  <td>Cafe Drink</td>
+                  <td>${product.quantity || 1}</td>
+                  <td>${product.price} LE</td>
+                  <td>${(product.price || 0) * (product.quantity || 1)} LE</td>
+                </tr>
+                `).join('') : ''}
+              </tbody>
+            </table>
+          </div>
           
-          <div class="total">
-            <p>Total Amount: <strong>${totalWithCafe} LE</strong></p>
+          <div class="total-section">
+            <h3>Order Summary</h3>
+            <div class="total-row">
+              <span>Base Product:</span>
+              <span>${baseProductTotal} LE</span>
+            </div>
+            ${order.cafeProduct?.length > 0 ? `
+            <div class="total-row">
+              <span>Cafe Drinks (${order.cafeProduct.length} items):</span>
+              <span>${cafeProductsTotal} LE</span>
+            </div>
+            ` : ''}
+            <div class="total-row grand-total">
+              <span>TOTAL AMOUNT:</span>
+              <span>${totalWithCafe} LE</span>
+            </div>
           </div>
           
           <div class="footer">
@@ -558,12 +636,12 @@ If you need any help, feel free to contact us anytime — we’re always here fo
         </div>
         
         <script>
-          setTimeout(() => {
+          window.onload = function() {
             window.print();
-            setTimeout(() => {
+            setTimeout(function() {
               window.close();
-            }, 500);
-          }, 500);
+            }, 1000);
+          };
         </script>
       </body>
       </html>
@@ -617,7 +695,7 @@ If you need any help, feel free to contact us anytime — we’re always here fo
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: 0,
             overflow: 'hidden',
             boxShadow: theme.shadows[8]
           }
@@ -625,8 +703,8 @@ If you need any help, feel free to contact us anytime — we’re always here fo
       >
         <Box
           sx={{
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: 'white',
+            background: '#FDE9EE',
+            color: 'black',
             p: 3,
             position: 'relative'
           }}
@@ -670,19 +748,18 @@ If you need any help, feel free to contact us anytime — we’re always here fo
             </Box>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <InfoCard title="Personal Details">
                   <Typography variant="body2" fontWeight="bold">{order.name || "Unknown"}</Typography>
-                  {/* <Typography variant="caption" color="text.secondary">{order.email || "Unknown"}</Typography> */}
                 </InfoCard>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <InfoCard title="Contact">
                   <Typography variant="body2" fontWeight="bold">{order.contactPhone || "Not Provided"}</Typography>
                   <Typography variant="caption" color="text.secondary">Phone Number</Typography>
                 </InfoCard>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <InfoCard title="Delivery">
                   <Typography variant="body2" fontWeight="bold">{formatDate(order.selectedDate)}</Typography>
                   <Typography variant="caption" color="text.secondary">{order.selectedTimeSlote || "Time not set"}</Typography>
@@ -757,16 +834,6 @@ If you need any help, feel free to contact us anytime — we’re always here fo
               sx={{ borderRadius: 2 }}
             >
               WhatsApp
-            </Button>
-
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<ImageIcon />}
-              onClick={saveAsImage}
-              sx={{ borderRadius: 2 }}
-            >
-              Save Image
             </Button>
 
             <Button
@@ -911,14 +978,15 @@ const InvoiceContent = React.forwardRef(({ order, products, totalWithCafe }, ref
       </Box>
 
       <Grid container spacing={4} sx={{ mb: 4 }}>
-        <Grid item xs={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="h6" fontWeight="bold" mb={1}>From:</Typography>
           <Typography variant="body1" fontWeight="bold">Flower Shop & Cafe</Typography>
           <Typography variant="body2">123 Flower Street, Cairo</Typography>
           <Typography variant="body2">Phone: +20 100 000 0000</Typography>
           <Typography variant="body2">Email: info@flowershop.com</Typography>
         </Grid>
-        <Grid item xs={6}>
+
+        <Grid size={{ xs: 12, md: 6 }}>
           <Typography variant="h6" fontWeight="bold" mb={1}>Bill To:</Typography>
           <Typography variant="body1" fontWeight="bold">{order.name || "Customer"}</Typography>
           <Typography variant="body2">{order.userId?.email || "N/A"}</Typography>
@@ -927,7 +995,6 @@ const InvoiceContent = React.forwardRef(({ order, products, totalWithCafe }, ref
           <Typography variant="body2">Time: {order.selectedTimeSlote || "N/A"}</Typography>
         </Grid>
       </Grid>
-
       <Box sx={{ mb: 4 }}>
         <Typography variant="h6" fontWeight="bold" mb={2}>Order Details</Typography>
         <Box sx={{ border: '1px solid #ddd', borderRadius: 1 }}>
@@ -1079,10 +1146,9 @@ export default function DashboardOrders() {
   if (isLoading) {
     return (
       <Box className="flex flex-col justify-center items-center h-64">
-        <CircularProgress size={60} />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Loading orders...
-        </Typography>
+        <div className="flex justify-center items-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
+        </div>
       </Box>
     );
   }
@@ -1168,50 +1234,50 @@ export default function DashboardOrders() {
           </Typography>
         </Box>
       ) : isMobile ? (
-        <Grid spacing={2}>
-          {orders.map((order) => {
-            const totalWithCafe = (order.totalPrice || 0) + (order.cafeProduct?.price || 0);
-
-            return (
-              <Grid item xs={12} key={order._id}>
-                <Card className=" m-2 " sx={{ boxShadow: theme.shadows[3] }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                      <Typography variant="subtitle1" fontWeight="bold" color="primary">
-                        Order #{order._id.slice(-6).toUpperCase()}
-                      </Typography>
-                      <IconButton size="small" onClick={() => handleViewDetails(order)} color="info">
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      User: {order.userId?.name || "Unknown"}
+        <Grid container spacing={2}>
+          {orders.map((order) => (
+            <Grid size={12} key={order._id}>
+              <Card className="m-2" sx={{ boxShadow: theme.shadows[3] }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Order #{order._id.slice(-6).toUpperCase()}
                     </Typography>
+                    <IconButton size="small" onClick={() => handleViewDetails(order)} color="info">
+                      <ViewIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" fontWeight="medium">
-                        Total: {totalWithCafe} LE
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </Box>
+                  <Typography variant="body2" fontWeight="medium" gutterBottom>
+                    User: {order.name || "Unknown"}
+                  </Typography>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                      <Chip label={order.status} color={getStatusColor(order.status)} size="small" sx={{ minWidth: 80 }} />
-                      <Select size="small" value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} sx={{ minWidth: 120 }}>
-                        <MenuItem value="pending">Pending</MenuItem>
-                        <MenuItem value="processing">Processing</MenuItem>
-                        <MenuItem value="delivered">Delivered</MenuItem>
-                        <MenuItem value="cancelled">Cancelled</MenuItem>
-                      </Select>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" fontWeight="medium">
+                      Total: {(order.totalPrice || 0) + (order.cafeProduct?.price || 0)} LE
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {new Date(order.createdAt).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                    <Chip label={order.status} color={getStatusColor(order.status)} size="small" sx={{ minWidth: 80 }} />
+                    <Select size="small" value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} sx={{ minWidth: 120 }}>
+                      <MenuItem value="pending">Pending</MenuItem>
+                      <MenuItem value="processing">Processing</MenuItem>
+                      <MenuItem value="delivered">Delivered</MenuItem>
+                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
       ) : (
         <Box sx={{ overflowX: 'auto', borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
