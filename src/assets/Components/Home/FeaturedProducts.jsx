@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
-import { motion } from 'framer-motion';
-import { FiShoppingCart, FiRefreshCw } from "react-icons/fi";
+import React, { useState, useContext, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiShoppingCart, FiRefreshCw, FiCoffee, FiPlus } from "react-icons/fi";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from "react-hot-toast";
 import { CartContext } from './../../Context/CartContext';
+import ChooseCafe from "./../../Components/OrderStepper/Steps/chooseCafe";
 
 const ProductSkeleton = () => {
   return (
@@ -27,22 +28,158 @@ const ProductSkeleton = () => {
           <div className="h-4 w-3/4 bg-gray-200 rounded" />
         </div>
         <div className="mt-auto">
-          <div
-            className="w-full h-9 lg:h-11 bg-gray-200 rounded"
-          />
+          <div className="w-full h-9 lg:h-11 bg-gray-200 rounded" />
         </div>
       </div>
     </div>
   );
 };
 
-
 const FeaturedProducts = ({ products = [], loading, navigate }) => {
-  const { addToCart, pending, token } = useContext(CartContext);
+  const { addToCart, getCart, cart, pending, token } = useContext(CartContext);
+
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const routerNavigate = useNavigate();
+  const [showDrinkModal, setShowDrinkModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDrinkPrompt, setShowDrinkPrompt] = useState(false);
+  const [pendingItem, setPendingItem] = useState(null);
+  const pendingItemRef = useRef(null);
+
+ const handleDrinkSelect = (drinkData) => {
+  if (!selectedItem && !pendingItemRef.current) return;
+
+  const currentItem = selectedItem || pendingItemRef.current;
+  if (!currentItem) return;
+
+  const drinkKey = currentItem.stableKey;
+
+  const saved = JSON.parse(localStorage.getItem("cartDrinkSelections") || "{}");
+
+  saved[drinkKey] = {
+    drink: drinkData,
+    cafe: drinkData.cafe,
+    selectedAt: new Date().toISOString(),
+    productId: currentItem.originalProductId,
+    unitIndex: currentItem.unitIndex,
+    itemTimestamp: currentItem.itemTimestamp,
+    stableKey: drinkKey
+  };
+
+  localStorage.setItem("cartDrinkSelections", JSON.stringify(saved));
+
+  setShowDrinkModal(false);
+  setShowDrinkPrompt(false);
+  setSelectedItem(null);
+  setPendingItem(null);
+  pendingItemRef.current = null;
+
+  toast.success(`${drinkData.productName} added to your item! 🎉`, {
+    icon: '🍹',
+    style: {
+      borderRadius: '2px',
+      background: '#333',
+      color: '#fff',
+    },
+  });
+
+  // 👇 الجزء الجديد
+  setTimeout(() => {
+    navigate("/cart");
+  }, 500);
+};
+
+  const handleAddToCartClick = async (product) => {
+    const id = product._id || product.id;
+
+    if (token || localStorage.getItem("sessionId")) {
+      try {
+        await addToCart(id, 1);
+        await getCart();
+
+        setTimeout(() => {
+          const currentCart = cart;
+          if (currentCart && currentCart.length > 0) {
+            const lastItem = currentCart[currentCart.length - 1];
+            if (lastItem) {
+              prepareDrinkModal(lastItem);
+            } else {
+              setShowDrinkPrompt(true);
+              toast("✨ Item added! Would you like to add a drink?", {
+                icon: '🍹',
+                duration: 4000,
+              });
+            }
+          } else {
+            setShowDrinkPrompt(true);
+            toast("✨ Item added! Would you like to add a drink?", {
+              icon: '🍹',
+              duration: 4000,
+            });
+          }
+        }, 500);
+
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to add to cart. Please try again.", {
+          icon: '❌',
+        });
+      }
+    } else {
+      setSelectedProduct(product);
+      setShowModal(true);
+    }
+  };
+
+  const prepareDrinkModal = (item) => {
+    const productId = item.productId?._id || item._id;
+    const unitIndex = (item.quantity || 1) - 1;
+    const itemTimestamp = item.createdAt || item.addedAt || item._id || new Date().toISOString();
+    const stableKey = `${productId}-${unitIndex}-${itemTimestamp}`;
+
+    const preparedItem = {
+      ...item,
+      originalProductId: productId,
+      unitIndex,
+      itemTimestamp,
+      stableKey,
+      productData: item.productId || item
+    };
+
+    setSelectedItem(preparedItem);
+    setShowDrinkModal(true);
+    setShowDrinkPrompt(false);
+  };
+
+  const handleOpenDrinkForPending = () => {
+    if (pendingItemRef.current) {
+      setSelectedItem(pendingItemRef.current);
+      setShowDrinkModal(true);
+      setShowDrinkPrompt(false);
+    } else {
+      const latestCart = cart;
+      if (latestCart && latestCart.length > 0) {
+        const lastItem = latestCart[latestCart.length - 1];
+        const productId = lastItem.productId?._id || lastItem._id;
+        const unitIndex = (lastItem.quantity || 1) - 1;
+        const itemTimestamp = lastItem.createdAt || lastItem.addedAt || lastItem._id || new Date().toISOString();
+        const stableKey = `${productId}-${unitIndex}-${itemTimestamp}`;
+        const preparedItem = {
+          ...lastItem,
+          originalProductId: productId,
+          unitIndex,
+          itemTimestamp,
+          stableKey,
+          productData: lastItem.productId || lastItem
+        };
+
+        setSelectedItem(preparedItem);
+        setShowDrinkModal(true);
+        setShowDrinkPrompt(false);
+      }
+    }
+  };
 
   const handleGuestAdd = async () => {
     if (!selectedProduct) return;
@@ -53,149 +190,269 @@ const FeaturedProducts = ({ products = [], loading, navigate }) => {
       const sessionId = response.data.sessionId;
       localStorage.setItem("sessionId", sessionId);
       await addToCart(selectedProduct._id, 1);
+      await getCart();
+
+      setTimeout(() => {
+        const currentCart = cart;
+        if (currentCart && currentCart.length > 0) {
+          const lastItem = currentCart[currentCart.length - 1];
+          if (lastItem) {
+            prepareDrinkModal(lastItem);
+          } else {
+            setShowDrinkPrompt(true);
+            toast("✨ Item added! Would you like to add a drink?", {
+              icon: '🍹',
+              duration: 4000,
+            });
+          }
+        } else {
+          setShowDrinkPrompt(true);
+          toast("✨ Item added! Would you like to add a drink?", {
+            icon: '🍹',
+            duration: 4000,
+          });
+        }
+      }, 500);
+
       setShowModal(false);
+      toast.success("Added to cart as guest! 🎉", {
+        icon: '🛒',
+      });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to add as guest");
+      toast.error("Failed to add as guest. Please try again.", {
+        icon: '❌',
+      });
     } finally {
       setIsCreatingSession(false);
     }
   };
 
-  const handleAddToCartClick = async (product) => {
-    const id = product._id || product.id;
-
-    if (token || localStorage.getItem("sessionId")) {
-      try {
-        await addToCart(id, 1);
-      } catch (err) {
-        console.error(err);
-      }
-    } else {
-      setSelectedProduct(product);
-      setShowModal(true);
-    }
-  };
-
   return (
     <>
-      {showModal && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !isCreatingSession) setShowModal(false);
-          }}
-        >
+      <AnimatePresence>
+        {showDrinkModal && selectedItem && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white p-6 max-w-sm w-full shadow-2xl text-center relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowDrinkModal(false);
+              setShowDrinkPrompt(false);
+              setSelectedItem(null);
+            }}
           >
-            <button
-              onClick={() => !isCreatingSession && setShowModal(false)}
-              disabled={isCreatingSession}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-              aria-label="Close modal"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+              className="bg-white shadow-2xl w-full max-w-6xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 
-                    1 0 111.414 1.414L11.414 10l4.293 
-                    4.293a1 1 0 01-1.414 1.414L10 
-                    11.414l-4.293 4.293a1 1 0 
-                    01-1.414-1.414L8.586 10 
-                    4.293 5.707a1 1 0 
-                    010-1.414z"
-                  clipRule="evenodd"
+              <div className="bg-gradient-to-r from-[#EB95A2] to-[#d88592] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <FiCoffee className="text-white text-2xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      Choose Your Drink
+                    </h3>
+                    <p className="text-white/90 text-sm">
+                      for {selectedItem.productData?.name}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <ChooseCafe
+                  onSelectDrink={handleDrinkSelect}
+                  singleSelectionMode={true}
                 />
-              </svg>
-            </button>
+              </div>
 
-            <div className="mx-auto flex items-center justify-center mb-4">
-              <img className="h-28 w-auto" src="./Logo.PNG" alt="Love Acts Logo" />
-            </div>
-
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              {isCreatingSession ? "Creating Guest Session..." : "Continue Shopping"}
-            </h3>
-
-            <p className="text-gray-600 mb-6 text-base leading-relaxed">
-              {isCreatingSession
-                ? "Please wait while we set up your guest session..."
-                : "To save your cart and checkout, please sign in . You can also continue as a guest."}
-            </p>
-
-            {!isCreatingSession ? (
-              <div className="flex flex-col gap-3">
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
                 <button
                   onClick={() => {
-                    if (selectedProduct) {
-                      localStorage.setItem('pendingProduct', JSON.stringify({
-                        productId: selectedProduct._id,
-                        name: selectedProduct.name,
-                        price: selectedProduct.price,
-                        image: selectedProduct.image
-                      }));
-                    }
-                    setShowModal(false);
-                    navigate("/login");
+                    setShowDrinkModal(false);
+                    setShowDrinkPrompt(false);
+                    setSelectedItem(null);
                   }}
-                  className="border-2 border-gray-200 text-gray-700 py-3 px-4 hover:bg-slate-300 transition-all duration-300 font-medium flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors"
                 >
-                  Sign In
-                </button>
-
-                <button
-                  onClick={handleGuestAdd}
-                  disabled={isCreatingSession}
-                  className="border-2 border-[#EB95A2] text-[#EB95A2] py-3 px-4 hover:bg-[#fef5f7] transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCreatingSession ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      >
-                        <FiRefreshCw className="h-5 w-5" />
-                      </motion.div>
-                      Setting up Guest Session...
-                    </>
-                  ) : (
-                    <>
-                      <FiShoppingCart className="h-5 w-5" />
-                      Continue as Guest
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 py-2 text-sm transition-colors duration-300 mt-2"
-                >
-                  Maybe Later
+                  Cancel
                 </button>
               </div>
-            ) : (
-              <div className="py-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EB95A2] mx-auto mb-4"></div>
-                <p className="text-sm text-gray-500">Setting up your temporary cart...</p>
-              </div>
-            )}
-
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                {isCreatingSession
-                  ? "Your guest session will allow you to shop now and save items temporarily."
-                  : "As a guest, your cart will be saved temporarily. We recommend creating an account to save your cart permanently."}
-              </p>
-            </div>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDrinkPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+              className="bg-white max-w-sm w-full overflow-hidden shadow-md"
+            >
+              <div className="bg-gradient-to-r from-[#EB95A2] to-[#d88592] p-6 text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-4xl">🍹</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Select a Drink
+                </h3>
+                <p className="text-white/90 text-sm">
+                  To complete your order, you must choose a drink for this item.
+                </p>
+              </div>
+
+              <div className="p-6 space-y-3">
+                <button
+                  onClick={handleOpenDrinkForPending}
+                  className="w-full bg-[#EB95A2] text-white py-3 px-4 font-semibold hover:bg-[#d88592] transition-colors"
+                >
+                  Choose Drink
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !isCreatingSession) setShowModal(false);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white p-6 max-w-sm w-full shadow-2xl text-center relative"
+            >
+              <button
+                onClick={() => !isCreatingSession && setShowModal(false)}
+                disabled={isCreatingSession}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                aria-label="Close modal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 
+                      1 0 111.414 1.414L11.414 10l4.293 
+                      4.293a1 1 0 01-1.414 1.414L10 
+                      11.414l-4.293 4.293a1 1 0 
+                      01-1.414-1.414L8.586 10 
+                      4.293 5.707a1 1 0 
+                      010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              <div className="mx-auto flex items-center justify-center mb-4">
+                <img className="h-28 w-auto" src="./Logo.PNG" alt="Love Acts Logo" />
+              </div>
+
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                {isCreatingSession ? "Creating Guest Session..." : "Continue Shopping"}
+              </h3>
+
+              <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                {isCreatingSession
+                  ? "Please wait while we set up your guest session..."
+                  : "To save your cart and checkout, please sign in. You can also continue as a guest."}
+              </p>
+
+              {!isCreatingSession ? (
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      if (selectedProduct) {
+                        localStorage.setItem('pendingProduct', JSON.stringify({
+                          productId: selectedProduct._id,
+                          name: selectedProduct.name,
+                          price: selectedProduct.price,
+                          image: selectedProduct.image
+                        }));
+                      }
+                      setShowModal(false);
+                      navigate("/login");
+                    }}
+                    className="border-2 border-gray-200 text-gray-700 py-3 px-4 hover:bg-slate-300 transition-all duration-300 font-medium flex items-center justify-center gap-2"
+                  >
+                    Sign In
+                  </button>
+
+                  <button
+                    onClick={handleGuestAdd}
+                    disabled={isCreatingSession}
+                    className="border-2 border-[#EB95A2] text-[#EB95A2] py-3 px-4 hover:bg-[#fef5f7] transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingSession ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <FiRefreshCw className="h-5 w-5" />
+                        </motion.div>
+                        Setting up Guest Session...
+                      </>
+                    ) : (
+                      <>
+                        <FiShoppingCart className="h-5 w-5" />
+                        Continue as Guest
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-gray-500 hover:text-gray-700 py-2 text-sm transition-colors duration-300 mt-2"
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+              ) : (
+                <div className="py-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EB95A2] mx-auto mb-4"></div>
+                  <p className="text-sm text-gray-500">Setting up your temporary cart...</p>
+                </div>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-500">
+                  {isCreatingSession
+                    ? "Your guest session will allow you to shop now and save items temporarily."
+                    : "As a guest, your cart will be saved temporarily. We recommend creating an account to save your cart permanently."}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">

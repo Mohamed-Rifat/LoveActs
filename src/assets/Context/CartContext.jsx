@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import { useToken } from "../Context/TokenContext/TokenContext";
 import { toast } from "react-hot-toast";
 
@@ -16,46 +16,20 @@ export const CartProvider = ({ children }) => {
 
   const API = "https://flowers-vert-six.vercel.app/api/cart";
 
-
   const getHeaders = () => {
     if (token) return { Authorization: `Bearer ${token}` };
 
     const sessionId = localStorage.getItem("sessionId");
-    if (!sessionId) throw new Error("Missing sessionId");
+    if (!sessionId) return null;
 
     return { sessionid: sessionId };
   };
-
-  const getCart = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/get-user-cart`, {
-        headers: getHeaders(),
-      });
-
-      setCart(res.data.cart?.products || []);
-      setCartId(res.data.cart?._id || null);
-      setNumOfCartItems(res.data.cart?.products?.length || 0);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        setCart([]);
-        setCartId(null);
-        setNumOfCartItems(0);
-      } else {
-        console.error(err);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   const createGuestSession = async () => {
     try {
       const response = await axios.get("https://flowers-vert-six.vercel.app/get-seesion-id");
       const sessionId = response.data.sessionId;
       localStorage.setItem("sessionId", sessionId);
-      console.log("New guest session created:", sessionId);
       return sessionId;
     } catch (error) {
       console.error("Failed to create guest session:", error);
@@ -64,42 +38,126 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const addToCart = async (productId, quantity = 1) => {
+  const getCart = useCallback(async () => {
+    setLoading(true);
+
+    if (!token && !localStorage.getItem("sessionId")) {
+      try {
+        await createGuestSession();
+      } catch (error) {
+        setLoading(false);
+        return;
+      }
+    }
+
+    const headers = getHeaders();
+
+    if (!headers) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${API}/get-user-cart`, {
+        headers: headers,
+      });
+
+      setCart(res.data.cart?.products || []);
+      setCartId(res.data.cart?._id || null);
+      setNumOfCartItems(res.data.cart?.products?.length || 0);
+    } catch (err) {
+      if (err.response?.status === 404 || err.response?.data?.message?.includes("not found")) {
+        setCart([]);
+        setCartId(null);
+        setNumOfCartItems(0);
+      } else {
+        console.error("Error fetching cart:", err);
+        toast.error("Failed to load cart");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    getCart();
+  }, [getCart]);
+
+  const addToCart = async (productId, quantity = 1, drink = null, uniqueId = null, customTimestamp = null) => {
     setPending((p) => ({ ...p, [`add-${productId}`]: true }));
 
     try {
-      let headers;
-      try {
-        headers = getHeaders();
-      } catch (error) {
-        if (error.message === "Missing sessionId" && !token) {
-          throw new Error("NEED_SESSION");
-        } else {
-          throw error;
-        }
+      let headers = getHeaders();
+
+      if (!headers) {
+        const newSessionId = await createGuestSession();
+        headers = { sessionid: newSessionId };
       }
+
+      const dataToSend = {
+        productId,
+        quantity,
+        ...(drink && { drink }),
+        ...(customTimestamp && { addedAt: customTimestamp }),
+        ...(uniqueId && { uniqueId })
+      };
 
       await axios.post(
         `${API}/add-to-cart`,
-        { productId, quantity },
+        dataToSend,
         { headers }
       );
+
       await getCart();
       toast.success("Added to cart");
+
+      if (drink && customTimestamp) {
+        setTimeout(() => {
+          verifyDrinkSelection(productId, customTimestamp, drink);
+        }, 500);
+      }
+
     } catch (err) {
       console.error(err);
-
-      if (err.message === "NEED_SESSION") {
-        throw new Error("NEED_SESSION");
-      } else {
-        toast.error("Failed to add to cart");
-      }
+      toast.error("Failed to add to cart");
     } finally {
       setPending((p) => ({ ...p, [`add-${productId}`]: false }));
     }
   };
 
+  const verifyDrinkSelection = (productId, timestamp, drink) => {
+    try {
+      const savedSelections = localStorage.getItem('cartDrinkSelections');
+      if (savedSelections) {
+        const selections = JSON.parse(savedSelections);
+        const expectedKey = `${productId}-0-${timestamp}`;
+
+        if (!selections[expectedKey]) {
+          console.warn('⚠️ Drink selection not found, attempting to re-save...');
+          const drinkSelectionData = {
+            drink: drink,
+            selectedAt: new Date().toISOString(),
+            productId: productId,
+            unitIndex: 0,
+            itemTimestamp: timestamp,
+            stableKey: expectedKey
+          };
+
+          selections[expectedKey] = drinkSelectionData;
+          localStorage.setItem('cartDrinkSelections', JSON.stringify(selections));
+        } else {
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying drink selection:', error);
+    }
+  };
+
   const updateCartItem = async (productId, quantity = 1) => {
+    if (!cartId) {
+      return;
+    }
+
     try {
       await axios.patch(
         `${API}/remove-product-from-cart/${cartId}`,
@@ -110,10 +168,53 @@ export const CartProvider = ({ children }) => {
       await getCart();
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 404) {
+        setCart([]);
+        setCartId(null);
+        setNumOfCartItems(0);
+      } else {
+        toast.error("Failed to update cart");
+      }
+    }
+  };
+
+  const removeCartItem = async (productId) => {
+    if (!cartId) {
+      toast.error("Cart not found");
+      return;
+    }
+
+    setPending((p) => ({ ...p, [`remove-${productId}`]: true }));
+
+    try {
+      await axios.patch(
+        `${API}/remove-product-from-cart/${cartId}`,
+        { productId, quantity: 0 },
+        { headers: getHeaders() }
+      );
+      await getCart();
+      toast.success("Product removed from cart");
+    } catch (err) {
+      console.error("Error removing product:", err);
+      if (err.response?.status === 404) {
+        setCart([]);
+        setCartId(null);
+        setNumOfCartItems(0);
+        toast.error("Cart not found");
+      } else {
+        toast.error("Failed to remove product. Try again.");
+      }
+    } finally {
+      setPending((p) => ({ ...p, [`remove-${productId}`]: false }));
     }
   };
 
   const clearCart = async () => {
+    if (!cartId) {
+      toast.error("No cart found");
+      return;
+    }
+
     try {
       await axios.delete(`${API}/clear-cart`, {
         headers: getHeaders(),
@@ -123,29 +224,29 @@ export const CartProvider = ({ children }) => {
       toast.success("Cart cleared");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to clear cart");
     }
   };
+
   const clearGuestCart = async () => {
     try {
-      try {
-        await axios.delete(`${API}/clear-cart`, {
-          headers: getHeaders(),
-        });
-      } catch (err) {
-        console.log("Could not clear existing cart:", err.message);
+      if (cartId) {
+        try {
+          await axios.delete(`${API}/clear-cart`, {
+            headers: getHeaders(),
+          });
+        } catch (err) {
+        }
       }
 
       localStorage.removeItem("sessionId");
 
-      const response = await axios.get("https://flowers-vert-six.vercel.app/get-seesion-id");
-      const newSessionId = response.data.sessionId;
-      localStorage.setItem("sessionId", newSessionId);
+      const newSessionId = await createGuestSession();
 
       setCart([]);
       setCartId(null);
       setNumOfCartItems(0);
 
-      toast.success("Cart cleared Successfully");
       return newSessionId;
     } catch (error) {
       console.error("Failed to clear guest cart:", error);
@@ -164,6 +265,7 @@ export const CartProvider = ({ children }) => {
         pending,
         addToCart,
         updateCartItem,
+        removeCartItem,
         clearCart,
         clearGuestCart,
         getCart,

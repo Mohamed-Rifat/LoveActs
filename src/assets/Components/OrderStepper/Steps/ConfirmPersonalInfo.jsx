@@ -20,6 +20,11 @@ export default function ConfirmPersonalInfo({
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const PICKUP_ADDRESS = {
+    street: "التجمع",
+    city: "القاهره الجديدة",
+    country: "مصر"
+  };
 
   useEffect(() => {
     const fetchDeliveryMethod = () => {
@@ -65,6 +70,17 @@ export default function ConfirmPersonalInfo({
       setUserData(normalizedData);
     }
   }, [userInitialData]);
+
+  useEffect(() => {
+    if (deliveryMethod === "pickup") {
+      setUserData(prev => ({
+        ...prev,
+        street: PICKUP_ADDRESS.street,
+        city: PICKUP_ADDRESS.city,
+        country: PICKUP_ADDRESS.country
+      }));
+    }
+  }, [deliveryMethod]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -156,6 +172,16 @@ export default function ConfirmPersonalInfo({
           city: userData.city.trim(),
           country: userData.country.trim()
         }
+      }),
+      ...(deliveryMethod === "pickup" && {
+        street: PICKUP_ADDRESS.street,
+        city: PICKUP_ADDRESS.city,
+        country: PICKUP_ADDRESS.country,
+        address: {
+          street: PICKUP_ADDRESS.street,
+          city: PICKUP_ADDRESS.city,
+          country: PICKUP_ADDRESS.country
+        }
       })
     };
     onConfirm(confirmedData);
@@ -178,7 +204,6 @@ export default function ConfirmPersonalInfo({
         userData.country.trim();
       return addressValid;
     }
-
     return true;
   };
 
@@ -320,12 +345,12 @@ export default function ConfirmPersonalInfo({
             <div className="p-4 bg-white border border-amber-100 rounded-lg">
               <h4 className="text-base font-semibold text-gray-800 mb-2">Main Store</h4>
               <p className="text-gray-600 text-sm mb-3">
-                <span className="font-medium">Address:</span> New Cairo
+                <span className="font-medium">Address:</span> {PICKUP_ADDRESS.street}, {PICKUP_ADDRESS.city}, {PICKUP_ADDRESS.country}
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 justify-center">
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   <FiPhone className="text-xs" />
-                  <span>01234567890</span>
+                  <span>01*********</span>
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   <FiMapPin className="text-xs" />
@@ -386,7 +411,7 @@ export default function ConfirmPersonalInfo({
             )}
             {deliveryMethod === "pickup" && (
               <p className="text-green-700 text-xs mt-1">
-                Pickup at: Main Store
+                Pickup at: {PICKUP_ADDRESS.street}, {PICKUP_ADDRESS.city}, {PICKUP_ADDRESS.country}
               </p>
             )}
           </div>
@@ -420,7 +445,7 @@ export default function ConfirmPersonalInfo({
                 <p className="text-blue-700 text-sm font-medium">
                   {deliveryMethod === "delivery"
                     ? `${userData.street || "Not set"}, ${userData.city || ""}, ${userData.country || ""}`
-                    : "Main Store - Cairo, 123 Nile Street"
+                    : `${PICKUP_ADDRESS.street}, ${PICKUP_ADDRESS.city}, ${PICKUP_ADDRESS.country}`
                   }
                 </p>
               </div>
@@ -579,7 +604,11 @@ export default function ConfirmPersonalInfo({
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto ml-auto">
           <button
-            onClick={onBack}
+            onClick={() => {
+              onBack();
+              localStorage.removeItem("user");
+              localStorage.removeItem("cartDeliveryOption");
+            }}
             className="px-6 py-3.5 font-medium focus:outline-none transition-all duration-200 flex items-center justify-center bg-gray-200 text-gray-700 hover:bg-gray-300 w-full sm:w-auto"
           >
             Back to Cart

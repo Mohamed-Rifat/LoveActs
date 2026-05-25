@@ -1,49 +1,72 @@
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../../../Context/CartContext";
 import { useToken } from "../../../Context/TokenContext/TokenContext";
 import { FiCheckCircle } from "react-icons/fi";
 
-export default function DeliveryStatus() {
-  const navigate = useNavigate();
+export default function DeliveryStatus({ orderNumber, onComplete }) {
   const { clearCart, clearGuestCart } = useContext(CartContext);
   const { token } = useToken();
   const [orderCompleted, setOrderCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const hasCompleted = useRef(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const processOrder = async () => {
+      if (hasCompleted.current) return;
+
       try {
-        if (token) {
-          await clearCart();
-        } else {
-          await clearGuestCart();
+        try {
+          if (token) {
+            await clearCart();
+          } else {
+            await clearGuestCart();
+          }
+        } catch (error) {
+          console.warn("⚠️ Cart clear failed but continuing:", error.message);
         }
-        
+
+        setOrderCompleted(true);
+        hasCompleted.current = true;
         setTimeout(() => {
-          setOrderCompleted(true);
-          setTimeout(() => {
-            navigate("/", {
-              replace: true,
-              state: { orderCompleted: true }
-            });
-          }, 3000);
+          if (onComplete && typeof onComplete === 'function') {
+            onComplete();
+          }
         }, 2000);
+
       } catch (error) {
-        console.error("❌ Error clearing cart:", error);
+        console.error("❌ Error in processOrder:", error);
+        if (!hasCompleted.current) {
+          hasCompleted.current = true;
+          setTimeout(() => {
+            if (onComplete) onComplete();
+          }, 2000);
+        }
       }
     };
 
     const timer = setTimeout(() => {
       processOrder();
-    }, 3000);
+    }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [navigate, clearCart, clearGuestCart, token]);
-
-  useEffect(() => {
-    const bar = document.getElementById("progress-bar");
-    if (bar) bar.style.width = "100%";
-  }, []);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [clearCart, clearGuestCart, token, onComplete]);
 
   if (orderCompleted) {
     return (
@@ -56,11 +79,16 @@ export default function DeliveryStatus() {
           <p className="text-gray-600 mb-4">
             Your order has been placed successfully!
           </p>
-          <p className="text-gray-500 mb-6">
-            Thank you for your purchase. You will receive your order shortly.
+          {orderNumber && (
+            <p className="text-gray-500 mb-2">
+              Order Number: <strong className="text-[#CF848A]">{orderNumber}</strong>
+            </p>
+          )}
+          <p className="text-gray-500">
+            Thank you for your purchase.
           </p>
-          <div className="animate-pulse text-sm text-blue-600">
-            Redirecting to home page...
+          <div className="mt-6 text-sm text-blue-600">
+            Preparing your order summary...
           </div>
         </div>
       </div>
@@ -78,9 +106,8 @@ export default function DeliveryStatus() {
         </p>
         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
           <div
-            id="progress-bar"
-            className="bg-blue-600 h-2 rounded-full transition-all duration-3000 ease-linear"
-            style={{ width: "0%" }}
+            className="bg-gradient-to-r from-[#CF848A] to-[#A85C68] h-2 rounded-full transition-all duration-300 ease-linear"
+            style={{ width: `${progress}%` }}
           />
         </div>
         <p className="text-sm text-gray-500">

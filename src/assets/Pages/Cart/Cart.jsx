@@ -8,12 +8,17 @@ import { useToken } from '../../Context/TokenContext/TokenContext';
 import ChooseCafe from "./../../Components/OrderStepper/Steps/chooseCafe";
 import './Cart.css';
 import { toast } from "react-hot-toast";
+import { TiWarningOutline } from "react-icons/ti";
+import axios from "axios";
 
 export default function Cart() {
   const cartContext = useContext(CartContext);
   const navigate = useNavigate();
   const { token } = useToken();
   const [clearingCart, setClearingCart] = useState(false);
+  const [clearCartModalOpen, setClearCartModalOpen] = useState(false);
+  const [showDrinkModal, setShowDrinkModal] = useState(false);
+  const [selectedItemForDrink, setSelectedItemForDrink] = useState(null);
 
   if (!cartContext) {
     throw new Error("Cart must be used within a CartProvider");
@@ -22,13 +27,10 @@ export default function Cart() {
   const {
     cart: items = [],
     loading,
-    numOfCartItems,
     clearCart,
     clearGuestCart,
-    addToCart,
-    updateCartItem,
     getCart,
-    pending
+    removeCartItem,
   } = cartContext;
 
   const checkUserAuth = () => {
@@ -62,7 +64,6 @@ export default function Cart() {
     return {};
   });
 
-  const [activeDrinkSelection, setActiveDrinkSelection] = useState(null);
   const [expandedView, setExpandedView] = useState({});
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   const [authStatus, setAuthStatus] = useState(checkUserAuth());
@@ -70,7 +71,6 @@ export default function Cart() {
   useEffect(() => {
     setAuthStatus(checkUserAuth());
   }, [token]);
-
 
   const getProductId = (item) => item?.productId?._id || item?._id || null;
   const getProductData = (item) => (item.productId && typeof item.productId === 'object' ? item.productId : item);
@@ -136,7 +136,6 @@ export default function Cart() {
       });
 
       if (updated) {
-        console.log('Synced old drink selections to new system');
         setDrinkSelections(updatedSelections);
       }
     }
@@ -147,7 +146,6 @@ export default function Cart() {
     if (checkpointData && items && items.length > 0) {
       try {
         const parsedData = JSON.parse(checkpointData);
-        console.log('Restoring drink selections from checkpoint');
         setDrinkSelections(parsedData);
         setTimeout(() => {
           localStorage.removeItem('cartDrinkSelectionsCheckpoint');
@@ -243,7 +241,7 @@ export default function Cart() {
 
   const handleProceedClick = () => {
     if (!allDrinksSelected) {
-      alert("Please select a drink for all items before proceeding!");
+      toast.error("Please select a drink for all items before proceeding!");
       return;
     }
     setShowModal(true);
@@ -251,7 +249,7 @@ export default function Cart() {
 
   const handleConfirmOption = () => {
     if (!allDrinksSelected) {
-      alert("Please select a drink for all items before proceeding!");
+      toast.error("Please select a drink for all items before proceeding!");
       return;
     }
 
@@ -307,7 +305,6 @@ export default function Cart() {
       if (checkpointData && items && items.length > 0) {
         try {
           const parsedData = JSON.parse(checkpointData);
-          console.log('Restoring drink selections from checkpoint');
           setDrinkSelections(parsedData);
           setTimeout(() => {
             localStorage.removeItem('cartDrinkSelectionsCheckpoint');
@@ -320,37 +317,34 @@ export default function Cart() {
   }, [items]);
 
   const handleOpenDrinkSelection = (uniqueId) => {
-    setActiveDrinkSelection(uniqueId);
+    const item = expandedItems.find(item => item.uniqueId === uniqueId);
+    setSelectedItemForDrink(item);
+    setShowDrinkModal(true);
   };
 
-  const handleCloseDrinkSelection = () => {
-    setActiveDrinkSelection(null);
+  const handleCloseDrinkModal = () => {
+    setShowDrinkModal(false);
+    setSelectedItemForDrink(null);
   };
 
-  const handleDrinkSelect = (drinkData) => {
-    if (activeDrinkSelection) {
-      const item = expandedItems.find(item => item.uniqueId === activeDrinkSelection);
+  const handleDrinkSelectFromModal = (drinkData) => {
+    if (selectedItemForDrink) {
+      const drinkKey = selectedItemForDrink.stableKey;
 
-      if (item) {
-        const drinkKey = item.stableKey;
-
-        setDrinkSelections(prev => {
-          const newSelections = {
-            ...prev,
-            [drinkKey]: {
-              drink: drinkData,
-              cafe: drinkData.cafe,
-              selectedAt: new Date().toISOString(),
-              productId: item.originalProductId,
-              unitIndex: item.unitIndex,
-              itemTimestamp: item.itemTimestamp,
-              stableKey: drinkKey
-            }
-          };
-          return newSelections;
-        });
-      }
-      setActiveDrinkSelection(null);
+      setDrinkSelections(prev => ({
+        ...prev,
+        [drinkKey]: {
+          drink: drinkData,
+          cafe: drinkData.cafe,
+          selectedAt: new Date().toISOString(),
+          productId: selectedItemForDrink.originalProductId,
+          unitIndex: selectedItemForDrink.unitIndex,
+          itemTimestamp: selectedItemForDrink.itemTimestamp,
+          stableKey: drinkKey
+        }
+      }));
+      
+      handleCloseDrinkModal();
     }
   };
 
@@ -364,9 +358,8 @@ export default function Cart() {
       setDrinkSelections(prev => {
         const newSelections = { ...prev };
         delete newSelections[drinkKey];
-        console.log('Drink removed with key:', drinkKey);
         return newSelections;
-      });
+      });      
     }
   };
 
@@ -437,11 +430,13 @@ export default function Cart() {
       } else {
         await handleManualGuestClear();
       }
+      toast.success("Cart cleared successfully");
     } catch (error) {
       console.error('Error clearing cart:', error);
       toast.error("Failed to clear cart");
     } finally {
       setClearingCart(false);
+      setClearCartModalOpen(false);
     }
   };
 
@@ -462,6 +457,8 @@ export default function Cart() {
   if (loading) return <Loader />;
 
   if (!items || items.length === 0) {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const isAdmin = user?.role === "Admin";
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -476,20 +473,21 @@ export default function Cart() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="relative mb-6"
           >
-            <div className="w-24 h-24 bg-[#FDE9EE] rounded-full flex items-center justify-center mx-auto">
-              <FiShoppingCart className="text-4xl text-[#CF848A]" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-10 h-10 bg-[#FDE9EE] text-[#CF848A] rounded-full flex items-center justify-center font-bold">
-              0
+            <div className={`w-24 h-24 ${isAdmin ? 'bg-red-100' : 'bg-[#FDE9EE]'} rounded-full flex items-center justify-center mx-auto`}>
+              {isAdmin ? (
+                <FiUser className="text-4xl text-red-500" />
+              ) : (
+                <FiShoppingCart className="text-4xl text-[#CF848A]" />
+              )}
             </div>
           </motion.div>
           <motion.h2
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-3xl font-bold text-gray-800 mb-3"
+            className={`text-3xl font-bold mb-3 ${isAdmin ? 'text-red-600' : 'text-gray-800'}`}
           >
-            Your cart is empty
+            {isAdmin ? "Access Denied" : "Your cart is empty"}
           </motion.h2>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -497,7 +495,9 @@ export default function Cart() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="text-gray-600 mb-8"
           >
-            Looks like you haven't added any items to your cart yet.
+            {isAdmin
+              ? "Admins cannot access the shopping cart. This area is reserved for customers only."
+              : "Looks like you haven't added any items to your cart yet."}
           </motion.p>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -505,11 +505,14 @@ export default function Cart() {
             transition={{ delay: 0.5, duration: 0.5 }}
           >
             <Link
-              to="/products"
-              className="inline-flex items-center gap-2 bg-[#FDE9EE] text-[#CF848A] font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+              to={isAdmin ? "/admindashboard" : "/products"}
+              className={`inline-flex items-center gap-2 font-medium py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg ${isAdmin
+                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                : "bg-[#FDE9EE] text-[#CF848A]"
+                }`}
             >
               <FiArrowLeft className="transform rotate-180" />
-              Continue Shopping
+              {isAdmin ? "Back to Dashboard" : "Continue Shopping"}
             </Link>
           </motion.div>
         </div>
@@ -552,7 +555,7 @@ export default function Cart() {
 
               <button
                 className="Btn"
-                onClick={handleClearCart}
+                onClick={() => setClearCartModalOpen(true)}
                 disabled={clearingCart}
               >
                 <div className="sign">
@@ -582,6 +585,43 @@ export default function Cart() {
           </div>
         </div>
       </div>
+
+      {clearCartModalOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          onClick={() => setClearCartModalOpen(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full animate__animated animate__shakeX"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='flex flex-wrap items-center'>
+              <TiWarningOutline className='text-5xl text-yellow-400' />
+              <h2 className="text-3xl font-bold text-red-600 ml-2">Warning</h2>
+            </div>
+            <p className="text-gray-700 mt-2">Are you sure you want to clear the entire cart? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors"
+                onClick={() => setClearCartModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center justify-center"
+                onClick={handleClearCart}
+                disabled={clearingCart}
+              >
+                {clearingCart ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -660,13 +700,27 @@ export default function Cart() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-1">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base font-bold text-gray-900 truncate">
-                                {group.productData.title || group.productData.name}
-                              </h3>
-                              <p className="text-xs text-gray-500">
-                                {formatPrice(group.productData.price)} LE each
-                              </p>
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <h3 className="text-base font-bold text-gray-900 truncate">
+                                  {group.productData.title || group.productData.name}
+                                </h3>
+
+                                <p className="text-xs text-gray-500">
+                                  {formatPrice(group.productData.price)} LE each
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeCartItem(group.items[0]?.originalProductId);
+                                }}
+                                className="shrink-0 text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                              >
+                                Delete
+                              </button>
+
                             </div>
 
                             <div className="text-right">
@@ -699,17 +753,18 @@ export default function Cart() {
                                 {groupSelectedCount}/{group.quantity} drinks
                               </span>
                             </div>
-
-                            <button className="text-[#CF848A] hover:text-[#A85C68] text-xs font-medium flex items-center gap-1">
-                              {isExpanded ? 'Hide' : 'Show Items'}
-                              <motion.span
-                                animate={{ rotate: isExpanded ? 180 : 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="text-xs"
-                              >
-                                ▼
-                              </motion.span>
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <button className="text-[#CF848A] hover:text-[#A85C68] text-xs font-medium flex items-center gap-1">
+                                {isExpanded ? 'Hide' : 'Show Items'}
+                                <motion.span
+                                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="text-xs"
+                                >
+                                  ▼
+                                </motion.span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -739,14 +794,13 @@ export default function Cart() {
                                   );
 
                                 const hasDrinkSelection = !!selection?.drink;
-                                const isActive = activeDrinkSelection === item.uniqueId;
 
                                 return (
                                   <div key={item.uniqueId} className="bg-white border border-gray-200 p-3">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-gray-900">
-                                          {group.productData.title || group.productData.name}  ( {unitIndex + 1} )
+                                          {group.productData.title || group.productData.name} ({unitIndex + 1})
                                         </span>
                                         {hasDrinkSelection && (
                                           <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5">
@@ -804,35 +858,6 @@ export default function Cart() {
                                         </button>
                                       )}
                                     </div>
-
-                                    {isActive && (
-                                      <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="mt-3 pt-3 border-t border-gray-200"
-                                      >
-                                        <div className="flex items-center justify-between mb-3">
-                                          <h5 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
-                                            <FiCoffee className="text-[#CF848A]" />
-                                            <span>Choose Drink for Item {unitIndex + 1}</span>
-                                          </h5>
-                                          <button
-                                            onClick={handleCloseDrinkSelection}
-                                            className="text-gray-500 hover:text-gray-700 text-xs p-1 hover:bg-gray-100"
-                                          >
-                                            ✕ Close
-                                          </button>
-                                        </div>
-                                        <div className="max-h-[400px] overflow-y-auto">
-                                          <div className="border border-gray-200">
-                                            <ChooseCafe
-                                              onSelectDrink={handleDrinkSelect}
-                                              singleSelectionMode={true}
-                                            />
-                                          </div>
-                                        </div>
-                                      </motion.div>
-                                    )}
                                   </div>
                                 );
                               })}
@@ -889,8 +914,8 @@ export default function Cart() {
                           return sum + group.items.reduce((groupSum, item) => groupSum + item.productData.price, 0);
                         }, 0);
                         const drinksTotal = Object.values(drinkSelections).reduce((sum, sel) => sum + (sel.drink?.price || 0), 0);
-                        const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
-                        const finalTotal = productsTotal + drinksTotal + deliveryFee;
+                        const deliveryFeeValue = deliveryOption === "delivery" ? 50 : 0;
+                        const finalTotalValue = productsTotal + drinksTotal + deliveryFeeValue;
                         return (
                           <>
                             <div className="flex justify-between text-gray-600">
@@ -909,7 +934,7 @@ export default function Cart() {
                                 <div className="flex justify-between">
                                   <span>Delivery</span>
                                   <span className={deliveryOption === "delivery" ? "text-amber-600" : "text-gray-600"}>
-                                    {deliveryOption === "delivery" ? `+${formatPrice(deliveryFee)} LE` : "Pickup"}
+                                    {deliveryOption === "delivery" ? `+${formatPrice(deliveryFeeValue)} LE` : "Pickup"}
                                   </span>
                                 </div>
                               </>
@@ -918,7 +943,7 @@ export default function Cart() {
                             <div className="h-px bg-gray-200"></div>
                             <div className="flex justify-between text-lg font-bold pt-2">
                               <span>Total</span>
-                              <span className="text-[#CF848A]">{formatPrice(finalTotal)} LE</span>
+                              <span className="text-[#CF848A]">{formatPrice(finalTotalValue)} LE</span>
                             </div>
                           </>
                         );
@@ -1048,9 +1073,9 @@ export default function Cart() {
 
                     const drinksTotal = Object.values(drinkSelections).reduce((sum, sel) => sum + (sel.drink?.price || 0), 0);
 
-                    const deliveryFee = deliveryOption === "delivery" ? 50 : 0;
+                    const deliveryFeeValue = deliveryOption === "delivery" ? 50 : 0;
 
-                    const finalTotal = productsTotal + drinksTotal + deliveryFee;
+                    const finalTotalValue = productsTotal + drinksTotal + deliveryFeeValue;
 
                     return (
                       <div className="space-y-2">
@@ -1068,7 +1093,7 @@ export default function Cart() {
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Delivery</span>
                             <span className={deliveryOption === "delivery" ? "text-amber-600" : "text-gray-600"}>
-                              {deliveryOption === "delivery" ? `+${formatPrice(deliveryFee)} LE` : "Pickup"}
+                              {deliveryOption === "delivery" ? `+${formatPrice(deliveryFeeValue)} LE` : "Pickup"}
                             </span>
                           </div>
                         )}
@@ -1076,7 +1101,7 @@ export default function Cart() {
                         <div className="pt-2 border-t border-gray-200">
                           <div className="flex justify-between text-base font-bold">
                             <span>Total</span>
-                            <span className="text-[#CF848A]">{formatPrice(finalTotal)} LE</span>
+                            <span className="text-[#CF848A]">{formatPrice(finalTotalValue)} LE</span>
                           </div>
                         </div>
                       </div>
@@ -1106,6 +1131,75 @@ export default function Cart() {
           </AnimatePresence>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showDrinkModal && selectedItemForDrink && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={handleCloseDrinkModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-[#CF848A] to-[#A85C68]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <FiCoffee className="text-white text-2xl" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        Choose Your Drink
+                      </h3>
+                      <p className="text-white/90 text-sm mt-1">
+                        {selectedItemForDrink.productData.title || selectedItemForDrink.productData.name}
+                        {" - "}
+                        Item {selectedItemForDrink.unitIndex + 1}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCloseDrinkModal}
+                    className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Select your preferred drink for this flower from the menu below:
+                  </p>
+                </div>
+                
+                <ChooseCafe
+                  onSelectDrink={handleDrinkSelectFromModal}
+                  singleSelectionMode={true}
+                />
+              </div>
+
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={handleCloseDrinkModal}
+                  className="w-full py-3 px-4 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-medium transition-colors rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showModal && (
@@ -1193,7 +1287,10 @@ export default function Cart() {
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setShowModal(false)}
+                    onClick={() => {
+                      setShowModal(false);
+                      localStorage.removeItem("cartDeliveryOption");
+                    }}
                     className="flex-1 py-3 px-4 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                   >
                     Cancel

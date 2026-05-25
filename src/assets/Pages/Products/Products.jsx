@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiShoppingCart, FiRefreshCw, FiX, FiSearch, FiChevronDown, FiChevronUp, FiCoffee } from "react-icons/fi";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/UseCart";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-hot-toast";
+import ChooseCafe from "./../../Components/OrderStepper/Steps/chooseCafe"; 
 
 const ProductSkeleton = () => {
   return (
@@ -29,13 +30,12 @@ const ProductSkeleton = () => {
   );
 };
 
-
 const Shimmer = () => (
   <div className="absolute inset-0 transform -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
 );
 
 export default function Products() {
-  const { addToCart, pending, getCart } = useCart();
+  const { addToCart, pending, getCart, cart } = useCart();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +48,11 @@ export default function Products() {
   const [favorites, setFavorites] = useState(new Set());
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [pendingGuestProduct, setPendingGuestProduct] = useState(null);
+  const [showDrinkModal, setShowDrinkModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDrinkPrompt, setShowDrinkPrompt] = useState(false);
+  const [pendingItem, setPendingItem] = useState(null);
+  const pendingItemRef = useRef(null);
   const sortRef = useRef(null);
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
@@ -111,12 +116,157 @@ export default function Products() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleViewDetails = (product) => {
-    setSelectedProduct(product);
-    setQuantity(1);
+  const handleDrinkSelect = (drinkData) => {
+    if (!selectedItem && !pendingItemRef.current) return;
+
+    const currentItem = selectedItem || pendingItemRef.current;
+    if (!currentItem) return;
+
+    const drinkKey = currentItem.stableKey;
+
+    const saved = JSON.parse(localStorage.getItem("cartDrinkSelections") || "{}");
+
+    saved[drinkKey] = {
+      drink: drinkData,
+      cafe: drinkData.cafe,
+      selectedAt: new Date().toISOString(),
+      productId: currentItem.originalProductId,
+      unitIndex: currentItem.unitIndex,
+      itemTimestamp: currentItem.itemTimestamp,
+      stableKey: drinkKey
+    };
+
+    localStorage.setItem("cartDrinkSelections", JSON.stringify(saved));
+
+    setShowDrinkModal(false);
+    setShowDrinkPrompt(false);
+    setSelectedItem(null);
+    setPendingItem(null);
+    pendingItemRef.current = null;
+
+    toast.success(`${drinkData.productName} added to your item! 🎉`, {
+      icon: '🍹',
+      style: {
+        borderRadius: '2px',
+        background: '#333',
+        color: '#fff',
+      },
+    });
+
+    setTimeout(() => {
+      window.location.href = "/cart";
+    }, 500);
   };
 
-  const handleCloseModal = () => setSelectedProduct(null);
+    const prepareDrinkModal = (item) => {
+    const productId = item.productId?._id || item._id;
+    const unitIndex = (item.quantity || 1) - 1;
+    const itemTimestamp = item.createdAt || item.addedAt || item._id || new Date().toISOString();
+    const stableKey = `${productId}-${unitIndex}-${itemTimestamp}`;
+
+    const preparedItem = {
+      ...item,
+      originalProductId: productId,
+      unitIndex,
+      itemTimestamp,
+      stableKey,
+      productData: item.productId || item
+    };
+
+    setSelectedItem(preparedItem);
+    setShowDrinkModal(true);
+    setShowDrinkPrompt(false);
+  };
+
+  const handleOpenDrinkForPending = () => {
+    if (pendingItemRef.current) {
+      setSelectedItem(pendingItemRef.current);
+      setShowDrinkModal(true);
+      setShowDrinkPrompt(false);
+    } else {
+      const latestCart = cart;
+      if (latestCart && latestCart.length > 0) {
+        const lastItem = latestCart[latestCart.length - 1];
+        const productId = lastItem.productId?._id || lastItem._id;
+        const unitIndex = (lastItem.quantity || 1) - 1;
+        const itemTimestamp = lastItem.createdAt || lastItem.addedAt || lastItem._id || new Date().toISOString();
+        const stableKey = `${productId}-${unitIndex}-${itemTimestamp}`;
+        const preparedItem = {
+          ...lastItem,
+          originalProductId: productId,
+          unitIndex,
+          itemTimestamp,
+          stableKey,
+          productData: lastItem.productId || lastItem
+        };
+
+        setSelectedItem(preparedItem);
+        setShowDrinkModal(true);
+        setShowDrinkPrompt(false);
+      }
+    }
+  };
+
+    const handleAddToCart = async (productId, qty = 1) => {
+    const hasSession = localStorage.getItem("sessionId");
+    const product = products.find(p => p._id === productId || p.id === productId);
+
+    if (token) {
+      if (role === "Admin") {
+        toast.error("You are an admin, you cannot add products!");
+        return;
+      }
+      try {
+        await addToCart(productId, qty);
+        await getCart();
+
+        setTimeout(() => {
+          const currentCart = cart;
+          if (currentCart && currentCart.length > 0) {
+            const lastItem = currentCart[currentCart.length - 1];
+            if (lastItem) {
+              prepareDrinkModal(lastItem);
+            } else {
+              setShowDrinkPrompt(true);
+            }
+          } else {
+            setShowDrinkPrompt(true);
+          }
+        }, 500);
+      } catch (err) {
+        toast.error("Something went wrong while adding!");
+      }
+    }
+    else if (hasSession) {
+      try {
+        await addToCart(productId, qty);
+        await getCart();
+
+        setTimeout(() => {
+          const currentCart = cart;
+          if (currentCart && currentCart.length > 0) {
+            const lastItem = currentCart[currentCart.length - 1];
+            if (lastItem) {
+              prepareDrinkModal(lastItem);
+            } else {
+              setShowDrinkPrompt(true);
+            }
+          } else {
+            setShowDrinkPrompt(true);
+          }
+        }, 500);
+      } catch (err) {
+        toast.error("Something went wrong while adding!");
+      }
+    }
+    else {
+      if (product) {
+        setPendingGuestProduct({ productId, quantity: qty });
+        setSelectedProduct(product);
+        setShowModal(true);
+      }
+    }
+  };
 
   const handleGuestAdd = async () => {
     if (!pendingGuestProduct) return;
@@ -130,48 +280,41 @@ export default function Products() {
       await addToCart(pendingGuestProduct.productId, pendingGuestProduct.quantity);
       await getCart();
 
+      setTimeout(() => {
+        const currentCart = cart;
+        if (currentCart && currentCart.length > 0) {
+          const lastItem = currentCart[currentCart.length - 1];
+          if (lastItem) {
+            prepareDrinkModal(lastItem);
+          } else {
+            setShowDrinkPrompt(true);
+          }
+        } else {
+          setShowDrinkPrompt(true);
+        }
+      }, 500);
       setShowModal(false);
       setPendingGuestProduct(null);
       setSelectedProduct(null);
+      toast.success("Added to cart as guest! 🎉", {
+        icon: '🛒',
+      });
     } catch (err) {
       console.error(err);
+      toast.error("Failed to add as guest. Please try again.", {
+        icon: '❌',
+      });
     } finally {
       setIsCreatingSession(false);
     }
   };
 
-  const handleAddToCart = async (productId, qty = 1) => {
-    const hasSession = localStorage.getItem("sessionId");
-
-    if (token) {
-      if (role === "Admin") {
-        toast.error("You are an admin, you cannot add products!");
-        return;
-      }
-      try {
-        await addToCart(productId, qty);
-        await getCart();
-      } catch (err) {
-        toast.error("Something went wrong while adding!");
-      }
-    }
-    else if (hasSession) {
-      try {
-        await addToCart(productId, qty);
-        await getCart();
-      } catch (err) {
-        toast.error("Something went wrong while adding!");
-      }
-    }
-    else {
-      const product = products.find(p => p._id === productId || p.id === productId);
-      if (product) {
-        setPendingGuestProduct({ productId, quantity: qty });
-        setSelectedProduct(product);
-        setShowModal(true);
-      }
-    }
+  const handleViewDetails = (product) => {
+    setSelectedProduct(product);
+    setQuantity(1);
   };
+
+  const handleCloseModal = () => setSelectedProduct(null);
 
   const sortOptions = [
     { label: "Default", value: "default" },
@@ -228,6 +371,107 @@ export default function Products() {
         <meta property="og:url" content="https://loveacts.vercel.app/products" />
       </Helmet>
 
+      <AnimatePresence>
+        {showDrinkModal && selectedItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowDrinkModal(false);
+              setShowDrinkPrompt(false);
+              setSelectedItem(null);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+              className="bg-white shadow-2xl w-full max-w-6xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-[#EB95A2] to-[#d88592] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <FiCoffee className="text-white text-2xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      Choose Your Drink
+                    </h3>
+                    <p className="text-white/90 text-sm">
+                      for {selectedItem.productData?.name}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <ChooseCafe
+                  onSelectDrink={handleDrinkSelect}
+                  singleSelectionMode={true}
+                />
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <button
+                  onClick={() => {
+                    setShowDrinkModal(false);
+                    setShowDrinkPrompt(false);
+                    setSelectedItem(null);
+                  }}
+                  className="w-full py-3 px-4 border border-gray-300 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDrinkPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 120 }}
+              className="bg-white max-w-sm w-full overflow-hidden shadow-md"
+            >
+              <div className="bg-gradient-to-r from-[#EB95A2] to-[#d88592] p-6 text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-4xl">🍹</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Select a Drink
+                </h3>
+                <p className="text-white/90 text-sm">
+                  To complete your order, you must choose a drink for this item.
+                </p>
+              </div>
+
+              <div className="p-6 space-y-3">
+                <button
+                  onClick={handleOpenDrinkForPending}
+                  className="w-full bg-[#EB95A2] text-white py-3 px-4 font-semibold hover:bg-[#d88592] transition-colors"
+                >
+                  Choose Drink
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showModal && selectedProduct && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
@@ -252,7 +496,7 @@ export default function Products() {
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
               aria-label="Close modal"
             >
-              <svg xmlns="http://www.w3.org2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 
@@ -357,7 +601,7 @@ export default function Products() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center  whitespace-nowrap font-dancing">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-3 bg-gradient-to-br from-[#CF848A] to-[#A85C68] bg-clip-text text-transparent self-center whitespace-nowrap font-dancing">
             Discover Our Products
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
@@ -470,14 +714,14 @@ export default function Products() {
                       />
                     </div>
 
-                    <motion.button
+                    {/* <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handleViewDetails(p)}
                       className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
                     >
                       <FiSearch className="text-gray-600" />
-                    </motion.button>
+                    </motion.button> */}
                   </div>
 
                   <div className="p-4 flex flex-col justify-between flex-grow">

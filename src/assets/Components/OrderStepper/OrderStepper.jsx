@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Stepper,
   Step,
@@ -13,16 +13,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ConfirmPersonalInfo from "./Steps/ConfirmPersonalInfo";
 import ReviewOrder from "./Steps/ReviewOrder";
 import DeliveryStatus from "./Steps/DeliveryStatus";
+import FinalMessage from "./Steps/FinalMessage";
 
 const steps = [
   "Confirm Personal Info",
   "Review & Confirm Order",
-  "Order in Progress"
+  "Order in Progress",
+  "Order Confirmed"
 ];
 
 export default function OrderStepper() {
   const [activeStep, setActiveStep] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [orderNumber, setOrderNumber] = useState("");
+  const [orderDetails, setOrderDetails] = useState(null);
+  const isMovingToNext = useRef(false);
 
   const [userData, setUserData] = useState({});
   const [orderData, setOrderData] = useState({
@@ -33,7 +38,6 @@ export default function OrderStepper() {
   const [cartData, setCartData] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
-
 
   useEffect(() => {
     setIsLoading(true);
@@ -60,7 +64,6 @@ export default function OrderStepper() {
     setIsLoading(false);
   }, [location.state]);
 
-
   useEffect(() => {
     if (!isLoading && (!orderData.deliveryOption || orderData.finalTotal <= 0)) {
       navigate("/cart", { replace: true });
@@ -68,8 +71,20 @@ export default function OrderStepper() {
   }, [isLoading, orderData, navigate]);
 
   const handleNext = () => {
+    if (isMovingToNext.current) {
+      return;
+    }
+
     if (activeStep < steps.length - 1) {
-      setActiveStep(prev => prev + 1);
+      isMovingToNext.current = true;
+      setActiveStep(prev => {
+        const newStep = prev + 1;
+        setTimeout(() => {
+          isMovingToNext.current = false;
+        }, 500);
+        return newStep;
+      });
+    } else {
     }
   };
 
@@ -79,6 +94,20 @@ export default function OrderStepper() {
     } else {
       setActiveStep(prev => prev - 1);
     }
+  };
+
+  const handleOrderConfirm = (orderResult) => {
+    setOrderNumber(orderResult.orderId);
+    setOrderDetails(orderResult);
+    handleNext();
+  };
+
+  const handleFinish = () => {
+    localStorage.removeItem("cartDrinkSelections");
+    localStorage.removeItem("cartDeliveryOption");
+    localStorage.removeItem("user");
+    localStorage.removeItem("cartId");
+    navigate("/", { replace: true });
   };
 
   const renderStepContent = (step) => {
@@ -105,16 +134,29 @@ export default function OrderStepper() {
             deliveryOption={orderData.deliveryOption}
             finalTotal={orderData.finalTotal}
             drinkSelections={orderData.drinkSelections}
-            cartData={orderData.cartItems} 
-            expandedItems={orderData.expandedItems} 
-            groupedItems={orderData.groupedItems} 
+            cartData={cartData}
+            expandedItems={orderData.expandedItems}
+            groupedItems={orderData.groupedItems}
             subtotal={orderData.subtotal}
             onBack={handleBack}
-            onConfirm={handleNext}
+            onConfirm={handleOrderConfirm}
           />
         );
+
       case 2:
-        return <DeliveryStatus />;
+        return <DeliveryStatus orderNumber={orderNumber} onComplete={handleNext} />;
+
+      case 3:
+        return (
+          <FinalMessage
+            orderNumber={orderNumber}
+            orderDetails={orderDetails}
+            userData={userData}
+            orderData={orderData}
+            cartData={cartData}
+            onFinish={handleFinish}
+          />
+        );
 
       default:
         return null;

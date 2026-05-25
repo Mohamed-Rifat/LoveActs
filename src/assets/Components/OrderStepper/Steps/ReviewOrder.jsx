@@ -254,112 +254,125 @@ const ReviewOrderMain = ({
         return true;
     }, [selectedDate, selectedTimeSlot, userData, deliveryOption, cart]);
 
-   const handleSubmitOrder = async () => {
-    if (!isValidOrder) {
-        setMessage({
-            type: "error",
-            text: "Please complete all required information first"
-        });
-        return;
-    }
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-        const formattedDate = selectedDate ? selectedDate.format('DD/MM/YYYY') : null;
-        const sessionId = localStorage.getItem("sessionId");
-        const cafeProductArray = Object.values(drinkSelections).map(selection => ({
-            name: selection.drink?.productName || "Unknown Drink",
-            price: selection.drink?.price || 0,
-            quantity: 1
-        }));
-
-        const orderPayload = {
-            address: {
-                street: userData.street.trim(),
-                city: userData.city.trim(),
-                country: userData.country.trim(),
-            },
-            name: userData.name.trim(),
-            phone: userData.phone.trim(),
-            cartId: cartId || localStorage.getItem("cartId") || "", 
-            cafe: cafeProductArray.length > 0 ? "689b9a7a7c1bab94ba870113" : null,
-            cafeProduct: cafeProductArray,
-            selectedDate: formattedDate,
-            selectedTimeSlote: selectedTimeSlot,
-            contactPhone: `+2${userData.phone.trim()}`,
-        };
-
-        Object.keys(orderPayload).forEach(key => {
-            if (orderPayload[key] === null || orderPayload[key] === undefined) {
-                delete orderPayload[key];
-            }
-        });
-
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-
-        if (sessionId) {
-            headers["sessionId"] = sessionId;
+    const handleSubmitOrder = async () => {
+        if (!isValidOrder) {
+            setMessage({
+                type: "error",
+                text: "Please complete all required information first"
+            });
+            return;
         }
 
-        const response = await axios.post(
-            "https://flowers-vert-six.vercel.app/api/order",
-            orderPayload,
-            { headers }
-        );
+        setLoading(true);
+        setMessage(null);
 
-        setMessage({
-            type: "success",
-            text: "🎉 Order placed successfully!"
-        });
+        try {
+            const formattedDate = selectedDate ? selectedDate.format('DD/MM/YYYY') : null;
+            const sessionId = localStorage.getItem("sessionId");
+            const cafeProductArray = Object.values(drinkSelections).map(selection => ({
+                name: selection.drink?.productName || "Unknown Drink",
+                price: selection.drink?.price || 0,
+                quantity: 1
+            }));
 
-        localStorage.removeItem("cartDrinkSelections");
-        localStorage.removeItem("cartDeliveryOption");
-        localStorage.removeItem("user");
-        localStorage.removeItem("cartId");
-        setCart([]);
-        setCartTotal(0);
-        setDrinkSelections({});
+            const orderPayload = {
+                address: {
+                    street: userData.street.trim(),
+                    city: userData.city.trim(),
+                    country: userData.country.trim(),
+                },
+                name: userData.name.trim(),
+                phone: userData.phone.trim(),
+                cartId: cartId || localStorage.getItem("cartId") || "",
+                cafe: cafeProductArray.length > 0 ? "689b9a7a7c1bab94ba870113" : null,
+                cafeProduct: cafeProductArray,
+                selectedDate: formattedDate,
+                selectedTimeSlote: selectedTimeSlot,
+                contactPhone: `+2${userData.phone.trim()}`,
+            };
 
-        setTimeout(() => {
+            Object.keys(orderPayload).forEach(key => {
+                if (orderPayload[key] === null || orderPayload[key] === undefined) {
+                    delete orderPayload[key];
+                }
+            });
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (sessionId) {
+                headers["sessionId"] = sessionId;
+            }
+
+            const response = await axios.post(
+                "https://flowers-vert-six.vercel.app/api/order",
+                orderPayload,
+                { headers }
+            );
+
+            const orderId = response.data.order?._id ||
+                response.data._id ||
+                response.data.orderNumber ||
+                `ORD-${Date.now().toString().slice(-6)}`;
+
+            localStorage.setItem("lastOrderId", orderId);
+            localStorage.setItem("lastOrderDetails", JSON.stringify({
+                orderId: orderId,
+                selectedDate: formattedDate,
+                selectedTimeSlot: selectedTimeSlot,
+                totalAmount: calculatedTotal,
+                createdAt: new Date().toISOString()
+            }));
+
+            setMessage({
+                type: "success",
+                text: "🎉 Order placed successfully!"
+            });
+
+            localStorage.removeItem("cartDrinkSelections");
+            localStorage.removeItem("cartDeliveryOption");
+            localStorage.removeItem("user");
+            localStorage.removeItem("cartId");
+            setCart([]);
+            setCartTotal(0);
+            setDrinkSelections({});
+
             if (onConfirm) {
                 onConfirm({
-                    orderId: response.data.order?._id || response.data._id || `ORD-${Date.now().toString().slice(-6)}`,
+                    orderId: orderId,
                     selectedDate: formattedDate,
                     selectedTimeSlot: selectedTimeSlot,
-                    totalAmount: calculatedTotal
+                    totalAmount: calculatedTotal,
+                    orderResponse: response.data
                 });
             }
-        }, 1500);
 
-    } catch (err) {
-        console.error("❌ Full Order Error:", err);
-        console.error("❌ Error Response:", err.response?.data);
-        console.error("❌ Validation Details:", JSON.stringify(err.response?.data?.details, null, 2));
-        
-        let errorMessage = "Failed to place order. Please try again.";
-        
-        if (err.response?.data?.details) {
-            errorMessage = "Validation Errors:\n";
-            err.response.data.details.forEach((detail, index) => {
-                console.error(`Error ${index + 1}:`, detail);
-                errorMessage += `\n${index + 1}. ${detail.message || JSON.stringify(detail)}`;
+        } catch (err) {
+            console.error("❌ Full Order Error:", err);
+            console.error("❌ Error Response:", err.response?.data);
+            console.error("❌ Validation Details:", JSON.stringify(err.response?.data?.details, null, 2));
+
+            let errorMessage = "Failed to place order. Please try again.";
+
+            if (err.response?.data?.details) {
+                errorMessage = "Validation Errors:\n";
+                err.response.data.details.forEach((detail, index) => {
+                    console.error(`Error ${index + 1}:`, detail);
+                    errorMessage += `\n${index + 1}. ${detail.message || JSON.stringify(detail)}`;
+                });
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+
+            setMessage({
+                type: "error",
+                text: errorMessage
             });
-        } else if (err.response?.data?.message) {
-            errorMessage = err.response.data.message;
+        } finally {
+            setLoading(false);
         }
-        
-        setMessage({
-            type: "error",
-            text: errorMessage
-        });
-    } finally {
-        setLoading(false);
-    }
-};
+    };
     const toggleFixedSummary = () => setShowFixedSummary(!showFixedSummary);
 
     const handleRefreshCart = () => {
